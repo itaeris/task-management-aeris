@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { SettingsForm } from "@/components/settings-form";
-import { InstallAppCard } from "@/components/pwa";
 import { PresenceProvider } from "@/components/presence";
 import { BrandMark } from "@/components/brand-mark";
 import { btnGhost } from "@/components/ui";
@@ -26,15 +25,14 @@ export default async function SettingsPage() {
         <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="font-serif text-4xl">Settings</h1>
-            <p className="mt-1 text-sm text-muted">Profil, password, dan pasang aplikasi di perangkat.</p>
+            <p className="mt-1 text-sm text-muted">Ubah nama tampilan dan reset password akun.</p>
           </div>
           <Link href="/" className={cn(btnGhost, "self-start")}>
             Kembali
           </Link>
         </div>
-        <div className="mt-6 grid gap-5">
+        <div className="mt-6">
           <SettingsForm user={user} />
-          <InstallAppCard />
         </div>
       </main>
     </PresenceProvider>

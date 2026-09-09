@@ -11,7 +11,7 @@ Stack: **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4**, **Framer 
 - Product log, Scrum log, Daily check, Kanban, Calendar, Timeline
 - Komentar, attachment, dan aktivitas project
 - Presence di header: siapa sedang buka halaman atau task
-- Settings: ubah nama tampilan, reset password, dan pasang PWA
+- Settings: ubah nama tampilan dan reset password
 - Loading pakai skeleton, bukan spinner
 - Bisa dipasang sebagai aplikasi (PWA) di HP dan desktop
 
@@ -102,7 +102,7 @@ User Google dicocokkan/dibuat di `public.users` berdasarkan email.
 2. Di server, set `APP_URL=https://pipeline.aerisbeaute.com` plus env Supabase/Google.
 3. Google Console: tambah origin dan redirect URI production di atas.
 4. Build: `npm run build && npm run start` (atau proses manager di belakang reverse proxy). Proxy harus meneruskan `Host` dan `X-Forwarded-Proto: https`.
-5. PWA: service worker aktif otomatis di domain (bukan localhost). Install dari Chrome ⋮ → Install app, atau Settings → Pasang aplikasi. iOS: Safari Share → Add to Home Screen.
+5. PWA: service worker aktif otomatis di domain (bukan localhost). Chrome/Edge: menu ⋮ → Install app. iOS: Safari Share → Add to Home Screen.
 
 ## PWA
 
@@ -111,7 +111,7 @@ App bisa dipasang ke home screen / desktop (standalone).
 - Manifest: `/manifest.webmanifest`
 - Ikon: `public/icons/`
 - Service worker (production): `public/sw.js` — halaman offline jika navigasi gagal
-- Chrome/Edge: menu ⋮ → Install app, atau tombol **Pasang aplikasi** di Settings
+- Chrome/Edge: menu ⋮ → Install app
 - iOS Safari: Share → Add to Home Screen
 - Banner muncul saat koneksi terputus
 
