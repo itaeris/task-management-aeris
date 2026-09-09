@@ -1,10 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { createProject, joinProject } from "@/lib/actions/projects";
-import { AvatarStack, btnGhost, btnPrimary, field, iconBtn, surface } from "@/components/ui";
-import { IconPicker, ProjectIconEditor } from "@/components/icon-picker";
+import { ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
+import { joinProject } from "@/lib/actions/projects";
+import { ACCESS_LABEL, ACCESS_OPTIONS, type ProjectAccess } from "@/lib/access";
+import { AvatarStack, btnGhost, field, iconBtn, surface } from "@/components/ui";
+import { CreateProjectForm } from "@/components/create-project-form";
+import { DeleteProjectDialog } from "@/components/delete-project-dialog";
+import { ProjectIconEditor } from "@/components/icon-picker";
 import { PresenceBoard, PresenceProvider } from "@/components/presence";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -21,6 +24,8 @@ type ProjectCard = {
   color: string;
   shareCode: string;
   role: string;
+  access: ProjectAccess;
+  groupName: string | null;
   taskCount: number;
   doneCount: number;
   memberCount: number;
@@ -35,6 +40,12 @@ type UserCard = {
   email: string;
   initials: string;
   color: string;
+};
+
+type GroupOption = {
+  id: string;
+  name: string;
+  memberCount: number;
 };
 
 function percent(done: number, total: number) {
@@ -76,35 +87,60 @@ function rollup(projects: ProjectCard[]) {
 
 const PAGE_SIZE = 6;
 
+type AccessFilter = "all" | ProjectAccess;
+
+const VIEW_FILTERS = [{ id: "all" as const, label: "All" }, ...ACCESS_OPTIONS];
+
 export function HomeProjects({
   user,
   projects,
+  people,
+  groups,
 }: {
   user: UserCard;
   projects: ProjectCard[];
+  people: UserCard[];
+  groups: GroupOption[];
 }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [accessFilter, setAccessFilter] = useState<AccessFilter>("all");
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
   const mine = projects.filter((project) => project.role === "owner");
   const others = projects.filter((project) => project.role !== "owner");
   const mineProgress = rollup(mine);
   const othersProgress = rollup(others);
 
+  const accessCounts = useMemo(() => {
+    const counts: Record<AccessFilter, number> = {
+      all: projects.length,
+      personal: 0,
+      group: 0,
+      organization: 0,
+    };
+    for (const project of projects) counts[project.access] += 1;
+    return counts;
+  }, [projects]);
+
   const filtered = useMemo(() => {
+    const scoped =
+      accessFilter === "all" ? projects : projects.filter((project) => project.access === accessFilter);
     const q = query.trim().toLowerCase();
-    if (!q) return projects;
-    return projects.filter((project) => {
+    if (!q) return scoped;
+    return scoped.filter((project) => {
       const haystack = [
         project.name,
         project.description,
         project.ownerName ?? "",
         project.role === "owner" ? "yours" : "joined",
+        ACCESS_LABEL[project.access],
+        project.groupName ?? "",
       ]
         .join(" ")
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [projects, query]);
+  }, [projects, query, accessFilter]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -147,29 +183,57 @@ export function HomeProjects({
 
         <FadeIn delay={0.04} className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <section className={cn(surface, "flex min-h-[24rem] flex-col overflow-hidden rounded-3xl lg:min-h-0")}>
-            <div className="flex shrink-0 flex-col gap-2 border-b border-line px-3 py-3 sm:flex-row sm:items-center sm:px-4">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-serif shrink-0 text-xl">Project</h2>
-                <p className="text-sm text-muted sm:hidden">
-                  {filtered.length}/{projects.length}
+            <div className="flex shrink-0 flex-col gap-2 border-b border-line px-3 py-3 sm:px-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="font-serif shrink-0 text-xl">Project</h2>
+                  <p className="text-sm text-muted sm:hidden">
+                    {filtered.length}/{accessFilter === "all" ? projects.length : accessCounts[accessFilter]}
+                  </p>
+                </div>
+                <label className="relative min-w-0 flex-1">
+                  <Search size={15} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" />
+                  <input
+                    value={query}
+                    onChange={(event) => {
+                      setQuery(event.target.value);
+                      setPage(1);
+                    }}
+                    className={cn(field, "h-10 pl-9")}
+                    placeholder="Search projects…"
+                    aria-label="Search projects"
+                  />
+                </label>
+                <p className="hidden shrink-0 text-sm text-muted sm:block">
+                  {filtered.length} of {accessFilter === "all" ? projects.length : accessCounts[accessFilter]}
                 </p>
               </div>
-              <label className="relative min-w-0 flex-1">
-                <Search size={15} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" />
-                <input
-                  value={query}
-                  onChange={(event) => {
-                    setQuery(event.target.value);
-                    setPage(1);
-                  }}
-                  className={cn(field, "h-10 pl-9")}
-                  placeholder="Search projects…"
-                  aria-label="Search projects"
-                />
-              </label>
-              <p className="hidden shrink-0 text-sm text-muted sm:block">
-                {filtered.length} of {projects.length}
-              </p>
+              <div className="flex flex-wrap gap-1" role="tablist" aria-label="Filter projects by access">
+                {VIEW_FILTERS.map((option) => {
+                  const active = accessFilter === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => {
+                        setAccessFilter(option.id);
+                        setPage(1);
+                      }}
+                      className={cn(
+                        "inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition",
+                        active ? "bg-terracotta text-white" : "bg-paper-2 text-muted hover:bg-sand hover:text-ink",
+                      )}
+                    >
+                      {option.label}
+                      <span className={cn("tabular-nums", active ? "text-white/80" : "text-muted")}>
+                        {accessCounts[option.id]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-2">
               {projects.length === 0 ? (
@@ -183,7 +247,11 @@ export function HomeProjects({
                 <div className="flex h-full items-center justify-center p-8 text-center">
                   <div>
                     <p className="font-semibold">No matches</p>
-                    <p className="mt-1 text-sm text-muted">Try another term, or clear the search.</p>
+                    <p className="mt-1 text-sm text-muted">
+                      {query.trim()
+                        ? "Try another term, or clear the search."
+                        : `No ${accessFilter === "all" ? "" : `${ACCESS_LABEL[accessFilter].toLowerCase()} `}projects yet.`}
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -198,7 +266,7 @@ export function HomeProjects({
                       exit={{ opacity: 0, y: -6 }}
                       transition={{ duration: 0.22, ease: easeOutSoft }}
                     >
-                      <article className="rounded-2xl px-2 py-3 transition hover:bg-sand sm:px-3">
+                      <article className="group rounded-2xl px-2 py-3 transition hover:bg-sand sm:px-3">
                         <div className="flex items-center gap-3">
                           <ProjectIconEditor
                             projectId={project.id}
@@ -210,11 +278,24 @@ export function HomeProjects({
                             <div className="flex min-w-0 items-center gap-2">
                               <h3 className="truncate font-semibold">{project.name}</h3>
                               <span className="hidden shrink-0 rounded-full bg-paper-2 px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted uppercase sm:inline">
+                                {ACCESS_LABEL[project.access]}
+                              </span>
+                              <span className="hidden shrink-0 rounded-full bg-paper-2 px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted uppercase sm:inline">
                                 {project.role === "owner" ? "Yours" : "Joined"}
                               </span>
                             </div>
                             <p className="mt-0.5 truncate text-sm text-muted">{project.description}</p>
                           </Link>
+                          {project.role === "owner" ? (
+                            <button
+                              type="button"
+                              className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition hover:bg-red-50 hover:text-red-700 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                              aria-label={`Delete ${project.name}`}
+                              onClick={() => setPendingDelete({ id: project.id, name: project.name })}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          ) : null}
                           <div className="hidden sm:block">
                             <AvatarStack members={project.members} />
                           </div>
@@ -222,9 +303,11 @@ export function HomeProjects({
                         <div className="mt-3 sm:pl-11">
                           <ProgressBar done={project.doneCount} total={project.taskCount} />
                           <p className="mt-1 truncate text-[11px] text-muted">
-                            {project.role === "owner" ? "Yours" : "Joined"}
-                            {" · "}
-                            {project.memberCount} {project.memberCount === 1 ? "member" : "members"}
+                            {ACCESS_LABEL[project.access]}
+                            {project.access === "group" && project.groupName ? ` · ${project.groupName}` : ""}
+                            {project.access === "organization"
+                              ? " · open to everyone"
+                              : ` · ${project.memberCount} ${project.memberCount === 1 ? "member" : "members"}`}
                             {project.role !== "owner" && project.ownerName ? ` · owner ${project.ownerName}` : ""}
                           </p>
                         </div>
@@ -292,15 +375,7 @@ export function HomeProjects({
           </section>
 
           <aside className={cn(surface, "flex min-h-0 flex-col overflow-hidden rounded-3xl")}>
-            <form action={createProject} className="min-h-0 flex-1 overflow-y-auto p-4">
-              <h2 className="font-serif text-xl">New project</h2>
-              <div className="mt-3 grid gap-2">
-                <input name="name" className={field} placeholder="Project name" required />
-                <textarea name="description" className={field} rows={2} placeholder="Product summary" />
-                <IconPicker compact />
-                <button className={cn(btnPrimary, "w-full")}>Create project</button>
-              </div>
-            </form>
+            <CreateProjectForm userId={user.id} people={people} groups={groups} />
             <form action={joinProject} className="shrink-0 border-t border-line p-4">
               <h2 className="text-sm font-semibold">Join with a code</h2>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row">
@@ -310,6 +385,7 @@ export function HomeProjects({
             </form>
           </aside>
         </FadeIn>
+        <DeleteProjectDialog project={pendingDelete} onClose={() => setPendingDelete(null)} />
       </main>
     </PresenceProvider>
   );

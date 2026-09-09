@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { getProjectWorkspace } from "@/lib/queries";
+import { getProjectShell } from "@/lib/queries";
 import { ProjectShell } from "@/components/project-shell";
 
 export default async function ProjectLayout({
@@ -13,15 +13,15 @@ export default async function ProjectLayout({
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) redirect(`/login?next=/projects/${id}`);
-  const workspace = await getProjectWorkspace(id, user.id);
-  if (!workspace) notFound();
+  const shell = await getProjectShell(id, user.id);
+  if (!shell) notFound();
 
   return (
     <ProjectShell
-      projectId={workspace.project.id}
-      projectName={workspace.project.name}
-      projectColor={workspace.project.color}
-      canEditIcon={workspace.role === "owner"}
+      projectId={shell.project.id}
+      projectName={shell.project.name}
+      projectColor={shell.project.color}
+      canEditIcon={shell.role === "owner"}
       user={user}
     >
       {children}

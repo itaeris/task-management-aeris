@@ -7,7 +7,7 @@ Stack: **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4**, **Framer 
 ## Features
 
 - Sign in with email/username + password, or Google OAuth
-- Create a project, join with a share code, change the Flaticon icon (UIcons)
+- Create a project as **Personal**, **Group**, or **Organization**; join with a share code; change the Flaticon icon (UIcons)
 - Product log, Scrum log, Daily check, Kanban, Calendar, Timeline
 - Comments, attachments, and project activity
 - Presence in the header: who has a page or task open
@@ -45,6 +45,7 @@ In the Supabase SQL Editor:
 1. New project: run `supabase/schema.sql`
 2. If the `users` table already exists: run `supabase/migration_auth.sql`
 3. Presence (“active now”): run `supabase/migration_presence.sql`
+4. Project access (personal / group / organization): run `supabase/migration_project_access.sql`
 
 The schema also creates a private storage bucket named `attachments`.
 
@@ -159,10 +160,10 @@ Regenerate PWA icons with `node scripts/generate-pwa-icons.mjs`.
 
 ## Quick flow
 
-1. Sign in, then create a project or join with a code.
+1. Sign in, then create a project (personal, group, or organization) or join with a code.
 2. Pick a Flaticon icon when creating a project. Older projects that still use a color circle: click the icon (pencil) on the home card or sidebar — owner only.
 3. Work in the project menu: Overview, Product log, Scrum log, Daily check, Kanban, Calendar, Timeline, Share.
-4. Share invites members. The owner can rotate the code and change the name/description/icon.
+4. Group and organization projects are open to those people automatically. Share still works for extra invites. The owner can rotate the code and change the name/description/icon.
 5. The header shows who is active in the app.
 
 ## Structure

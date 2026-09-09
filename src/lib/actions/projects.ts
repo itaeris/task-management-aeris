@@ -2,14 +2,27 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  canLeaveProject,
+  isMissingAccessSchema,
+  parseProjectAccess,
+  type ProjectAccess,
+} from "@/lib/access";
+import { isGroupMember } from "@/lib/project-access";
+import { addGroupMembersToProject, createGroupRecord } from "@/lib/groups";
 import { supabase, unwrap } from "@/lib/supabase";
 import { requireProjectMember, requireUser } from "@/lib/auth";
+import { removeProjectFromGoogleCalendar } from "@/lib/google-calendar";
 import { DEFAULT_PROJECT_ICON, encodeProjectIcon, isFlaticonId } from "@/lib/project-icon";
 import { shareCode } from "@/lib/utils";
 
 function refresh(projectId?: string) {
   revalidatePath("/");
   if (projectId) revalidatePath(`/projects/${projectId}`, "layout");
+}
+
+function migrationHint() {
+  return "Project access columns are missing. Run supabase/migration_project_access.sql in the SQL Editor.";
 }
 
 async function logActivity(projectId: string, userId: string, message: string) {
@@ -36,13 +49,51 @@ async function joinMember(projectId: string, userId: string) {
       .maybeSingle(),
   );
   if (existing) return;
-  unwrap(
-    await supabase.from("project_members").insert({
-      project_id: projectId,
-      user_id: userId,
-      role: "member",
-    }),
-  );
+  const result = await supabase.from("project_members").insert({
+    project_id: projectId,
+    user_id: userId,
+    role: "member",
+    source: "invite",
+  });
+  if (result.error && isMissingAccessSchema(result.error)) {
+    unwrap(
+      await supabase.from("project_members").insert({
+        project_id: projectId,
+        user_id: userId,
+        role: "member",
+      }),
+    );
+    return;
+  }
+  if (result.error) throw new Error(result.error.message);
+}
+
+async function resolveAccess(
+  formData: FormData,
+  userId: string,
+  currentGroupId?: string | null,
+) {
+  const access = parseProjectAccess(formData.get("access"));
+  if (access !== "group") return { access, groupId: null as string | null };
+
+  const selected = String(formData.get("groupId") ?? "").trim();
+  const groupName = String(formData.get("groupName") ?? "").trim();
+  const memberIds = formData.getAll("members").map((value) => String(value));
+
+  if (selected && selected !== "new") {
+    if (!(await isGroupMember(selected, userId))) {
+      throw new Error("You can only use a group you belong to.");
+    }
+    return { access, groupId: selected };
+  }
+  if (selected === "current" && currentGroupId) {
+    if (!(await isGroupMember(currentGroupId, userId))) {
+      throw new Error("You can only use a group you belong to.");
+    }
+    return { access, groupId: currentGroupId };
+  }
+  if (!groupName) throw new Error("Group name is required.");
+  return { access, groupId: await createGroupRecord(groupName, userId, memberIds) };
 }
 
 export async function createProject(formData: FormData) {
@@ -53,46 +104,116 @@ export async function createProject(formData: FormData) {
   const color = encodeProjectIcon(isFlaticonId(icon) ? icon : DEFAULT_PROJECT_ICON);
   if (!name) throw new Error("Project name is required.");
 
-  const project = unwrap(
-    await supabase
-      .from("projects")
-      .insert({
-        name,
-        description,
-        color,
-        share_code: shareCode(),
-        owner_id: user.id,
-      })
-      .select("id")
-      .single(),
-  ) as { id: string };
+  let access: ProjectAccess = "personal";
+  let groupId: string | null = null;
+  try {
+    const resolved = await resolveAccess(formData, user.id);
+    access = resolved.access;
+    groupId = resolved.groupId;
+  } catch (error) {
+    if (isMissingAccessSchema(error)) throw new Error(migrationHint());
+    throw error;
+  }
 
-  unwrap(
-    await supabase.from("project_members").insert({
-      project_id: project.id,
-      user_id: user.id,
-      role: "owner",
-    }),
-  );
+  const payload: Record<string, string | null> = {
+    name,
+    description,
+    color,
+    share_code: shareCode(),
+    owner_id: user.id,
+    access,
+    group_id: groupId,
+  };
+
+  let project: { id: string };
+  const inserted = await supabase.from("projects").insert(payload).select("id").single();
+  if (inserted.error && isMissingAccessSchema(inserted.error)) {
+    if (access !== "personal") throw new Error(migrationHint());
+    project = unwrap(
+      await supabase
+        .from("projects")
+        .insert({
+          name,
+          description,
+          color,
+          share_code: payload.share_code,
+          owner_id: user.id,
+        })
+        .select("id")
+        .single(),
+    ) as { id: string };
+  } else if (inserted.error) {
+    throw new Error(inserted.error.message);
+  } else {
+    project = inserted.data as { id: string };
+  }
+
+  const ownerResult = await supabase.from("project_members").insert({
+    project_id: project.id,
+    user_id: user.id,
+    role: "owner",
+    source: "owner",
+  });
+  if (ownerResult.error && isMissingAccessSchema(ownerResult.error)) {
+    unwrap(
+      await supabase.from("project_members").insert({
+        project_id: project.id,
+        user_id: user.id,
+        role: "owner",
+      }),
+    );
+  } else if (ownerResult.error) {
+    throw new Error(ownerResult.error.message);
+  }
+
+  if (access === "group" && groupId) {
+    await addGroupMembersToProject(project.id, groupId, user.id);
+  }
+
   await logActivity(project.id, user.id, `created project ${name}`);
   refresh(project.id);
   redirect(`/projects/${project.id}`);
 }
 
 export async function updateProject(projectId: string, formData: FormData) {
-  const { user, membership } = await requireProjectMember(projectId);
+  const { user, membership, project } = await requireProjectMember(projectId);
   if (membership.role !== "owner") throw new Error("Only the owner can edit this project.");
   const name = String(formData.get("name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const icon = String(formData.get("icon") ?? "").trim();
   if (!name) throw new Error("Project name is required.");
-  const patch: { name: string; description: string; updated_at: string; color?: string } = {
+
+  const patch: {
+    name: string;
+    description: string;
+    updated_at: string;
+    color?: string;
+    access?: ProjectAccess;
+    group_id?: string | null;
+  } = {
     name,
     description,
     updated_at: new Date().toISOString(),
   };
   if (isFlaticonId(icon)) patch.color = encodeProjectIcon(icon);
-  unwrap(await supabase.from("projects").update(patch).eq("id", projectId));
+
+  if (formData.has("access")) {
+    const resolved = await resolveAccess(formData, user.id, project.group_id ?? null);
+    patch.access = resolved.access;
+    patch.group_id = resolved.groupId;
+    if (resolved.access === "personal") {
+      await supabase.from("project_members").delete().eq("project_id", projectId).eq("source", "access");
+    }
+    if (resolved.access === "group" && resolved.groupId) {
+      await addGroupMembersToProject(projectId, resolved.groupId, user.id);
+    }
+  }
+
+  const updated = await supabase.from("projects").update(patch).eq("id", projectId);
+  if (updated.error && isMissingAccessSchema(updated.error) && (patch.access || patch.group_id !== undefined)) {
+    throw new Error(migrationHint());
+  }
+  if (updated.error) throw new Error(updated.error.message);
   await logActivity(projectId, user.id, `updated project details`);
   refresh(projectId);
 }
@@ -147,9 +268,16 @@ export async function rotateShareCode(projectId: string) {
 }
 
 export async function leaveProject(projectId: string) {
-  const { user, membership } = await requireProjectMember(projectId);
-  if (membership.role === "owner") {
-    throw new Error("The owner cannot leave. Transfer the project first.");
+  const { user, membership, project } = await requireProjectMember(projectId);
+  const access = parseProjectAccess(project.access);
+  if (!canLeaveProject(access, membership.role, membership.source)) {
+    if (membership.role === "owner") {
+      throw new Error("The owner cannot leave. Transfer the project first.");
+    }
+    if (access === "organization") {
+      throw new Error("Organization projects are open to everyone in the workspace.");
+    }
+    throw new Error("Group members keep access automatically. Ask the owner to remove you from the group.");
   }
   unwrap(
     await supabase.from("project_members").delete().eq("project_id", projectId).eq("user_id", user.id),
@@ -157,4 +285,32 @@ export async function leaveProject(projectId: string) {
   await logActivity(projectId, user.id, `left the project`);
   refresh(projectId);
   redirect("/");
+}
+
+export async function deleteProject(projectId: string, confirmation: string) {
+  const { membership } = await requireProjectMember(projectId);
+  if (membership.role !== "owner") throw new Error("Only the owner can delete this project.");
+  if (confirmation !== "DELETE") throw new Error("Type DELETE to confirm.");
+
+  const tasks = unwrap(
+    await supabase.from("tasks").select("id").eq("project_id", projectId),
+  ) as Array<{ id: string }>;
+  const taskIds = tasks.map((task) => task.id);
+  if (taskIds.length) {
+    const files = unwrap(
+      await supabase.from("attachments").select("stored_name").in("task_id", taskIds),
+    ) as Array<{ stored_name: string }>;
+    if (files.length) {
+      await supabase.storage.from("attachments").remove(files.map((file) => file.stored_name));
+    }
+  }
+
+  try {
+    await removeProjectFromGoogleCalendar(projectId);
+  } catch {
+    // Calendar cleanup is best-effort; the project still deletes.
+  }
+
+  unwrap(await supabase.from("projects").delete().eq("id", projectId));
+  revalidatePath("/");
 }

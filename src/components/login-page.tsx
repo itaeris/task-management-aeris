@@ -101,7 +101,7 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
             Your product workspace.
           </motion.h1>
           <motion.p variants={fadeUp} className="mt-4 max-w-md text-sm leading-relaxed text-muted lg:text-[15px]">
-            Product log, scrum, daily check, and kanban for the team — in one place.
+            Product log, scrum, daily check, and kanban for the team - in one place.
           </motion.p>
 
           <motion.div variants={fadeUp} className="mt-8 hidden flex-wrap gap-2 lg:flex">

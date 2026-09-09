@@ -187,19 +187,29 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
                 the share code.
               </Term>
               <Term name="Following">
-                Projects you joined with a code or link. You are a member: you can work on tasks, daily, and
-                comments; you cannot change the project identity or rotate the share code.
+                Projects you joined with a code or that you can open because you are in the group or organization.
+                You can work on tasks, daily, and comments; you cannot change the project identity or rotate the
+                share code.
+              </Term>
+              <Term name="Access filter">
+                All, Personal, Group, or Organization. The list only shows that type. Search still works inside the
+                selected view.
               </Term>
               <Term name="Progress bar">
                 Done tasks versus all tasks in that group. It is not hours worked.
               </Term>
               <Term name="Create project">
-                Enter a name, description, and pick an icon. You automatically become the owner and get a share
-                code.
+                Enter a name, description, and pick an icon. Choose access: Personal (invite with a code), Group
+                (everyone in that group can open it), or Organization (everyone in the workspace can open it). You
+                become the owner.
               </Term>
               <Term name="Join project">
                 Enter a share code (format like ABCD-EFGH). If you are already a member, you go straight into
                 that project.
+              </Term>
+              <Term name="Delete project">
+                Owner only. Hover a project card and click delete. Type DELETE in the dialog to confirm. This is
+                permanent.
               </Term>
             </div>
           </section>
@@ -376,7 +386,8 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
               </Term>
               <Term name="Sync">
                 Push every due date in this project to Google again. Creating, updating, or deleting a task also
-                pushes while the connection is active.
+                pushes while the connection is active. Deleting the whole project also removes those events from
+                Google Calendar / CalDAV.
               </Term>
               <Term name="Disconnect">
                 Revoke the app&apos;s access to Google. Due-date events already on Google Calendar are not deleted
@@ -414,15 +425,17 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
               ) : null}
             </div>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Invite people into the project. They sign up or log in, then open the join link or type the code on
-              home.
+              Control who can open the project. Group and organization members do not need a share code.
             </p>
             <div className="mt-4 grid gap-3">
-              <Term name="Share code">The project&apos;s unique code. Anyone with the code can join as a member.</Term>
+              <Term name="Personal">Only the owner, plus people invited with the share code.</Term>
+              <Term name="Group">Everyone already in the group can open it. Adding someone to the group gives them every project linked to that group.</Term>
+              <Term name="Organization">Everyone in this workspace can open it.</Term>
+              <Term name="Share code">Optional extra invite. Anyone with the code can join as a member, even on a group or organization project.</Term>
               <Term name="Copy link">Copy the join URL. Same as the code, easier to send.</Term>
               <Term name="Rotate code">Owner only. The old code dies; old links can no longer be used to join. People already in the project are not kicked out.</Term>
-              <Term name="Save project">The owner changes the name, description, and icon.</Term>
-              <Term name="Leave project">A member (not the owner) leaves the project. Task data stays; your name is removed from membership.</Term>
+              <Term name="Save project">The owner changes the name, description, icon, and access type.</Term>
+              <Term name="Leave project">A member (not the owner) can leave a personal project, or a group project they joined only with a share code. Group and organization auto-access cannot be left from here.</Term>
             </div>
           </section>
 
@@ -451,7 +464,7 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
             <h2 className="font-serif text-2xl">Suggested workflow</h2>
             <ol className="mt-4 space-y-3">
               <Step n="1" title="Set up the project">
-                Create a project, invite the team through Share, add a short description on Overview.
+                Create a project, pick Personal / Group / Organization, then add a short description on Overview.
               </Step>
               <Step n="2" title="Write the backlog">
                 In Product log, break the work into tasks. Fill in priority, type, estimated points, and a due

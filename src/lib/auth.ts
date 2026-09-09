@@ -1,11 +1,13 @@
 import { cookies } from "next/headers";
+import { cache } from "react";
+import { ensureProjectAccess } from "@/lib/project-access";
 import { supabase, unwrap } from "@/lib/supabase";
 import { mapUser, type UserRow } from "@/lib/mappers";
 import { cookieOptions } from "@/lib/site";
 
 export const USER_COOKIE = "nara_user";
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   const store = await cookies();
   const userId = store.get(USER_COOKIE)?.value;
   if (!userId) return null;
@@ -13,7 +15,7 @@ export async function getCurrentUser() {
     await supabase.from("users").select("*").eq("id", userId).maybeSingle(),
   ) as UserRow | null;
   return row ? mapUser(row) : null;
-}
+});
 
 export async function requireUser() {
   const user = await getCurrentUser();
@@ -23,19 +25,12 @@ export async function requireUser() {
 
 export async function requireProjectMember(projectId: string) {
   const user = await requireUser();
-  const membership = unwrap(
-    await supabase
-      .from("project_members")
-      .select("*")
-      .eq("project_id", projectId)
-      .eq("user_id", user.id)
-      .maybeSingle(),
-  ) as { id: string; role: string } | null;
+  const membership = await ensureProjectAccess(projectId, user.id);
   if (!membership) throw new Error("You are not a member of this project.");
 
   const project = unwrap(
     await supabase.from("projects").select("*").eq("id", projectId).single(),
-  ) as { id: string; name: string };
+  ) as { id: string; name: string; access?: string; group_id?: string | null; owner_id: string };
   return { user, membership, project };
 }
 

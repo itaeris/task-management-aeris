@@ -8,6 +8,8 @@ drop table if exists public.tasks cascade;
 drop table if exists public.sprints cascade;
 drop table if exists public.project_members cascade;
 drop table if exists public.projects cascade;
+drop table if exists public.group_members cascade;
+drop table if exists public.groups cascade;
 drop table if exists public.users cascade;
 
 create table public.users (
@@ -22,6 +24,20 @@ create table public.users (
   created_at timestamptz not null default now()
 );
 
+create table public.groups (
+  id text primary key default gen_random_uuid()::text,
+  name text not null,
+  created_by text not null references public.users (id) on delete restrict,
+  created_at timestamptz not null default now()
+);
+
+create table public.group_members (
+  id text primary key default gen_random_uuid()::text,
+  group_id text not null references public.groups (id) on delete cascade,
+  user_id text not null references public.users (id) on delete cascade,
+  unique (group_id, user_id)
+);
+
 create table public.projects (
   id text primary key default gen_random_uuid()::text,
   name text not null,
@@ -29,8 +45,14 @@ create table public.projects (
   color text not null,
   share_code text not null unique,
   owner_id text not null references public.users (id) on delete restrict,
+  access text not null default 'personal' check (access in ('personal', 'group', 'organization')),
+  group_id text references public.groups (id) on delete set null,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  check (
+    (access = 'group' and group_id is not null)
+    or (access <> 'group' and group_id is null)
+  )
 );
 
 create table public.project_members (
@@ -38,6 +60,7 @@ create table public.project_members (
   project_id text not null references public.projects (id) on delete cascade,
   user_id text not null references public.users (id) on delete cascade,
   role text not null default 'member',
+  source text not null default 'invite' check (source in ('owner', 'invite', 'access')),
   joined_at timestamptz not null default now(),
   unique (project_id, user_id)
 );
@@ -113,6 +136,10 @@ create table public.activities (
 create index tasks_project_rank_idx on public.tasks (project_id, rank, created_at);
 create index comments_task_idx on public.comments (task_id, created_at);
 create index activities_project_idx on public.activities (project_id, created_at desc);
+create index projects_access_idx on public.projects (access);
+create index projects_group_id_idx on public.projects (group_id);
+create index group_members_user_idx on public.group_members (user_id);
+create index group_members_group_idx on public.group_members (group_id);
 
 create table public.presences (
   user_id text primary key references public.users (id) on delete cascade,
@@ -147,6 +174,8 @@ create table public.google_calendar_events (
 create index google_calendar_events_task_idx on public.google_calendar_events (task_id);
 
 alter table public.users enable row level security;
+alter table public.groups enable row level security;
+alter table public.group_members enable row level security;
 alter table public.projects enable row level security;
 alter table public.project_members enable row level security;
 alter table public.sprints enable row level security;

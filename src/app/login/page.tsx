@@ -3,7 +3,7 @@ import { getCurrentUser, safeNextPath } from "@/lib/auth";
 import { LoginPage } from "@/components/login-page";
 
 export const metadata = {
-  title: "Sign in — Task Management",
+  title: "Sign in - Task Management",
 };
 
 export default async function LoginRoute({

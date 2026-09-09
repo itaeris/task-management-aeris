@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { listPresence, pingPresence, type PresencePerson } from "@/lib/actions/presence";
@@ -31,6 +32,115 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
   }, [pathname, taskId]);
 
   return <PresenceTask.Provider value={setTaskId}>{children}</PresenceTask.Provider>;
+}
+
+function PresenceHoverChip({ person }: { person: PresencePerson }) {
+  const triggerRef = useRef<HTMLAnchorElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const hideTimer = useRef<number>(0);
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const href =
+    person.taskId && person.projectId
+      ? person.path
+      : person.projectId
+        ? `/projects/${person.projectId}`
+        : person.path;
+  const hasExtras = Boolean(person.projectName || person.taskTitle);
+
+  function place() {
+    const el = triggerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const width = hasExtras ? 264 : 220;
+    const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
+    setPos({ top: rect.bottom + 8, left });
+  }
+
+  function show() {
+    window.clearTimeout(hideTimer.current);
+    place();
+    setOpen(true);
+  }
+
+  function hide() {
+    window.clearTimeout(hideTimer.current);
+    hideTimer.current = window.setTimeout(() => setOpen(false), 90);
+  }
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    place();
+    function onMove() {
+      place();
+    }
+    window.addEventListener("resize", onMove);
+    window.addEventListener("scroll", onMove, true);
+    return () => {
+      window.removeEventListener("resize", onMove);
+      window.removeEventListener("scroll", onMove, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    return () => window.clearTimeout(hideTimer.current);
+  }, []);
+
+  return (
+    <>
+      <Link
+        ref={triggerRef}
+        href={href}
+        className="relative inline-flex rounded-full ring-2 ring-paper transition hover:z-10 hover:ring-terracotta/50"
+        aria-label={`${person.name}, ${person.pageLabel}${person.projectName ? `, ${person.projectName}` : ""}${person.taskTitle ? `, working on ${person.taskTitle}` : ""}`}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={(event) => {
+          if (cardRef.current?.contains(event.relatedTarget as Node)) return;
+          hide();
+        }}
+      >
+        <Avatar {...person} size="sm" title={false} />
+        <span className="absolute right-0 bottom-0 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-paper" />
+      </Link>
+      {open && pos && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              ref={cardRef}
+              role="tooltip"
+              className="pointer-events-none fixed z-[200] w-64 rounded-2xl border border-line bg-paper p-2.5 shadow-[0_14px_36px_rgba(15,23,42,0.22)]"
+              style={{ top: pos.top, left: pos.left }}
+            >
+              <div className="flex items-start gap-2">
+                <Avatar {...person} size="sm" title={false} />
+                <span className="min-w-0">
+                  <span className="block text-xs font-semibold leading-snug text-ink">{person.name}</span>
+                  <span className="mt-0.5 block truncate text-[10px] leading-tight text-muted">{person.pageLabel}</span>
+                </span>
+              </div>
+              {hasExtras ? (
+                <div className="mt-2 space-y-1.5 border-t border-line px-1 pt-2">
+                  {person.projectName ? (
+                    <p>
+                      <span className="block text-[9px] font-semibold tracking-wide text-muted uppercase">Project</span>
+                      <span className="block truncate text-[11px] font-medium text-ink">{person.projectName}</span>
+                    </p>
+                  ) : null}
+                  {person.taskTitle ? (
+                    <p>
+                      <span className="block text-[9px] font-semibold tracking-wide text-muted uppercase">Task</span>
+                      <span className="block truncate text-[11px] font-medium text-ink">{person.taskTitle}</span>
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
+  );
 }
 
 export function PresenceBoard({
@@ -78,33 +188,18 @@ export function PresenceBoard({
         <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
         <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
           {!ready ? (
-            <>
-              <Skeleton className="h-8 w-28 !rounded-full" />
-              <Skeleton className="h-8 w-32 !rounded-full" />
-            </>
+            <div className="flex items-center -space-x-1.5">
+              <Skeleton className="h-7 w-7 !rounded-full ring-2 ring-paper" />
+              <Skeleton className="h-7 w-7 !rounded-full ring-2 ring-paper" />
+            </div>
           ) : items.length === 0 ? (
             <p className="truncate text-sm text-muted">Just you</p>
           ) : (
-            items.map((person) => (
-              <Link
-                key={person.userId}
-                href={person.projectId ? `/projects/${person.projectId}` : person.path}
-                className="flex shrink-0 items-center gap-2 rounded-full border border-line bg-paper px-2 py-1 pr-3"
-                title={
-                  person.taskTitle
-                    ? `${person.name} · ${person.taskTitle}`
-                    : `${person.name} · ${person.projectName ?? person.pageLabel}`
-                }
-              >
-                <Avatar name={person.name} initials={person.initials} color={person.color} size="sm" />
-                <span className="max-w-[9rem]">
-                  <span className="block truncate text-xs font-semibold leading-tight">{person.name.split(" ")[0]}</span>
-                  <span className="block truncate text-[10px] text-muted">
-                    {person.taskTitle ?? person.projectName ?? person.pageLabel}
-                  </span>
-                </span>
-              </Link>
-            ))
+            <div className="flex items-center -space-x-1.5">
+              {items.map((person) => (
+                <PresenceHoverChip key={person.userId} person={person} />
+              ))}
+            </div>
           )}
         </div>
       </div>

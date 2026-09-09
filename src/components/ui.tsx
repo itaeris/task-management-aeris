@@ -22,11 +22,13 @@ export function Avatar({
   initials,
   color,
   size = "md",
+  title,
 }: {
   name: string;
   initials: string;
   color: string;
   size?: "xs" | "sm" | "md" | "lg";
+  title?: string | false;
 }) {
   const dim =
     size === "xs"
@@ -38,7 +40,7 @@ export function Avatar({
           : "h-8 w-8 text-[11px]";
   return (
     <span
-      title={name}
+      title={title === false ? undefined : (title ?? name)}
       className={cn(
         "inline-flex shrink-0 items-center justify-center rounded-full font-bold text-white shadow-sm",
         dim,

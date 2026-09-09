@@ -22,7 +22,6 @@ export function UserMenu({ user }: { user: UserLite }) {
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const firstName = user.name.split(" ")[0];
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -72,8 +71,8 @@ export function UserMenu({ user }: { user: UserLite }) {
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        <span className="font-serif hidden max-w-[8rem] truncate text-base leading-tight sm:inline sm:max-w-[10rem] sm:text-[15px]">
-          Hi, {firstName}
+        <span className="font-serif hidden max-w-[12rem] truncate text-base leading-tight sm:inline sm:max-w-[16rem] sm:text-[15px]">
+          Hi, {user.name}
         </span>
         <Avatar {...user} size="sm" />
         <ChevronDown size={14} className={cn("shrink-0 text-muted transition", open && "rotate-180")} />

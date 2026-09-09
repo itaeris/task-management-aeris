@@ -162,7 +162,7 @@ function eventBody(task: TaskRow, projectName: string) {
   };
 }
 
-async function calendarRequest(accessToken: string, path: string, init?: RequestInit) {
+async function calendarRequest<T = { id?: string }>(accessToken: string, path: string, init?: RequestInit) {
   const response = await fetch(`${CALENDAR_API}${path}`, {
     ...init,
     headers: {
@@ -171,7 +171,7 @@ async function calendarRequest(accessToken: string, path: string, init?: Request
       ...(init?.headers ?? {}),
     },
   });
-  if (response.status === 204) return null;
+  if (response.status === 204 || response.status === 404) return null;
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
     const message =
@@ -180,7 +180,15 @@ async function calendarRequest(accessToken: string, path: string, init?: Request
         : `Google Calendar error ${response.status}`;
     throw new Error(message);
   }
-  return payload as { id?: string };
+  return payload as T;
+}
+
+async function deleteGoogleEvent(accessToken: string, calendarId: string, eventId: string) {
+  await calendarRequest(
+    accessToken,
+    `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    { method: "DELETE" },
+  ).catch(() => undefined);
 }
 
 async function mappedEvent(userId: string, taskId: string) {
@@ -230,7 +238,7 @@ export async function upsertTaskOnGoogleCalendar(userId: string, taskId: string)
     }
   }
 
-  const created = await calendarRequest(
+  const created = await calendarRequest<{ id?: string }>(
     connection.access_token,
     `/calendars/${encodeURIComponent(connection.calendar_id)}/events`,
     { method: "POST", body: JSON.stringify(body) },
@@ -253,13 +261,60 @@ export async function deleteTaskOnGoogleCalendar(userId: string, taskId: string)
   const connection = await getValidAccessToken(userId).catch(() => null);
   const existing = await mappedEvent(userId, taskId);
   if (connection && existing) {
-    await calendarRequest(
-      connection.access_token,
-      `/calendars/${encodeURIComponent(existing.calendar_id)}/events/${encodeURIComponent(existing.event_id)}`,
-      { method: "DELETE" },
-    ).catch(() => undefined);
+    await deleteGoogleEvent(connection.access_token, existing.calendar_id, existing.event_id);
   }
   unwrap(await supabase.from("google_calendar_events").delete().eq("user_id", userId).eq("task_id", taskId));
+}
+
+export async function removeProjectFromGoogleCalendar(projectId: string) {
+  try {
+    const tasks = unwrap(
+      await supabase.from("tasks").select("id").eq("project_id", projectId),
+    ) as Array<{ id: string }>;
+    const taskIds = tasks.map((task) => task.id);
+    const maps = taskIds.length
+      ? ((unwrap(
+          await supabase
+            .from("google_calendar_events")
+            .select("user_id, event_id, calendar_id, task_id")
+            .in("task_id", taskIds),
+        ) as Array<{ user_id: string; event_id: string; calendar_id: string; task_id: string }>) ?? [])
+      : [];
+
+    const members = unwrap(
+      await supabase.from("project_members").select("user_id").eq("project_id", projectId),
+    ) as Array<{ user_id: string }>;
+    const userIds = [...new Set([...maps.map((row) => row.user_id), ...members.map((row) => row.user_id)])];
+
+    await Promise.all(
+      userIds.map(async (userId) => {
+        const connection = await getValidAccessToken(userId).catch(() => null);
+        if (!connection) return;
+
+        const own = maps.filter((row) => row.user_id === userId);
+        await Promise.all(
+          own.map((row) => deleteGoogleEvent(connection.access_token, row.calendar_id, row.event_id)),
+        );
+
+        const leftovers = await calendarRequest<{ items?: Array<{ id: string }> }>(
+          connection.access_token,
+          `/calendars/${encodeURIComponent(connection.calendar_id)}/events?maxResults=250&q=${encodeURIComponent(`/projects/${projectId}/`)}`,
+        ).catch(() => null);
+        await Promise.all(
+          (leftovers?.items ?? []).map((item) =>
+            deleteGoogleEvent(connection.access_token, connection.calendar_id, item.id),
+          ),
+        );
+      }),
+    );
+
+    if (taskIds.length) {
+      unwrap(await supabase.from("google_calendar_events").delete().in("task_id", taskIds));
+    }
+  } catch (error) {
+    if (isMissingCalendarTable(error)) return;
+    throw error;
+  }
 }
 
 export async function syncProjectToGoogleCalendar(userId: string, projectId: string) {

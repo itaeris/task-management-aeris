@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { getProjectWorkspace } from "@/lib/queries";
+import { getProjectWorkspace, listGroupMembers, listGroupsForUser, listUsers } from "@/lib/queries";
 import { SharePanel } from "@/components/share-panel";
 
 export default async function SharePage({
@@ -11,8 +11,15 @@ export default async function SharePage({
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) redirect("/");
-  const workspace = await getProjectWorkspace(id, user.id);
+  const [workspace, people, groups] = await Promise.all([
+    getProjectWorkspace(id, user.id),
+    listUsers(),
+    listGroupsForUser(user.id),
+  ]);
   if (!workspace) notFound();
+  const groupMembers = workspace.project.groupId
+    ? await listGroupMembers(workspace.project.groupId)
+    : [];
   return (
     <SharePanel
       projectId={id}
@@ -21,7 +28,15 @@ export default async function SharePage({
       shareCode={workspace.project.shareCode}
       color={workspace.project.color}
       role={workspace.role}
+      access={workspace.project.access}
+      groupId={workspace.project.groupId}
+      groupName={workspace.project.groupName}
+      membershipSource={workspace.membershipSource}
       members={workspace.members}
+      groupMembers={groupMembers}
+      groups={groups}
+      people={people}
+      currentUserId={user.id}
     />
   );
 }
