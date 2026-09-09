@@ -34,8 +34,10 @@ export function TimelineView({
     return { start: paddedStart, days: total };
   }, [ranged]);
 
-  const dayWidth = 28;
+  const dayWidth = 36;
   const width = days * dayWidth;
+  const today = startOfDay(new Date());
+  const weekdayLetters = ["S", "M", "T", "W", "T", "F", "S"];
 
   return (
     <div className="space-y-5">
@@ -52,14 +54,31 @@ export function TimelineView({
             <div className="flex">
               {Array.from({ length: days }, (_, index) => {
                 const date = addDays(start, index);
-                const isMonday = date.getDay() === 1;
+                const isToday = date.getTime() === today.getTime();
+                const isFirstOfMonth = date.getDate() === 1;
+                const weekend = date.getDay() === 0 || date.getDay() === 6;
                 return (
                   <div
                     key={index}
-                    className="border-l border-line px-1 py-3 text-[10px] text-muted"
+                    className={cn(
+                      "flex flex-col items-center justify-end gap-0.5 border-l border-line px-0.5 py-2",
+                      weekend && "bg-sand/40",
+                    )}
                     style={{ width: dayWidth }}
                   >
-                    {isMonday || index === 0 ? date.getDate() : ""}
+                    <span className="text-[9px] font-semibold tracking-wide text-muted uppercase">
+                      {isFirstOfMonth || index === 0
+                        ? date.toLocaleString("en-US", { month: "short" })
+                        : weekdayLetters[date.getDay()]}
+                    </span>
+                    <span
+                      className={cn(
+                        "inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums",
+                        isToday ? "bg-terracotta text-white" : "text-ink",
+                      )}
+                    >
+                      {date.getDate()}
+                    </span>
                   </div>
                 );
               })}

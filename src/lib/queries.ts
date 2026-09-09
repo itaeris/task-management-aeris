@@ -2,7 +2,7 @@ import { cache } from "react";
 import { isMissingAccessSchema, parseProjectAccess, type ProjectAccess } from "@/lib/access";
 import { ensureProjectAccess } from "@/lib/project-access";
 import { supabase, unwrap } from "@/lib/supabase";
-import { iso, memberFromUser, type TaskDetailDTO } from "@/lib/types";
+import { iso, memberFromUser, type ProjectWorkspace, type TaskDetailDTO } from "@/lib/types";
 import { mapTask, mapUser, memberFromRow, type TaskRow, type UserRow } from "@/lib/mappers";
 import { todayKey } from "@/lib/utils";
 
@@ -231,7 +231,7 @@ export const getProjectShell = cache(async (projectId: string, userId: string) =
   return { project, role: membership.role };
 });
 
-export const getProjectWorkspace = cache(async (projectId: string, userId: string) => {
+export const getProjectWorkspace = cache(async (projectId: string, userId: string): Promise<ProjectWorkspace | null> => {
   const ensured = await ensureProjectAccess(projectId, userId);
   if (!ensured) return null;
 
@@ -285,7 +285,7 @@ export const getProjectWorkspace = cache(async (projectId: string, userId: strin
   if (!project) return null;
   const membership = memberRows.find((item) => item.user_id === userId) ?? ensured;
 
-  const [sprintRows, tasks, dailyRows, activityRows, todayRows] = await Promise.all([
+  const [sprintRows, tasks, dailyRows, activityRows, todayRows, groupRow, groupMembers] = await Promise.all([
     supabase
       .from("sprints")
       .select("*")
@@ -346,6 +346,23 @@ export const getProjectWorkspace = cache(async (projectId: string, userId: strin
       .eq("project_id", projectId)
       .eq("date", todayKey())
       .then((result) => unwrap(result) as Array<{ id: string }>),
+    project.group_id
+      ? supabase
+          .from("groups")
+          .select("name")
+          .eq("id", project.group_id)
+          .maybeSingle()
+          .then((result) => {
+            if (result.error && isMissingAccessSchema(result.error)) return null;
+            return unwrap(result) as { name: string } | null;
+          })
+      : Promise.resolve(null),
+    project.group_id
+      ? listGroupMembers(project.group_id).catch((error) => {
+          if (isMissingAccessSchema(error)) return [];
+          throw error;
+        })
+      : Promise.resolve([]),
   ]);
 
   const taskIds = tasks.map((task) => task.id);
@@ -377,17 +394,7 @@ export const getProjectWorkspace = cache(async (projectId: string, userId: strin
   });
   const usersById = new Map(members.map((member) => [member.id, member]));
   const access = parseProjectAccess(project.access);
-  let groupName: string | null = null;
-  if (project.group_id) {
-    try {
-      const group = unwrap(
-        await supabase.from("groups").select("name").eq("id", project.group_id).maybeSingle(),
-      ) as { name: string } | null;
-      groupName = group?.name ?? null;
-    } catch (error) {
-      if (!isMissingAccessSchema(error)) throw error;
-    }
-  }
+  const groupName = groupRow?.name ?? null;
 
   return {
     project: {
@@ -457,6 +464,7 @@ export const getProjectWorkspace = cache(async (projectId: string, userId: strin
       };
     }),
     todayCheckins: todayRows.length,
+    groupMembers,
   };
 });
 

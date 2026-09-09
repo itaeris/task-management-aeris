@@ -1,24 +1,11 @@
-import { notFound, redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getProjectWorkspace } from "@/lib/queries";
-import { BacklogBoard } from "@/components/backlog-board";
+"use client";
 
-export default async function BacklogPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const user = await getCurrentUser();
-  if (!user) redirect("/");
-  const workspace = await getProjectWorkspace(id, user.id);
-  if (!workspace) notFound();
+import { BacklogBoard } from "@/components/backlog-board";
+import { useWorkspace } from "@/components/workspace-provider";
+
+export default function BacklogPage() {
+  const { project, tasks, members, sprints } = useWorkspace();
   return (
-    <BacklogBoard
-      projectId={id}
-      tasks={workspace.tasks}
-      members={workspace.members}
-      sprints={workspace.sprints}
-    />
+    <BacklogBoard projectId={project.id} tasks={tasks} members={members} sprints={sprints} />
   );
 }

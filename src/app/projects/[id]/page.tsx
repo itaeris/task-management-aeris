@@ -1,28 +1,19 @@
-import { notFound, redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getProjectWorkspace } from "@/lib/queries";
+"use client";
+
 import { Overview } from "@/components/overview";
+import { useWorkspace } from "@/components/workspace-provider";
 
-export default async function ProjectOverviewPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const user = await getCurrentUser();
-  if (!user) redirect("/");
-  const workspace = await getProjectWorkspace(id, user.id);
-  if (!workspace) notFound();
-
+export default function ProjectOverviewPage() {
+  const { project, tasks, sprints, activities, todayCheckins, members } = useWorkspace();
   return (
     <Overview
-      projectId={id}
-      description={workspace.project.description}
-      tasks={workspace.tasks}
-      sprints={workspace.sprints}
-      activities={workspace.activities}
-      todayCheckins={workspace.todayCheckins}
-      memberCount={workspace.members.length}
+      projectId={project.id}
+      description={project.description}
+      tasks={tasks}
+      sprints={sprints}
+      activities={activities}
+      todayCheckins={todayCheckins}
+      memberCount={members.length}
     />
   );
 }

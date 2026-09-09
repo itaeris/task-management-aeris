@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -91,11 +91,12 @@ export function KanbanBoard({
   const router = useRouter();
   const dndId = useId();
   const [items, setItems] = useState(tasks);
+  const [prevTasks, setPrevTasks] = useState(tasks);
   const [openId, setOpenId] = useState<string | null>(null);
-
-  useEffect(() => {
+  if (tasks !== prevTasks) {
+    setPrevTasks(tasks);
     setItems(tasks);
-  }, [tasks]);
+  }
   const [sprintFilter, setSprintFilter] = useState(
     sprints.find((sprint) => sprint.status === "active")?.id ?? "all",
   );

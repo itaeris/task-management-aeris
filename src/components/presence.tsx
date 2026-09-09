@@ -70,17 +70,22 @@ function PresenceHoverChip({ person }: { person: PresencePerson }) {
 
   useLayoutEffect(() => {
     if (!open) return;
-    place();
-    function onMove() {
-      place();
+    function update() {
+      const el = triggerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const width = hasExtras ? 264 : 220;
+      const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
+      setPos({ top: rect.bottom + 8, left });
     }
-    window.addEventListener("resize", onMove);
-    window.addEventListener("scroll", onMove, true);
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
     return () => {
-      window.removeEventListener("resize", onMove);
-      window.removeEventListener("scroll", onMove, true);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
     };
-  }, [open]);
+  }, [open, hasExtras]);
 
   useEffect(() => {
     return () => window.clearTimeout(hideTimer.current);

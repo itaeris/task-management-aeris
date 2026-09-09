@@ -1,32 +1,30 @@
-import { notFound, redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getProjectWorkspace } from "@/lib/queries";
-import { getCalendarConnection } from "@/lib/google-calendar";
-import { CalendarView } from "@/components/calendar-view";
+"use client";
 
-export default async function CalendarPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ calendar?: string; error?: string }>;
-}) {
-  const { id } = await params;
-  const { calendar, error } = await searchParams;
-  const user = await getCurrentUser();
-  if (!user) redirect("/");
-  const workspace = await getProjectWorkspace(id, user.id);
-  if (!workspace) notFound();
-  const connection = await getCalendarConnection(user.id);
+import { CalendarView } from "@/components/calendar-view";
+import { useWorkspace } from "@/components/workspace-provider";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+
+function CalendarFromWorkspace() {
+  const { project, tasks, members, sprints, calendar } = useWorkspace();
+  const searchParams = useSearchParams();
   return (
     <CalendarView
-      projectId={id}
-      tasks={workspace.tasks}
-      members={workspace.members}
-      sprints={workspace.sprints}
-      connection={connection}
-      calendarNotice={calendar}
-      calendarError={error}
+      projectId={project.id}
+      tasks={tasks}
+      members={members}
+      sprints={sprints}
+      connection={calendar}
+      calendarNotice={searchParams.get("calendar") ?? undefined}
+      calendarError={searchParams.get("error") ?? undefined}
     />
+  );
+}
+
+export default function CalendarPage() {
+  return (
+    <Suspense>
+      <CalendarFromWorkspace />
+    </Suspense>
   );
 }

@@ -71,6 +71,42 @@ export type CalendarConnectionPublic = {
   lastSyncedAt: string | null;
 };
 
+export type ProjectWorkspace = {
+  project: {
+    id: string;
+    name: string;
+    description: string;
+    color: string;
+    shareCode: string;
+    ownerId: string;
+    access: import("@/lib/access").ProjectAccess;
+    groupId: string | null;
+    groupName: string | null;
+  };
+  role: string;
+  membershipSource: string;
+  members: MemberDTO[];
+  groupMembers: MemberDTO[];
+  sprints: SprintDTO[];
+  tasks: TaskDTO[];
+  dailyLogs: Array<{
+    id: string;
+    date: string;
+    yesterday: string;
+    today: string;
+    blockers: string;
+    user: MemberDTO;
+    updatedAt: string;
+  }>;
+  activities: Array<{
+    id: string;
+    message: string;
+    createdAt: string;
+    user: MemberDTO;
+  }>;
+  todayCheckins: number;
+};
+
 export function memberFromUser(
   user: Pick<Profile, "id" | "name" | "email" | "initials" | "color">,
   role = "member",

@@ -238,11 +238,6 @@ export function DatePicker({
   const [cursor, setCursor] = useState(() => selectedDate ?? new Date());
   const { triggerRef, pos } = useMenuPosition(open, 292);
 
-  useEffect(() => {
-    if (!open) return;
-    setCursor(selected ? (parseKey(selected) ?? new Date()) : new Date());
-  }, [open, selected]);
-
   function choose(next: string) {
     if (value === undefined) setUncontrolled(next);
     onChange?.(next);
@@ -271,7 +266,10 @@ export function DatePicker({
         type="button"
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => {
+          if (!open) setCursor(selected ? (parseKey(selected) ?? new Date()) : new Date());
+          setOpen((current) => !current);
+        }}
         className={cn(field, "flex items-center justify-between gap-2 text-left")}
       >
         <span className={cn("truncate", selected ? "text-ink" : "text-muted")}>

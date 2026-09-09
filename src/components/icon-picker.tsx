@@ -29,29 +29,24 @@ function IconSearch({
   compact?: boolean;
 }) {
   const [query, setQuery] = useState("");
-  const [icons, setIcons] = useState<IconHit[]>(FEATURED);
-  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ q: string; icons: IconHit[] } | null>(null);
+  const q = query.trim();
+  const icons = q ? (result?.q === q ? result.icons : []) : FEATURED;
+  const loading = Boolean(q) && result?.q !== q;
 
   useEffect(() => {
-    const q = query.trim();
-    if (!q) {
-      setIcons(FEATURED);
-      setLoading(false);
-      return;
-    }
+    const next = query.trim();
+    if (!next) return;
 
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
-      setLoading(true);
       try {
-        const res = await fetch(`/api/icons/search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
+        const res = await fetch(`/api/icons/search?q=${encodeURIComponent(next)}`, { signal: controller.signal });
         if (!res.ok) throw new Error("search failed");
         const data = (await res.json()) as { icons?: IconHit[] };
-        if (!controller.signal.aborted) setIcons(data.icons ?? []);
+        if (!controller.signal.aborted) setResult({ q: next, icons: data.icons ?? [] });
       } catch {
-        if (!controller.signal.aborted) setIcons([]);
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) setResult({ q: next, icons: [] });
       }
     }, 220);
 

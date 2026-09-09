@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   ArrowLeft,
@@ -67,7 +67,7 @@ function SidebarBody({
     <>
       <div className="flex items-start justify-between px-5 pt-6">
         <div>
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2" onClick={onClose}>
             <BrandLockup />
           </Link>
           <div className="mt-4 flex items-center gap-3">
@@ -95,6 +95,8 @@ function SidebarBody({
             <Link
               key={href}
               href={href}
+              prefetch
+              onClick={onClose}
               className={cn(
                 "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm",
                 active ? "bg-paper-2 text-terracotta" : "text-muted hover:bg-sand hover:text-ink",
@@ -128,10 +130,6 @@ export function ProjectShell({
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
   const base = `/projects/${projectId}`;
-
-  useEffect(() => {
-    setNavOpen(false);
-  }, [pathname]);
 
   const sidebar = {
     projectId,
@@ -197,9 +195,9 @@ export function ProjectShell({
           <motion.div
             key={pathname}
             className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-1 py-3 sm:px-2 sm:py-4 lg:px-6"
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.28, ease: easeOutSoft }}
+            transition={{ duration: 0.16, ease: easeOutSoft }}
           >
             {children}
           </motion.div>

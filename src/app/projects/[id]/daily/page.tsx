@@ -1,24 +1,11 @@
-import { notFound, redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getProjectWorkspace } from "@/lib/queries";
-import { DailyView } from "@/components/daily-view";
+"use client";
 
-export default async function DailyPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const user = await getCurrentUser();
-  if (!user) redirect("/");
-  const workspace = await getProjectWorkspace(id, user.id);
-  if (!workspace) notFound();
+import { DailyView } from "@/components/daily-view";
+import { useWorkspace } from "@/components/workspace-provider";
+
+export default function DailyPage() {
+  const { project, userId, dailyLogs, members } = useWorkspace();
   return (
-    <DailyView
-      projectId={id}
-      currentUserId={user.id}
-      logs={workspace.dailyLogs}
-      members={workspace.members}
-    />
+    <DailyView projectId={project.id} currentUserId={userId} logs={dailyLogs} members={members} />
   );
 }

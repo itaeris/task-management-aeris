@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useState } from "react";
 import {
   CalendarDays,
   Eye,
@@ -70,7 +70,7 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
   const [showPassword, setShowPassword] = useState(false);
   const [notice, setNotice] = useState(GOOGLE_ERRORS[error ?? ""] ?? "");
   const [state, action, pending] = useActionState(login, {} as LoginState);
-  const greeting = useMemo(greetingLabel, []);
+  const greeting = greetingLabel();
   const reduce = useReducedMotion();
 
   return (

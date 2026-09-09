@@ -32,10 +32,11 @@ export function TaskDrawer({
   onClose: () => void;
   onChanged?: () => void;
 }) {
-  const [detail, setDetail] = useState<TaskDetailDTO | null>(null);
+  const [loaded, setLoaded] = useState<{ id: string; data: TaskDetailDTO } | null>(null);
   const [pending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
   const setActiveTask = useSetActiveTask();
+  const detail = taskId && loaded?.id === taskId ? loaded.data : null;
 
   useEffect(() => {
     setActiveTask(taskId);
@@ -43,14 +44,10 @@ export function TaskDrawer({
   }, [taskId, setActiveTask]);
 
   useEffect(() => {
-    if (!taskId) {
-      setDetail(null);
-      return;
-    }
-    setDetail(null);
+    if (!taskId) return;
     let cancelled = false;
     loadTaskDetail(taskId).then((data) => {
-      if (!cancelled) setDetail(data);
+      if (!cancelled) setLoaded({ id: taskId, data });
     });
     return () => {
       cancelled = true;
@@ -60,7 +57,7 @@ export function TaskDrawer({
   async function refresh() {
     if (!taskId) return;
     const data = await loadTaskDetail(taskId);
-    setDetail(data);
+    setLoaded({ id: taskId, data });
     onChanged?.();
   }
 

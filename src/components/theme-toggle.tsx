@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Moon, Sun } from "lucide-react";
 import { iconBtn } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 const STORAGE_KEY = "nara_theme";
 
 function isDarkNow() {
-  if (typeof document === "undefined") return false;
   return document.documentElement.classList.contains("dark");
 }
 
@@ -19,30 +18,29 @@ function applyTheme(dark: boolean) {
   meta?.setAttribute("content", dark ? "#0b1220" : "#3b82f6");
 }
 
-export function ThemeToggle({ className }: { className?: string }) {
-  const [dark, setDark] = useState(false);
+function subscribe(onStoreChange: () => void) {
+  function onStorage(event: StorageEvent) {
+    if (event.key !== STORAGE_KEY) return;
+    document.documentElement.classList.toggle("dark", event.newValue === "dark");
+    onStoreChange();
+  }
+  window.addEventListener("storage", onStorage);
+  const observer = new MutationObserver(onStoreChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    observer.disconnect();
+  };
+}
 
-  useEffect(() => {
-    setDark(isDarkNow());
-    function onStorage(event: StorageEvent) {
-      if (event.key !== STORAGE_KEY) return;
-      const next = event.newValue === "dark";
-      document.documentElement.classList.toggle("dark", next);
-      setDark(next);
-    }
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
+export function ThemeToggle({ className }: { className?: string }) {
+  const dark = useSyncExternalStore(subscribe, isDarkNow, () => false);
 
   return (
     <button
       type="button"
       className={cn(iconBtn, className)}
-      onClick={() => {
-        const next = !isDarkNow();
-        applyTheme(next);
-        setDark(next);
-      }}
+      onClick={() => applyTheme(!isDarkNow())}
       aria-label={dark ? "Light mode" : "Dark mode"}
       title={dark ? "Light mode" : "Dark mode"}
     >

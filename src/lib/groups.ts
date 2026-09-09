@@ -32,7 +32,13 @@ export async function addGroupMembersToProject(projectId: string, groupId: strin
   const result = await supabase.from("project_members").insert(rows);
   if (result.error && isMissingAccessSchema(result.error)) {
     unwrap(
-      await supabase.from("project_members").insert(rows.map(({ source: _source, ...row }) => row)),
+      await supabase.from("project_members").insert(
+        rows.map((row) => ({
+          project_id: row.project_id,
+          user_id: row.user_id,
+          role: row.role,
+        })),
+      ),
     );
     return;
   }

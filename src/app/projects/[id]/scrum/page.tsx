@@ -1,24 +1,9 @@
-import { notFound, redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getProjectWorkspace } from "@/lib/queries";
-import { ScrumView } from "@/components/scrum-view";
+"use client";
 
-export default async function ScrumPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const user = await getCurrentUser();
-  if (!user) redirect("/");
-  const workspace = await getProjectWorkspace(id, user.id);
-  if (!workspace) notFound();
-  return (
-    <ScrumView
-      projectId={id}
-      sprints={workspace.sprints}
-      tasks={workspace.tasks}
-      members={workspace.members}
-    />
-  );
+import { ScrumView } from "@/components/scrum-view";
+import { useWorkspace } from "@/components/workspace-provider";
+
+export default function ScrumPage() {
+  const { project, sprints, tasks, members } = useWorkspace();
+  return <ScrumView projectId={project.id} sprints={sprints} tasks={tasks} members={members} />;
 }
