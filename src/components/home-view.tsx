@@ -114,17 +114,17 @@ export function HomeProjects({
       <main className="relative mx-auto flex min-h-dvh w-full max-w-[1600px] flex-col gap-3 p-3 sm:p-4 lg:h-dvh lg:overflow-hidden">
         <FadeIn className="shrink-0">
         <header className="flex shrink-0 items-center gap-2 rounded-3xl border border-line bg-white/80 px-3 py-2.5 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <BrandMark className="h-5 w-5 shrink-0" />
-              <p className="text-[10px] font-semibold tracking-[0.22em] text-terracotta uppercase sm:text-[11px]">Task Management</p>
-            </div>
-            <h1 className="font-serif mt-0.5 truncate text-xl leading-tight sm:text-2xl">Hai, {user.name.split(" ")[0]}</h1>
+          <div className="flex min-w-0 items-center gap-2">
+            <BrandMark className="h-5 w-5 shrink-0" />
+            <p className="text-[10px] font-semibold tracking-[0.22em] text-terracotta uppercase sm:text-[11px]">Task Management</p>
           </div>
           <div className="hidden min-w-0 flex-1 md:flex">
             <PresenceBoard variant="header" />
           </div>
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2">
+            <h1 className="font-serif max-w-[8rem] truncate text-base leading-tight sm:max-w-none sm:text-lg">
+              Hai, {user.name.split(" ")[0]}
+            </h1>
             <Avatar {...user} size="sm" />
             <Link href="/settings" className={cn(btnGhost, "hidden sm:inline-flex")}>
               Settings
