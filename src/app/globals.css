@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-ink: #16324f;
+  --color-ink-soft: #1e4063;
+  --color-paper: #ffffff;
+  --color-paper-2: #e7f2fc;
+  --color-cream: #f7fbff;
+  --color-line: rgb(37 99 235 / 0.14);
+  --color-terracotta: #3b82f6;
+  --color-terracotta-dark: #2563eb;
+  --color-forest: #0ea5e9;
+  --color-gold: #7dd3fc;
+  --color-muted: #64748b;
+  --color-brown: #3b82f6;
+  --color-brown-deep: #1d4ed8;
+  --color-sand: #eef6ff;
+  --color-input: #f3f8fe;
+  --color-background: #ffffff;
+  --color-foreground: #16324f;
+  --font-sans: var(--font-poppins);
+  --font-serif: var(--font-poppins);
+  --font-mono: var(--font-poppins);
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background-color: #ffffff;
+  background-image:
+    radial-gradient(1200px 620px at 0% -8%, #dbeafe 0%, transparent 58%),
+    radial-gradient(900px 520px at 100% 0%, #e0f2fe 0%, transparent 52%),
+    linear-gradient(180deg, #ffffff 0%, #f3f8ff 46%, #d7ebff 100%);
+  background-attachment: fixed;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #93c5fd transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #93c5fd 0%, #60a5fa 100%);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e7f2fc;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent 0%, rgb(255 255 255 / 0.75) 50%, transparent 100%);
+  animation: skeleton-shimmer 1.35s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+}

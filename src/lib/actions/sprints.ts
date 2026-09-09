@@ -1,0 +1,60 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { supabase, unwrap } from "@/lib/supabase";
+import { requireProjectMember } from "@/lib/auth";
+import { parseDateInput } from "@/lib/utils";
+
+function refresh(projectId: string) {
+  revalidatePath(`/projects/${projectId}`, "layout");
+}
+
+export async function createSprint(projectId: string, formData: FormData) {
+  const { user } = await requireProjectMember(projectId);
+  const name = String(formData.get("name") ?? "").trim();
+  const goal = String(formData.get("goal") ?? "").trim();
+  const startDate = parseDateInput(formData.get("startDate"));
+  const endDate = parseDateInput(formData.get("endDate"));
+  if (!name || !startDate || !endDate) {
+    throw new Error("Nama sprint, tanggal mulai, dan tanggal selesai wajib.");
+  }
+
+  unwrap(
+    await supabase.from("sprints").insert({
+      project_id: projectId,
+      name,
+      goal,
+      start_date: startDate.toISOString(),
+      end_date: endDate.toISOString(),
+      status: "planning",
+    }),
+  );
+  unwrap(
+    await supabase.from("activities").insert({
+      project_id: projectId,
+      user_id: user.id,
+      message: `membuat sprint ${name}`,
+    }),
+  );
+  refresh(projectId);
+}
+
+export async function updateSprintStatus(projectId: string, sprintId: string, status: string) {
+  const { user } = await requireProjectMember(projectId);
+  if (status === "active") {
+    unwrap(
+      await supabase.from("sprints").update({ status: "completed" }).eq("project_id", projectId).eq("status", "active"),
+    );
+  }
+  const sprint = unwrap(
+    await supabase.from("sprints").update({ status }).eq("id", sprintId).select("name").single(),
+  ) as { name: string };
+  unwrap(
+    await supabase.from("activities").insert({
+      project_id: projectId,
+      user_id: user.id,
+      message: `mengubah ${sprint.name} menjadi ${status}`,
+    }),
+  );
+  refresh(projectId);
+}

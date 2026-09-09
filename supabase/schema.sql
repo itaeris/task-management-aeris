@@ -1,0 +1,140 @@
+create extension if not exists pgcrypto;
+
+drop table if exists public.activities cascade;
+drop table if exists public.daily_logs cascade;
+drop table if exists public.attachments cascade;
+drop table if exists public.comments cascade;
+drop table if exists public.tasks cascade;
+drop table if exists public.sprints cascade;
+drop table if exists public.project_members cascade;
+drop table if exists public.projects cascade;
+drop table if exists public.users cascade;
+
+create table public.users (
+  id text primary key default gen_random_uuid()::text,
+  name text not null,
+  username text unique,
+  email text not null unique,
+  password_hash text,
+  role text not null default 'member',
+  initials text not null,
+  color text not null,
+  created_at timestamptz not null default now()
+);
+
+create table public.projects (
+  id text primary key default gen_random_uuid()::text,
+  name text not null,
+  description text not null default '',
+  color text not null,
+  share_code text not null unique,
+  owner_id text not null references public.users (id) on delete restrict,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.project_members (
+  id text primary key default gen_random_uuid()::text,
+  project_id text not null references public.projects (id) on delete cascade,
+  user_id text not null references public.users (id) on delete cascade,
+  role text not null default 'member',
+  joined_at timestamptz not null default now(),
+  unique (project_id, user_id)
+);
+
+create table public.sprints (
+  id text primary key default gen_random_uuid()::text,
+  project_id text not null references public.projects (id) on delete cascade,
+  name text not null,
+  goal text not null default '',
+  start_date timestamptz not null,
+  end_date timestamptz not null,
+  status text not null default 'planning'
+);
+
+create table public.tasks (
+  id text primary key default gen_random_uuid()::text,
+  project_id text not null references public.projects (id) on delete cascade,
+  sprint_id text references public.sprints (id) on delete set null,
+  title text not null,
+  description text not null default '',
+  status text not null default 'backlog',
+  priority text not null default 'medium',
+  type text not null default 'story',
+  points int,
+  rank double precision not null default 0,
+  start_date timestamptz,
+  due_date timestamptz,
+  assignee_id text references public.users (id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.comments (
+  id text primary key default gen_random_uuid()::text,
+  task_id text not null references public.tasks (id) on delete cascade,
+  user_id text not null references public.users (id) on delete cascade,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+
+create table public.attachments (
+  id text primary key default gen_random_uuid()::text,
+  task_id text not null references public.tasks (id) on delete cascade,
+  user_id text not null references public.users (id) on delete cascade,
+  filename text not null,
+  mime_type text not null,
+  size int not null,
+  stored_name text not null,
+  created_at timestamptz not null default now()
+);
+
+create table public.daily_logs (
+  id text primary key default gen_random_uuid()::text,
+  project_id text not null references public.projects (id) on delete cascade,
+  user_id text not null references public.users (id) on delete cascade,
+  date text not null,
+  yesterday text not null default '',
+  today text not null default '',
+  blockers text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (project_id, user_id, date)
+);
+
+create table public.activities (
+  id text primary key default gen_random_uuid()::text,
+  project_id text not null references public.projects (id) on delete cascade,
+  user_id text not null references public.users (id) on delete cascade,
+  message text not null,
+  created_at timestamptz not null default now()
+);
+
+create index tasks_project_rank_idx on public.tasks (project_id, rank, created_at);
+create index comments_task_idx on public.comments (task_id, created_at);
+create index activities_project_idx on public.activities (project_id, created_at desc);
+
+create table public.presences (
+  user_id text primary key references public.users (id) on delete cascade,
+  project_id text references public.projects (id) on delete set null,
+  task_id text references public.tasks (id) on delete set null,
+  path text not null default '/',
+  updated_at timestamptz not null default now()
+);
+
+create index presences_updated_idx on public.presences (updated_at desc);
+
+alter table public.users enable row level security;
+alter table public.projects enable row level security;
+alter table public.project_members enable row level security;
+alter table public.sprints enable row level security;
+alter table public.tasks enable row level security;
+alter table public.comments enable row level security;
+alter table public.attachments enable row level security;
+alter table public.daily_logs enable row level security;
+alter table public.activities enable row level security;
+alter table public.presences enable row level security;
+
+insert into storage.buckets (id, name, public)
+values ('attachments', 'attachments', false)
+on conflict (id) do nothing;

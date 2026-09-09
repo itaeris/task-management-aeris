@@ -1,0 +1,312 @@
+"use client";
+
+import { useEffect, useRef, useState, useTransition } from "react";
+import { Paperclip, Trash2 } from "lucide-react";
+import { addComment, deleteTask, loadTaskDetail, updateTask } from "@/lib/actions/tasks";
+import { deleteAttachment, uploadAttachment } from "@/lib/actions/attachments";
+import { PRIORITIES, STATUSES, TASK_TYPES } from "@/lib/constants";
+import { cn, formatBytes, formatDay } from "@/lib/utils";
+import type { MemberDTO, SprintDTO, TaskDTO, TaskDetailDTO } from "@/lib/types";
+import { Avatar, PriorityBadge, TypeBadge, btnGhost, btnPrimary, field, iconBtn } from "@/components/ui";
+import { DatePicker, Select } from "@/components/fields";
+import { useSetActiveTask } from "@/components/presence";
+
+function dateInput(value: string | null) {
+  return value ? value.slice(0, 10) : "";
+}
+
+export function TaskDrawer({
+  taskId,
+  members,
+  sprints,
+  onClose,
+  onChanged,
+}: {
+  taskId: string | null;
+  members: MemberDTO[];
+  sprints: SprintDTO[];
+  onClose: () => void;
+  onChanged?: () => void;
+}) {
+  const [detail, setDetail] = useState<TaskDetailDTO | null>(null);
+  const [pending, startTransition] = useTransition();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const setActiveTask = useSetActiveTask();
+
+  useEffect(() => {
+    setActiveTask(taskId);
+    return () => setActiveTask(null);
+  }, [taskId, setActiveTask]);
+
+  useEffect(() => {
+    if (!taskId) {
+      setDetail(null);
+      return;
+    }
+    let cancelled = false;
+    loadTaskDetail(taskId).then((data) => {
+      if (!cancelled) setDetail(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [taskId]);
+
+  if (!taskId) return null;
+
+  async function refresh() {
+    const data = await loadTaskDetail(taskId!);
+    setDetail(data);
+    onChanged?.();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/30">
+      <button className="h-full flex-1" onClick={onClose} aria-label="Tutup" />
+      <aside className="flex h-full w-full max-w-xl flex-col overflow-y-auto bg-white shadow-2xl">
+        <div className="flex items-start justify-between border-b border-line px-6 py-5">
+          <div>
+            <p className="text-xs font-semibold tracking-[0.18em] text-muted uppercase">
+              Task detail
+            </p>
+            <h2 className="font-serif mt-1 text-2xl leading-tight">
+              {detail?.title ?? "Memuat..."}
+            </h2>
+          </div>
+          <button type="button" className={iconBtn} onClick={onClose} aria-label="Tutup">
+            ×
+          </button>
+        </div>
+
+        {detail ? (
+          <form
+            key={[
+              detail.id,
+              detail.title,
+              detail.description,
+              detail.type,
+              detail.priority,
+              detail.status,
+              detail.sprintId,
+              detail.assignee?.id,
+              detail.points,
+              detail.startDate,
+              detail.dueDate,
+            ].join("|")}
+            className="flex flex-1 flex-col gap-4 px-6 py-5"
+            action={(formData) => {
+              startTransition(async () => {
+                await updateTask(detail.id, formData);
+                await refresh();
+              });
+            }}
+          >
+            <label className="text-xs font-semibold text-muted">Judul</label>
+            <input name="title" className={field} defaultValue={detail.title} />
+
+            <label className="text-xs font-semibold text-muted">Deskripsi</label>
+            <textarea
+              name="description"
+              rows={4}
+              className={field}
+              defaultValue={detail.description}
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <Select
+                name="type"
+                defaultValue={detail.type}
+                options={TASK_TYPES.map((item) => ({ value: item.id, label: item.label }))}
+              />
+              <Select
+                name="priority"
+                defaultValue={detail.priority}
+                options={PRIORITIES.map((item) => ({ value: item.id, label: item.label }))}
+              />
+              <Select
+                name="status"
+                defaultValue={detail.status}
+                options={STATUSES.map((item) => ({ value: item.id, label: item.label }))}
+              />
+              <Select
+                name="sprintId"
+                defaultValue={detail.sprintId ?? ""}
+                placeholder="Tanpa sprint"
+                options={[
+                  { value: "", label: "Tanpa sprint" },
+                  ...sprints.map((sprint) => ({ value: sprint.id, label: sprint.name })),
+                ]}
+              />
+              <Select
+                name="assigneeId"
+                defaultValue={detail.assignee?.id ?? ""}
+                placeholder="Unassigned"
+                options={[
+                  { value: "", label: "Unassigned" },
+                  ...members.map((member) => ({ value: member.id, label: member.name })),
+                ]}
+              />
+              <input
+                name="points"
+                type="number"
+                min={0}
+                className={field}
+                placeholder="Story points"
+                defaultValue={detail.points ?? ""}
+              />
+              <DatePicker
+                name="startDate"
+                defaultValue={dateInput(detail.startDate)}
+                placeholder="Tanggal mulai"
+              />
+              <DatePicker
+                name="dueDate"
+                defaultValue={dateInput(detail.dueDate)}
+                placeholder="Due date"
+              />
+            </div>
+
+            <button className={cn(btnPrimary, "self-start")} disabled={pending}>
+              {pending ? "Menyimpan..." : "Simpan perubahan"}
+            </button>
+          </form>
+        ) : null}
+
+        {detail ? (
+          <div className="border-t border-line px-6 py-5">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Attachment</h3>
+              <button className={btnGhost} onClick={() => fileRef.current?.click()}>
+                <Paperclip size={14} /> Unggah
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  const data = new FormData();
+                  data.append("file", file);
+                  startTransition(async () => {
+                    await uploadAttachment(detail.id, data);
+                    await refresh();
+                  });
+                  event.target.value = "";
+                }}
+              />
+            </div>
+            <ul className="space-y-2">
+              {detail.attachments.length === 0 ? (
+                <li className="text-sm text-muted">Belum ada file.</li>
+              ) : (
+                detail.attachments.map((file) => (
+                  <li key={file.id} className="flex items-center justify-between rounded-2xl border border-line bg-white px-3 py-2">
+                    <a href={`/api/files/${file.id}`} target="_blank" className="min-w-0 truncate text-sm font-medium hover:underline">
+                      {file.filename}
+                    </a>
+                    <span className="ml-3 shrink-0 text-xs text-muted">{formatBytes(file.size)}</span>
+                    <button
+                      className="ml-2 text-muted hover:text-red-700"
+                      onClick={() =>
+                        startTransition(async () => {
+                          await deleteAttachment(file.id);
+                          await refresh();
+                        })
+                      }
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        ) : null}
+
+        {detail ? (
+          <div className="border-t border-line px-6 py-5">
+            <h3 className="mb-3 text-sm font-semibold">Kolaborasi — komentar</h3>
+            <ul className="space-y-3">
+              {detail.comments.map((comment) => (
+                <li key={comment.id} className="flex gap-3">
+                  <Avatar {...comment.user} size="sm" />
+                  <div className="flex-1 rounded-2xl bg-white px-3 py-2">
+                    <p className="text-xs text-muted">
+                      {comment.user.name} · {formatDay(comment.createdAt)}
+                    </p>
+                    <p className="text-sm">{comment.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <form
+              className="mt-4 flex gap-2"
+              action={(formData) => {
+                startTransition(async () => {
+                  await addComment(detail.id, formData);
+                  await refresh();
+                });
+              }}
+            >
+              <input name="body" className={field} placeholder="Tulis komentar..." />
+              <button className={btnPrimary}>Kirim</button>
+            </form>
+          </div>
+        ) : null}
+
+        {detail ? (
+          <div className="mt-auto border-t border-line px-6 py-4">
+            <button
+              className={cn(btnGhost, "text-red-700")}
+              onClick={() =>
+                startTransition(async () => {
+                  await deleteTask(detail.id);
+                  onChanged?.();
+                  onClose();
+                })
+              }
+            >
+              <Trash2 size={14} /> Hapus task
+            </button>
+          </div>
+        ) : null}
+      </aside>
+    </div>
+  );
+}
+
+export function TaskChip({
+  task,
+  onOpen,
+}: {
+  task: TaskDTO;
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(task.id)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") onOpen(task.id);
+      }}
+      className="w-full cursor-pointer rounded-2xl border border-line bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <TypeBadge type={task.type} />
+        <PriorityBadge priority={task.priority} />
+      </div>
+      <p className="mt-2 text-sm font-semibold leading-snug">{task.title}</p>
+      <div className="mt-3 flex items-center justify-between text-xs text-muted">
+        <span>{task.points ? `${task.points} pt` : "No points"}</span>
+        {task.dueDate ? <span>{formatDay(task.dueDate)}</span> : <span />}
+        {task.assignee ? (
+          <Avatar {...task.assignee} size="sm" />
+        ) : (
+          <span className="h-7 w-7 rounded-full border border-dashed border-line" />
+        )}
+      </div>
+    </div>
+  );
+}
