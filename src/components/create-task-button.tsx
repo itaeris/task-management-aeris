@@ -7,6 +7,7 @@ import { PRIORITIES, STATUSES, TASK_TYPES } from "@/lib/constants";
 import type { MemberDTO, SprintDTO } from "@/lib/types";
 import { DatePicker, Select } from "@/components/fields";
 import { btnGhost, btnPrimary, field, surface } from "@/components/ui";
+import { PendingSubmit, FormBusy } from "@/components/pending-submit";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { easeOutSoft } from "@/components/motion";
@@ -51,6 +52,7 @@ export function CreateTaskButton({
               setOpen(false);
             }}
           >
+            <FormBusy>
             <h2 className="font-serif text-2xl">New task</h2>
             <p className="mb-4 text-sm text-muted">Added to the product log. You can assign it to a sprint right away.</p>
             <div className="grid gap-3">
@@ -99,8 +101,9 @@ export function CreateTaskButton({
               <button type="button" className={btnGhost} onClick={() => setOpen(false)}>
                 Cancel
               </button>
-              <button className={btnPrimary}>Save</button>
+              <PendingSubmit idle="Save" busy="Creating…" />
             </div>
+            </FormBusy>
           </motion.form>
         </motion.div>
       ) : null}

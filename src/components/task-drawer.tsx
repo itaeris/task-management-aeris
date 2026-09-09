@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Paperclip, Trash2 } from "lucide-react";
+import { Paperclip, Trash2, LoaderCircle } from "lucide-react";
 import { addComment, deleteTask, loadTaskDetail, updateTask } from "@/lib/actions/tasks";
 import { deleteAttachment, uploadAttachment } from "@/lib/actions/attachments";
 import { PRIORITIES, STATUSES, TASK_TYPES } from "@/lib/constants";
 import { cn, formatBytes, formatDay } from "@/lib/utils";
 import type { MemberDTO, SprintDTO, TaskDTO, TaskDetailDTO } from "@/lib/types";
-import { Avatar, PriorityBadge, TypeBadge, btnGhost, btnPrimary, field, iconBtn, Skeleton } from "@/components/ui";
+import { Avatar, PriorityBadge, TypeBadge, btnGhost, field, iconBtn, Skeleton } from "@/components/ui";
+import { PendingSubmit } from "@/components/pending-submit";
 import { DatePicker, Select } from "@/components/fields";
 import { TaskDrawerSkeleton } from "@/components/skeletons";
 import { useSetActiveTask } from "@/components/presence";
@@ -113,11 +114,9 @@ export function TaskDrawer({
               detail.dueDate,
             ].join("|")}
             className="flex flex-1 flex-col gap-4 px-6 py-5"
-            action={(formData) => {
-              startTransition(async () => {
-                await updateTask(detail.id, formData);
-                await refresh();
-              });
+            action={async (formData) => {
+              await updateTask(detail.id, formData);
+              await refresh();
             }}
           >
             <label className="text-xs font-semibold text-muted">Title</label>
@@ -185,9 +184,7 @@ export function TaskDrawer({
               />
             </div>
 
-            <button className={cn(btnPrimary, "self-start")} disabled={pending}>
-              {pending ? "Saving..." : "Save changes"}
-            </button>
+            <PendingSubmit idle="Save changes" busy="Saving…" className="self-start" />
           </form>
 
           <div className="border-t border-line px-6 py-5">
@@ -257,21 +254,20 @@ export function TaskDrawer({
             </ul>
             <form
               className="mt-4 flex gap-2"
-              action={(formData) => {
-                startTransition(async () => {
-                  await addComment(detail.id, formData);
-                  await refresh();
-                });
+              action={async (formData) => {
+                await addComment(detail.id, formData);
+                await refresh();
               }}
             >
               <input name="body" className={field} placeholder="Write a comment..." />
-              <button className={btnPrimary}>Send</button>
+              <PendingSubmit idle="Send" busy="Sending…" />
             </form>
           </div>
 
           <div className="mt-auto border-t border-line px-6 py-4">
             <button
               className={cn(btnGhost, "text-red-700 dark:text-red-400")}
+              disabled={pending}
               onClick={() =>
                 startTransition(async () => {
                   await deleteTask(detail.id);
@@ -280,7 +276,8 @@ export function TaskDrawer({
                 })
               }
             >
-              <Trash2 size={14} /> Delete task
+              {pending ? <LoaderCircle size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              {pending ? "Deleting…" : "Delete task"}
             </button>
           </div>
         </>

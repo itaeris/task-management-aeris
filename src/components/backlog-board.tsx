@@ -95,7 +95,7 @@ export function BacklogBoard({
                     <p className="mt-1 line-clamp-1 text-xs text-muted">{task.description}</p>
                   ) : null}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 whitespace-nowrap">
                   <StatusBadge status={task.status} />
                 </td>
                 <td className="px-4 py-3 text-muted">{task.sprintName ?? "—"}</td>

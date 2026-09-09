@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { createSprint, updateSprintStatus } from "@/lib/actions/sprints";
 import { cn, formatDay } from "@/lib/utils";
 import type { MemberDTO, SprintDTO, TaskDTO } from "@/lib/types";
-import { StatusBadge, btnGhost, btnPrimary, chip, field, surface } from "@/components/ui";
+import { StatusBadge, chip, field, surface } from "@/components/ui";
+import { PendingSubmit } from "@/components/pending-submit";
 import { DatePicker } from "@/components/fields";
 import { CreateTaskButton } from "@/components/create-task-button";
 import { TaskDrawer } from "@/components/task-drawer";
@@ -47,7 +48,7 @@ export function ScrumView({
         <DatePicker name="startDate" placeholder="Start date" required />
         <DatePicker name="endDate" placeholder="End date" required />
         <input name="goal" className={cn(field, "md:col-span-3")} placeholder="Sprint goal" />
-        <button className={btnPrimary}>Create sprint</button>
+        <PendingSubmit idle="Create sprint" busy="Creating…" />
       </form>
 
       <div className="grid gap-4">
@@ -70,12 +71,12 @@ export function ScrumView({
                 <div className="flex gap-2">
                   {sprint.status !== "active" ? (
                     <form action={updateSprintStatus.bind(null, projectId, sprint.id, "active")}>
-                      <button className={btnPrimary}>Activate</button>
+                      <PendingSubmit idle="Activate" busy="Saving…" />
                     </form>
                   ) : null}
                   {sprint.status !== "completed" ? (
                     <form action={updateSprintStatus.bind(null, projectId, sprint.id, "completed")}>
-                      <button className={btnGhost}>Complete</button>
+                      <PendingSubmit idle="Complete" busy="Saving…" variant="ghost" />
                     </form>
                   ) : null}
                 </div>

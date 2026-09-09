@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { LoaderCircle } from "lucide-react";
 import { changePassword, updateProfile, type SettingsState } from "@/lib/actions/identity";
 import { btnPrimary, field, surface } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -39,7 +40,8 @@ export function SettingsForm({ user }: { user: Profile }) {
           </div>
           <Message state={profileState} />
           <button className={cn(btnPrimary, "mt-auto self-start")} disabled={profilePending}>
-            {profilePending ? "Saving..." : "Save name"}
+            {profilePending ? <LoaderCircle size={16} className="animate-spin" /> : null}
+            {profilePending ? "Saving…" : "Save name"}
           </button>
         </div>
       </form>
@@ -64,7 +66,8 @@ export function SettingsForm({ user }: { user: Profile }) {
           </div>
           <Message state={passwordState} />
           <button className={cn(btnPrimary, "mt-auto self-start")} disabled={passwordPending}>
-            {passwordPending ? "Saving..." : "Change password"}
+            {passwordPending ? <LoaderCircle size={16} className="animate-spin" /> : null}
+            {passwordPending ? "Saving…" : "Change password"}
           </button>
         </div>
       </form>

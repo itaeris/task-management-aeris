@@ -12,7 +12,8 @@ import {
   type ProjectAccess,
 } from "@/lib/access";
 import type { MemberDTO } from "@/lib/types";
-import { Avatar, btnGhost, btnPrimary, field, surface } from "@/components/ui";
+import { Avatar, btnGhost, field, surface } from "@/components/ui";
+import { PendingSubmit } from "@/components/pending-submit";
 import { IconPicker } from "@/components/icon-picker";
 import { DEFAULT_PROJECT_ICON, parseProjectMark } from "@/lib/project-icon";
 import { cn } from "@/lib/utils";
@@ -182,7 +183,7 @@ export function SharePanel({
                 ) : null}
               </div>
             ) : null}
-            <button className={cn(btnPrimary, "self-start")}>Save project</button>
+            <PendingSubmit idle="Save project" busy="Saving…" className="self-start" />
           </form>
         ) : showLeave ? (
           <form className="mt-6" action={leaveProject.bind(null, projectId)}>
@@ -244,7 +245,7 @@ export function SharePanel({
                     </option>
                   ))}
                 </select>
-                <button className={cn(btnGhost, "shrink-0")}>Add</button>
+                <PendingSubmit idle="Add" busy="Adding…" variant="ghost" className="shrink-0" />
               </form>
             ) : null}
           </section>

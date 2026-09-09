@@ -1,12 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useFormStatus } from "react-dom";
-import { LoaderCircle } from "lucide-react";
 import { createProject } from "@/lib/actions/projects";
 import { ACCESS_OPTIONS, type ProjectAccess } from "@/lib/access";
-import { btnPrimary, field } from "@/components/ui";
+import { field } from "@/components/ui";
 import { IconPicker } from "@/components/icon-picker";
+import { FormBusy, PendingSubmit } from "@/components/pending-submit";
 import { cn } from "@/lib/utils";
 
 type Person = {
@@ -22,30 +21,6 @@ type GroupOption = {
   name: string;
   memberCount: number;
 };
-
-function CreateProjectSubmit() {
-  const { pending } = useFormStatus();
-  return (
-    <button className={cn(btnPrimary, "relative w-full overflow-hidden")} disabled={pending} aria-busy={pending}>
-      {pending ? <LoaderCircle size={16} className="animate-spin" /> : null}
-      {pending ? "Creating project…" : "Create project"}
-      {pending ? (
-        <span className="absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-white/25">
-          <span className="block h-full w-1/2 animate-[create-progress_1.1s_ease-in-out_infinite] rounded-full bg-white" />
-        </span>
-      ) : null}
-    </button>
-  );
-}
-
-function PendingFields({ children }: { children: React.ReactNode }) {
-  const { pending } = useFormStatus();
-  return (
-    <fieldset disabled={pending} className="mt-3 grid gap-2 disabled:opacity-70">
-      {children}
-    </fieldset>
-  );
-}
 
 export function CreateProjectForm({
   userId,
@@ -64,7 +39,7 @@ export function CreateProjectForm({
   return (
     <form action={createProject} className="min-h-0 flex-1 overflow-y-auto p-4">
       <h2 className="font-serif text-xl">New project</h2>
-      <PendingFields>
+      <FormBusy className="mt-3 grid gap-2 disabled:opacity-70">
         <input name="name" className={field} placeholder="Project name" required />
         <textarea name="description" className={field} rows={2} placeholder="Product summary" />
         <IconPicker compact />
@@ -137,8 +112,8 @@ export function CreateProjectForm({
             ) : null}
           </div>
         ) : null}
-        <CreateProjectSubmit />
-      </PendingFields>
+        <PendingSubmit idle="Create project" busy="Creating project…" className="w-full" progress />
+      </FormBusy>
     </form>
   );
 }

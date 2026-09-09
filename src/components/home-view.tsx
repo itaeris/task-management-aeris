@@ -4,9 +4,10 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
 import { joinProject } from "@/lib/actions/projects";
 import { ACCESS_LABEL, ACCESS_OPTIONS, type ProjectAccess } from "@/lib/access";
-import { AvatarStack, btnGhost, field, iconBtn, surface } from "@/components/ui";
+import { AvatarStack, field, iconBtn, surface } from "@/components/ui";
 import { CreateProjectForm } from "@/components/create-project-form";
 import { DeleteProjectDialog } from "@/components/delete-project-dialog";
+import { PendingSubmit } from "@/components/pending-submit";
 import { ProjectIconEditor } from "@/components/icon-picker";
 import { PresenceBoard, PresenceProvider } from "@/components/presence";
 import { cn } from "@/lib/utils";
@@ -380,7 +381,7 @@ export function HomeProjects({
               <h2 className="text-sm font-semibold">Join with a code</h2>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row">
                 <input name="code" className={cn(field, "uppercase")} placeholder="XXXX-XXXX" required />
-                <button className={cn(btnGhost, "shrink-0")}>Join</button>
+                <PendingSubmit idle="Join" busy="Joining…" variant="ghost" className="shrink-0" />
               </div>
             </form>
           </aside>

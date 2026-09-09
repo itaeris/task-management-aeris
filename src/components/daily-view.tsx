@@ -3,7 +3,8 @@
 import { saveDailyLog } from "@/lib/actions/daily";
 import { cn, todayKey } from "@/lib/utils";
 import type { MemberDTO } from "@/lib/types";
-import { Avatar, btnPrimary, field, surface } from "@/components/ui";
+import { Avatar, field, surface } from "@/components/ui";
+import { PendingSubmit } from "@/components/pending-submit";
 
 type DailyItem = {
   id: string;
@@ -69,7 +70,7 @@ export function DailyView({
             placeholder="Blockers (optional)"
             defaultValue={mine?.blockers}
           />
-          <button className={cn(btnPrimary, "self-start")}>Save daily</button>
+          <PendingSubmit idle="Save daily" busy="Saving…" className="self-start" />
         </form>
       </section>
 

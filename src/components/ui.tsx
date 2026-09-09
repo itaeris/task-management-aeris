@@ -15,7 +15,7 @@ export const field =
 export const surface = "border border-line bg-paper/80 backdrop-blur-sm";
 
 export const chip =
-  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold tracking-wide uppercase";
+  "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold tracking-wide uppercase";
 
 export function Avatar({
   name,
