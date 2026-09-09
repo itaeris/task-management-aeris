@@ -10,6 +10,8 @@ import type { MemberDTO, SprintDTO, TaskDTO, TaskDetailDTO } from "@/lib/types";
 import { Avatar, PriorityBadge, TypeBadge, btnGhost, btnPrimary, field, iconBtn } from "@/components/ui";
 import { DatePicker, Select } from "@/components/fields";
 import { useSetActiveTask } from "@/components/presence";
+import { AnimatePresence, motion } from "framer-motion";
+import { easeOutSoft } from "@/components/motion";
 
 function dateInput(value: string | null) {
   return value ? value.slice(0, 10) : "";
@@ -52,18 +54,32 @@ export function TaskDrawer({
     };
   }, [taskId]);
 
-  if (!taskId) return null;
-
   async function refresh() {
-    const data = await loadTaskDetail(taskId!);
+    if (!taskId) return;
+    const data = await loadTaskDetail(taskId);
     setDetail(data);
     onChanged?.();
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/30">
-      <button className="h-full flex-1" onClick={onClose} aria-label="Tutup" />
-      <aside className="flex h-full w-full max-w-xl flex-col overflow-y-auto bg-white shadow-2xl">
+    <AnimatePresence>
+      {taskId ? (
+      <motion.div
+        key="task-drawer"
+        className="fixed inset-0 z-50 flex justify-end"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18 }}
+      >
+        <button className="h-full flex-1 bg-black/30" onClick={onClose} aria-label="Tutup" />
+        <motion.aside
+          className="flex h-full w-full max-w-xl flex-col overflow-y-auto bg-white shadow-2xl"
+          initial={{ x: 32 }}
+          animate={{ x: 0 }}
+          exit={{ x: 32 }}
+          transition={{ duration: 0.28, ease: easeOutSoft }}
+        >
         <div className="flex items-start justify-between border-b border-line px-6 py-5">
           <div>
             <p className="text-xs font-semibold tracking-[0.18em] text-muted uppercase">
@@ -271,8 +287,10 @@ export function TaskDrawer({
             </button>
           </div>
         ) : null}
-      </aside>
-    </div>
+        </motion.aside>
+      </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }
 

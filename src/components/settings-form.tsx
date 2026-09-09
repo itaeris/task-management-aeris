@@ -5,6 +5,7 @@ import { changePassword, updateProfile, type SettingsState } from "@/lib/actions
 import { btnPrimary, field, surface } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
+import { FadeIn } from "@/components/motion";
 
 function Message({ state }: { state: SettingsState }) {
   if (state.error) return <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>;
@@ -17,7 +18,7 @@ export function SettingsForm({ user }: { user: Profile }) {
   const [passwordState, passwordAction, passwordPending] = useActionState(changePassword, {} as SettingsState);
 
   return (
-    <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+    <FadeIn className="grid gap-5 lg:grid-cols-2 lg:items-start">
       <form action={profileAction} className={cn(surface, "flex h-full flex-col rounded-3xl p-6")}>
         <h2 className="font-serif text-2xl">Profil</h2>
         <p className="mt-1 text-sm text-muted">Nama ini yang dilihat user lain di workspace.</p>
@@ -67,6 +68,6 @@ export function SettingsForm({ user }: { user: Profile }) {
           </button>
         </div>
       </form>
-    </div>
+    </FadeIn>
   );
 }

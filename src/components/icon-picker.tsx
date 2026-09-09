@@ -181,7 +181,7 @@ export function ProjectIconEditor({
   const [pending, startTransition] = useTransition();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const mark = parseProjectMark(value);
   const selected = mark.type === "flaticon" ? mark.id : DEFAULT_PROJECT_ICON;
   const legacyColor = mark.type === "color";
@@ -192,10 +192,10 @@ export function ProjectIconEditor({
       const el = triggerRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      const width = 340;
+      const width = Math.min(340, window.innerWidth - 16);
       const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8);
       const top = Math.min(rect.bottom + 8, window.innerHeight - 280);
-      setPos({ top, left });
+      setPos({ top, left, width });
     }
     update();
     window.addEventListener("resize", update);
@@ -256,8 +256,8 @@ export function ProjectIconEditor({
         ? createPortal(
             <div
               ref={panelRef}
-              className="fixed z-[80] w-[340px] rounded-2xl border border-line bg-white p-3 shadow-[0_18px_40px_rgba(37,99,235,0.14)]"
-              style={{ top: pos.top, left: pos.left }}
+              className="fixed z-[80] rounded-2xl border border-line bg-white p-3 shadow-[0_18px_40px_rgba(37,99,235,0.14)]"
+              style={{ top: pos.top, left: pos.left, width: pos.width }}
               onClick={(event) => event.stopPropagation()}
               onPointerDown={(event) => event.stopPropagation()}
             >

@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
+import { PwaRoot } from "@/components/pwa";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -13,6 +14,22 @@ export const metadata: Metadata = {
   title: "Task Management",
   description:
     "Product log, scrum log, daily check, kanban, calendar, dan kolaborasi tim.",
+  applicationName: "Task Management",
+  appleWebApp: {
+    capable: true,
+    title: "Task Management",
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#3b82f6",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -31,7 +48,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           href="https://cdn-uicons.flaticon.com/2.6.0/uicons-brands/css/uicons-brands.css"
         />
       </head>
-      <body className="relative min-h-full font-sans text-ink">{children}</body>
+      <body className="relative min-h-full font-sans text-ink">
+        <PwaRoot />
+        {children}
+      </body>
     </html>
   );
 }

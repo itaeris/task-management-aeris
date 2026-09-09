@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -21,6 +21,8 @@ import { CreateTaskButton } from "@/components/create-task-button";
 import { Select } from "@/components/fields";
 import { chip } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { easeOutSoft } from "@/components/motion";
 
 function SortableCard({ task, onOpen }: { task: TaskDTO; onOpen: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -44,27 +46,34 @@ function Column({
   title,
   tasks,
   onOpen,
+  index,
 }: {
   id: string;
   title: string;
   tasks: TaskDTO[];
   onOpen: (id: string) => void;
+  index: number;
 }) {
   const { setNodeRef } = useDroppable({ id });
   return (
-    <section className="flex min-w-[260px] flex-1 flex-col rounded-3xl bg-paper-2/70 p-3">
-      <header className="mb-3 flex items-center justify-between px-1">
+    <motion.section
+      className="flex h-full min-h-0 min-w-[260px] flex-1 flex-col rounded-3xl bg-paper-2/70 p-3"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: index * 0.05, ease: easeOutSoft }}
+    >
+      <header className="mb-3 flex shrink-0 items-center justify-between px-1">
         <h3 className="text-sm font-semibold">{title}</h3>
         <span className={cn(chip, "bg-white text-muted")}>{tasks.length}</span>
       </header>
-      <div ref={setNodeRef} className="flex min-h-[180px] flex-1 flex-col gap-2">
+      <div ref={setNodeRef} className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
         <SortableContext items={tasks.map((task) => task.id)} strategy={verticalListSortingStrategy}>
           {tasks.map((task) => (
             <SortableCard key={task.id} task={task} onOpen={onOpen} />
           ))}
         </SortableContext>
       </div>
-    </section>
+    </motion.section>
   );
 }
 
@@ -80,6 +89,7 @@ export function KanbanBoard({
   sprints: SprintDTO[];
 }) {
   const router = useRouter();
+  const dndId = useId();
   const [items, setItems] = useState(tasks);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -138,8 +148,8 @@ export function KanbanBoard({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl">Kanban check</h1>
           <p className="text-sm text-muted">Geser kartu antar kolom. Klik untuk lampiran, komentar, dan tanggal.</p>
@@ -163,15 +173,16 @@ export function KanbanBoard({
           />
         </div>
       </div>
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
-        <div className="flex gap-3 overflow-x-auto pb-4">
-          {KANBAN_COLUMNS.map((column) => (
+      <DndContext id={dndId} sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
+        <div className="flex h-full min-h-0 flex-1 items-stretch gap-3 overflow-x-auto">
+          {KANBAN_COLUMNS.map((column, index) => (
             <Column
               key={column.id}
               id={column.id}
               title={column.label}
               tasks={grouped[column.id] ?? []}
               onOpen={setOpenId}
+              index={index}
             />
           ))}
         </div>

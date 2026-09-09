@@ -1,12 +1,17 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Search, Settings } from "lucide-react";
 import { logout } from "@/lib/actions/identity";
 import { createProject, joinProject } from "@/lib/actions/projects";
-import { Avatar, AvatarStack, btnGhost, btnPrimary, field, surface } from "@/components/ui";
+import { Avatar, AvatarStack, btnGhost, btnPrimary, field, iconBtn, surface } from "@/components/ui";
 import { IconPicker, ProjectIconEditor } from "@/components/icon-picker";
 import { PresenceBoard, PresenceProvider } from "@/components/presence";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
+import { easeOutSoft, FadeIn } from "@/components/motion";
+import { BrandMark } from "@/components/brand-mark";
 
 type ProjectCard = {
   id: string;
@@ -38,12 +43,18 @@ function percent(done: number, total: number) {
 
 function ProgressBar({ done, total }: { done: number; total: number }) {
   const value = percent(done, total);
+  const width = `${Math.max(value, value > 0 ? 4 : 0)}%`;
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2 sm:gap-3">
       <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-sky-100">
-        <div className="h-full rounded-full bg-terracotta transition-[width]" style={{ width: `${Math.max(value, value > 0 ? 4 : 0)}%` }} />
+        <motion.div
+          className="h-full rounded-full bg-terracotta"
+          initial={{ width: 0 }}
+          animate={{ width }}
+          transition={{ duration: 0.55, ease: easeOutSoft }}
+        />
       </div>
-      <p className="w-[4.75rem] shrink-0 text-right text-xs font-semibold tabular-nums text-ink">
+      <p className="w-16 shrink-0 text-right text-[11px] font-semibold tabular-nums text-ink sm:w-[4.75rem] sm:text-xs">
         {done}/{total}
         <span className="ml-1 text-muted">{value}%</span>
       </p>
@@ -62,6 +73,8 @@ function rollup(projects: ProjectCard[]) {
   );
 }
 
+const PAGE_SIZE = 6;
+
 export function HomeProjects({
   user,
   projects,
@@ -69,67 +82,134 @@ export function HomeProjects({
   user: UserCard;
   projects: ProjectCard[];
 }) {
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const mine = projects.filter((project) => project.role === "owner");
   const others = projects.filter((project) => project.role !== "owner");
   const mineProgress = rollup(mine);
   const othersProgress = rollup(others);
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return projects;
+    return projects.filter((project) => {
+      const haystack = [
+        project.name,
+        project.description,
+        project.ownerName ?? "",
+        project.role === "owner" ? "punya kamu" : "diikuti",
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [projects, query]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
   return (
     <PresenceProvider>
-      <main className="relative flex h-dvh flex-col gap-3 overflow-hidden p-4">
-        <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-3xl border border-line bg-white/80 px-4 py-2.5 shadow-sm backdrop-blur-md">
+      <main className="relative mx-auto flex min-h-dvh w-full max-w-[1600px] flex-col gap-3 p-3 sm:p-4 lg:h-dvh lg:overflow-hidden">
+        <FadeIn className="shrink-0">
+        <header className="flex shrink-0 items-center gap-2 rounded-3xl border border-line bg-white/80 px-3 py-2.5 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold tracking-[0.22em] text-terracotta uppercase">Task Management</p>
-            <h1 className="font-serif mt-0.5 text-2xl leading-tight">Hai, {user.name.split(" ")[0]}</h1>
+            <div className="flex items-center gap-2">
+              <BrandMark className="h-5 w-5 shrink-0" />
+              <p className="text-[10px] font-semibold tracking-[0.22em] text-terracotta uppercase sm:text-[11px]">Task Management</p>
+            </div>
+            <h1 className="font-serif mt-0.5 truncate text-xl leading-tight sm:text-2xl">Hai, {user.name.split(" ")[0]}</h1>
           </div>
-          <PresenceBoard variant="header" />
-          <div className="flex shrink-0 items-center gap-2">
-            <Avatar {...user} />
-            <Link href="/settings" className={btnGhost}>
+          <div className="hidden min-w-0 flex-1 md:flex">
+            <PresenceBoard variant="header" />
+          </div>
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <Avatar {...user} size="sm" />
+            <Link href="/settings" className={cn(btnGhost, "hidden sm:inline-flex")}>
               Settings
+            </Link>
+            <Link href="/settings" className={cn(iconBtn, "sm:hidden")} aria-label="Settings">
+              <Settings size={16} />
             </Link>
             <form action={logout}>
               <button className={btnPrimary}>Keluar</button>
             </form>
           </div>
         </header>
+        </FadeIn>
 
-        <section className="grid shrink-0 gap-3 md:grid-cols-2">
-          <article className={cn(surface, "rounded-3xl px-4 py-3")}>
-            <div className="mb-2 flex items-baseline gap-2">
-              <p className="text-[11px] font-semibold tracking-wide text-muted uppercase">Project kamu</p>
-              <p className="text-sm font-semibold">{mine.length} project</p>
+        <FadeIn delay={0.05} className="grid shrink-0 grid-cols-2 gap-2 sm:gap-3">
+          <article className={cn(surface, "rounded-2xl px-3 py-2.5 sm:rounded-3xl sm:px-4 sm:py-3")}>
+            <div className="mb-2 flex flex-wrap items-baseline gap-x-2">
+              <p className="text-[10px] font-semibold tracking-wide text-muted uppercase sm:text-[11px]">Project kamu</p>
+              <p className="text-sm font-semibold">{mine.length}</p>
             </div>
             <ProgressBar done={mineProgress.done} total={mineProgress.total} />
           </article>
-          <article className={cn(surface, "rounded-3xl px-4 py-3")}>
-            <div className="mb-2 flex items-baseline gap-2">
-              <p className="text-[11px] font-semibold tracking-wide text-muted uppercase">Project orang lain</p>
+          <article className={cn(surface, "rounded-2xl px-3 py-2.5 sm:rounded-3xl sm:px-4 sm:py-3")}>
+            <div className="mb-2 flex flex-wrap items-baseline gap-x-2">
+              <p className="text-[10px] font-semibold tracking-wide text-muted uppercase sm:text-[11px]">Orang lain</p>
               <p className="text-sm font-semibold">{others.length} diikuti</p>
             </div>
             <ProgressBar done={othersProgress.done} total={othersProgress.total} />
           </article>
-        </section>
+        </FadeIn>
 
-        <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
-          <section className={cn(surface, "flex min-h-0 flex-col overflow-hidden rounded-3xl")}>
-            <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3">
-              <h2 className="font-serif text-xl">Project</h2>
-              <p className="text-sm text-muted">{projects.length} total</p>
+        <FadeIn delay={0.1} className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <section className={cn(surface, "flex min-h-[24rem] flex-col overflow-hidden rounded-3xl lg:min-h-0")}>
+            <div className="flex shrink-0 flex-col gap-2 border-b border-line px-3 py-3 sm:flex-row sm:items-center sm:px-4">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-serif shrink-0 text-xl">Project</h2>
+                <p className="text-sm text-muted sm:hidden">
+                  {filtered.length}/{projects.length}
+                </p>
+              </div>
+              <label className="relative min-w-0 flex-1">
+                <Search size={15} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" />
+                <input
+                  value={query}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    setPage(1);
+                  }}
+                  className={cn(field, "h-10 pl-9")}
+                  placeholder="Cari project…"
+                  aria-label="Cari project"
+                />
+              </label>
+              <p className="hidden shrink-0 text-sm text-muted sm:block">
+                {filtered.length} dari {projects.length}
+              </p>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-2">
               {projects.length === 0 ? (
                 <div className="flex h-full items-center justify-center p-8 text-center">
                   <div>
                     <p className="font-semibold">Belum ada project</p>
-                    <p className="mt-1 text-sm text-muted">Buat baru atau join lewat kode di kanan.</p>
+                    <p className="mt-1 text-sm text-muted">Buat baru atau join lewat kode.</p>
+                  </div>
+                </div>
+              ) : paged.length === 0 ? (
+                <div className="flex h-full items-center justify-center p-8 text-center">
+                  <div>
+                    <p className="font-semibold">Tidak ketemu</p>
+                    <p className="mt-1 text-sm text-muted">Coba kata lain, atau hapus pencarian.</p>
                   </div>
                 </div>
               ) : (
                 <ul className="space-y-2">
-                  {projects.map((project) => (
-                    <li key={project.id}>
-                      <article className="rounded-2xl px-3 py-3 transition hover:bg-sand">
+                  <AnimatePresence mode="popLayout" initial={false}>
+                  {paged.map((project) => (
+                    <motion.li
+                      key={project.id}
+                      layout
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.22, ease: easeOutSoft }}
+                    >
+                      <article className="rounded-2xl px-2 py-3 transition hover:bg-sand sm:px-3">
                         <div className="flex items-center gap-3">
                           <ProjectIconEditor
                             projectId={project.id}
@@ -138,29 +218,87 @@ export function HomeProjects({
                             size="sm"
                           />
                           <Link href={`/projects/${project.id}`} className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex min-w-0 items-center gap-2">
                               <h3 className="truncate font-semibold">{project.name}</h3>
-                              <span className="shrink-0 rounded-full bg-paper-2 px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted uppercase">
+                              <span className="hidden shrink-0 rounded-full bg-paper-2 px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted uppercase sm:inline">
                                 {project.role === "owner" ? "Punya kamu" : "Diikuti"}
                               </span>
                             </div>
                             <p className="mt-0.5 truncate text-sm text-muted">{project.description}</p>
                           </Link>
-                          <AvatarStack members={project.members} />
+                          <div className="hidden sm:block">
+                            <AvatarStack members={project.members} />
+                          </div>
                         </div>
-                        <div className="mt-3 pl-11">
+                        <div className="mt-3 sm:pl-11">
                           <ProgressBar done={project.doneCount} total={project.taskCount} />
-                          <p className="mt-1 text-[11px] text-muted">
+                          <p className="mt-1 truncate text-[11px] text-muted">
+                            {project.role === "owner" ? "Punya kamu" : "Diikuti"}
+                            {" · "}
                             {project.memberCount} anggota
                             {project.role !== "owner" && project.ownerName ? ` · owner ${project.ownerName}` : ""}
-                            {project.activeSprint ? ` · ${project.activeSprint}` : ""}
                           </p>
                         </div>
                       </article>
-                    </li>
+                    </motion.li>
                   ))}
+                  </AnimatePresence>
                 </ul>
               )}
+            </div>
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-line px-3 py-2 sm:px-4 sm:py-2.5">
+              <p className="text-xs text-muted">
+                {filtered.length === 0 ? "Tidak ada hasil" : `Halaman ${currentPage} dari ${pageCount}`}
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className={iconBtn}
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage((value) => Math.max(1, value - 1))}
+                  aria-label="Halaman sebelumnya"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                {Array.from({ length: pageCount }, (_, index) => index + 1)
+                  .filter((number) => {
+                    if (pageCount <= 5) return true;
+                    return number === 1 || number === pageCount || Math.abs(number - currentPage) <= 1;
+                  })
+                  .reduce<number[]>((list, number, index, source) => {
+                    if (index > 0 && number - source[index - 1] > 1) list.push(-source[index - 1]);
+                    list.push(number);
+                    return list;
+                  }, [])
+                  .map((number) =>
+                    number < 0 ? (
+                      <span key={`gap-${number}`} className="hidden px-1 text-sm text-muted sm:inline">
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={number}
+                        type="button"
+                        onClick={() => setPage(number)}
+                        className={cn(
+                          "inline-flex h-9 min-w-9 items-center justify-center rounded-full px-2 text-sm font-semibold",
+                          number === currentPage ? "bg-terracotta text-white" : "text-muted hover:bg-sand",
+                        )}
+                      >
+                        {number}
+                      </button>
+                    ),
+                  )}
+                <button
+                  type="button"
+                  className={iconBtn}
+                  disabled={currentPage >= pageCount}
+                  onClick={() => setPage((value) => Math.min(pageCount, value + 1))}
+                  aria-label="Halaman berikutnya"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </section>
 
@@ -176,13 +314,13 @@ export function HomeProjects({
             </form>
             <form action={joinProject} className="shrink-0 border-t border-line p-4">
               <h2 className="text-sm font-semibold">Join lewat kode</h2>
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
                 <input name="code" className={cn(field, "uppercase")} placeholder="XXXX-XXXX" required />
                 <button className={cn(btnGhost, "shrink-0")}>Gabung</button>
               </div>
             </form>
           </aside>
-        </div>
+        </FadeIn>
       </main>
     </PresenceProvider>
   );

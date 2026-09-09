@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn, formatDay } from "@/lib/utils";
 import { Avatar, StatusBadge, surface } from "@/components/ui";
+import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import type { MemberDTO, SprintDTO, TaskDTO } from "@/lib/types";
 
 export function Overview({
@@ -29,17 +30,26 @@ export function Overview({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-4xl">Overview</h1>
+      <FadeIn>
+        <h1 className="font-serif text-3xl sm:text-4xl">Overview</h1>
         <p className="mt-2 max-w-2xl text-muted">{description}</p>
-      </div>
-      <div className="grid gap-4 md:grid-cols-4">
-        <Stat label="Open items" value={String(tasks.length - done)} />
-        <Stat label="Done" value={String(done)} />
-        <Stat label="Daily check hari ini" value={`${todayCheckins}/${memberCount}`} />
-        <Stat label="Sprint aktif" value={active ? active.name.replace(/Sprint \d+ — /, "") : "Tidak ada"} />
-      </div>
+      </FadeIn>
+      <Stagger className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <StaggerItem>
+          <Stat label="Open items" value={String(tasks.length - done)} />
+        </StaggerItem>
+        <StaggerItem>
+          <Stat label="Done" value={String(done)} />
+        </StaggerItem>
+        <StaggerItem>
+          <Stat label="Daily check hari ini" value={`${todayCheckins}/${memberCount}`} />
+        </StaggerItem>
+        <StaggerItem>
+          <Stat label="Sprint aktif" value={active ? active.name.replace(/Sprint \d+ — /, "") : "Tidak ada"} />
+        </StaggerItem>
+      </Stagger>
       {active ? (
+        <FadeIn delay={0.12}>
         <section className={cn(surface, "rounded-3xl p-5")}>
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-2xl">{active.name}</h2>
@@ -57,15 +67,16 @@ export function Overview({
             />
           </div>
         </section>
+        </FadeIn>
       ) : null}
-      <div className="grid gap-4 lg:grid-cols-2">
+      <FadeIn delay={0.16} className="grid gap-4 lg:grid-cols-2">
         <section className={cn(surface, "rounded-3xl p-5")}>
           <h2 className="font-serif text-2xl">Deadline dekat</h2>
           <ul className="mt-3 divide-y divide-line">
             {upcoming.map((task) => (
-              <li key={task.id} className="flex items-center justify-between py-3">
-                <span className="pr-3 text-sm font-medium">{task.title}</span>
-                <div className="flex items-center gap-2">
+              <li key={task.id} className="flex items-center justify-between gap-2 py-3">
+                <span className="min-w-0 truncate text-sm font-medium">{task.title}</span>
+                <div className="flex shrink-0 items-center gap-2">
                   <StatusBadge status={task.status} />
                   <span className="text-xs text-muted">{formatDay(task.dueDate!)}</span>
                 </div>
@@ -87,7 +98,7 @@ export function Overview({
             ))}
           </ul>
         </section>
-      </div>
+      </FadeIn>
     </div>
   );
 }

@@ -36,8 +36,9 @@ export function HomeSkeleton() {
 
       <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <Card className="flex min-h-0 flex-col p-0">
-          <div className="flex items-center justify-between border-b border-line px-5 py-3">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
             <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-10 min-w-0 flex-1 rounded-xl" />
             <Skeleton className="h-4 w-16" />
           </div>
           <div className="space-y-2 p-3">

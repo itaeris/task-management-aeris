@@ -13,6 +13,9 @@ import {
   Sunrise,
 } from "lucide-react";
 import { login, type LoginState } from "@/lib/actions/identity";
+import { BrandMark } from "@/components/brand-mark";
+import { motion, useReducedMotion } from "framer-motion";
+import { easeOutSoft, fadeUp, stagger } from "@/components/motion";
 
 const FEATURES = [
   { label: "Dashboard", icon: LayoutDashboard },
@@ -27,20 +30,6 @@ function greetingLabel() {
   if (hour < 11) return "GOOD MORNING";
   if (hour < 18) return "GOOD AFTERNOON";
   return "GOOD EVENING";
-}
-
-function BrandMark({ className = "h-7 w-7" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 28 20" fill="none" className={className} aria-hidden>
-      <path
-        d="M1.5 16.5C4.2 8.2 7.4 8.2 10.2 16.2C13.4 5.8 16.8 5.8 19.8 16.2C22.2 9.8 25 9.8 26.8 16.2"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
 }
 
 function GoogleMark() {
@@ -81,27 +70,43 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
   const [notice, setNotice] = useState(GOOGLE_ERRORS[error ?? ""] ?? "");
   const [state, action, pending] = useActionState(login, {} as LoginState);
   const greeting = useMemo(greetingLabel, []);
+  const reduce = useReducedMotion();
 
   return (
     <main className="flex min-h-dvh flex-col bg-gradient-to-b from-white via-sky-50 to-sky-100 text-ink lg:grid lg:grid-cols-2">
       <section className="relative flex min-h-[38vh] flex-col bg-[radial-gradient(circle_at_28%_42%,#bfdbfe,transparent_58%),linear-gradient(180deg,#f8fbff_0%,#dbeafe_48%,#93c5fd_100%)] px-6 pb-10 pt-6 sm:px-10 lg:min-h-dvh lg:px-12 lg:py-10">
-        <div className="flex items-center gap-3">
-          <BrandMark className="h-8 w-8 text-ink" />
+        <motion.div
+          className="flex items-center gap-3"
+          initial={reduce ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: easeOutSoft }}
+        >
+          <BrandMark className="h-9 w-9" />
           <div>
             <p className="text-[13px] font-semibold tracking-[0.18em] text-ink">TASK MANAGEMENT</p>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="mt-10 max-w-xl lg:mt-auto lg:mb-auto">
-          <p className="text-[11px] font-semibold tracking-[0.28em] text-sky-700/80">{greeting}</p>
-          <h1 className="font-serif mt-3 text-4xl leading-[1.12] font-semibold tracking-tight text-ink sm:text-5xl lg:text-[3.4rem]">
+        <motion.div
+          className="mt-10 max-w-xl lg:mt-auto lg:mb-auto"
+          initial={reduce ? false : "hidden"}
+          animate="show"
+          variants={stagger}
+        >
+          <motion.p variants={fadeUp} className="text-[11px] font-semibold tracking-[0.28em] text-sky-700/80">
+            {greeting}
+          </motion.p>
+          <motion.h1
+            variants={fadeUp}
+            className="font-serif mt-3 text-4xl leading-[1.12] font-semibold tracking-tight text-ink sm:text-5xl lg:text-[3.4rem]"
+          >
             Your product workspace.
-          </h1>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-slate-600 lg:text-[15px]">
+          </motion.h1>
+          <motion.p variants={fadeUp} className="mt-4 max-w-md text-sm leading-relaxed text-slate-600 lg:text-[15px]">
             Product log, scrum, daily check, dan kanban untuk tim dalam satu tempat.
-          </p>
+          </motion.p>
 
-          <div className="mt-8 hidden flex-wrap gap-2 lg:flex">
+          <motion.div variants={fadeUp} className="mt-8 hidden flex-wrap gap-2 lg:flex">
             {FEATURES.map((item) => {
               const Icon = item.icon;
               return (
@@ -114,9 +119,9 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
                 </span>
               );
             })}
-          </div>
+          </motion.div>
 
-          <div className="mt-8 flex gap-3 lg:hidden">
+          <motion.div variants={fadeUp} className="mt-8 flex gap-3 lg:hidden">
             {FEATURES.map((item) => {
               const Icon = item.icon;
               return (
@@ -129,14 +134,19 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
                 </span>
               );
             })}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         <p className="mt-8 hidden text-xs text-slate-500 lg:block">Task Management</p>
       </section>
 
       <section className="relative -mt-6 flex-1 rounded-t-[2.4rem] bg-white px-6 pt-4 pb-8 sm:px-8 lg:mt-0 lg:flex lg:items-center lg:justify-center lg:rounded-none lg:bg-transparent lg:px-10 lg:py-12">
-        <div className="relative lg:w-full lg:max-w-[440px] lg:rounded-[32px] lg:bg-white/90 lg:px-9 lg:py-10 lg:shadow-[0_24px_60px_rgba(37,99,235,0.12)] lg:backdrop-blur">
+        <motion.div
+          className="relative lg:w-full lg:max-w-[440px] lg:rounded-[32px] lg:bg-white/90 lg:px-9 lg:py-10 lg:shadow-[0_24px_60px_rgba(37,99,235,0.12)] lg:backdrop-blur"
+          initial={reduce ? false : { opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.12, ease: easeOutSoft }}
+        >
           <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-sky-200 lg:hidden" />
 
           <h2 className="font-serif text-[2rem] leading-none text-ink">Welcome back</h2>
@@ -216,7 +226,7 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
           >
             Lupa password?
           </button>
-        </div>
+        </motion.div>
       </section>
     </main>
   );

@@ -2,7 +2,7 @@
 
 Webapp kolaborasi task untuk tim: product log, scrum, daily check, kanban, calendar, timeline, share project, attachment, dan siapa yang sedang aktif.
 
-Stack: **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4**, **Supabase**.
+Stack: **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4**, **Framer Motion**, **Supabase**.
 
 ## Fitur
 
@@ -11,8 +11,9 @@ Stack: **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4**, **Supabas
 - Product log, Scrum log, Daily check, Kanban, Calendar, Timeline
 - Komentar, attachment, dan aktivitas project
 - Presence di header: siapa sedang buka halaman atau task
-- Settings: ubah nama tampilan dan reset password
+- Settings: ubah nama tampilan, reset password, dan pasang PWA
 - Loading pakai skeleton, bukan spinner
+- Bisa dipasang sebagai aplikasi (PWA) di HP dan desktop
 
 ## Setup
 
@@ -84,6 +85,19 @@ http://localhost:3000/api/auth/google/callback
 
 User Google dicocokkan/dibuat di `public.users` berdasarkan email.
 
+## PWA
+
+App bisa dipasang ke home screen / desktop (standalone).
+
+- Manifest: `/manifest.webmanifest`
+- Ikon: `public/icons/`
+- Service worker (production): `public/sw.js` — halaman offline jika navigasi gagal
+- Chrome/Edge: menu ⋮ → Install app, atau tombol **Pasang aplikasi** di Settings
+- iOS Safari: Share → Add to Home Screen
+- Banner muncul saat koneksi terputus
+
+Service worker tidak aktif di `next dev` supaya cache tidak mengganggu HMR. Tes install di `npm run build && npm run start`, atau pakai Chrome di `localhost`.
+
 ## Scripts
 
 | Command | Fungsi |
@@ -94,6 +108,8 @@ User Google dicocokkan/dibuat di `public.users` berdasarkan email.
 | `npm run lint` | ESLint |
 | `npm run db:seed` | Seed user + project demo |
 | `npm run db:admin` | Buat/update akun admin `itaeris` |
+
+Ikon PWA bisa digenerate ulang: `node scripts/generate-pwa-icons.mjs`.
 
 ## Alur singkat
 

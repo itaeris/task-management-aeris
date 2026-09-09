@@ -8,6 +8,8 @@ import type { MemberDTO, SprintDTO } from "@/lib/types";
 import { DatePicker, Select } from "@/components/fields";
 import { btnGhost, btnPrimary, field, surface } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
+import { easeOutSoft } from "@/components/motion";
 
 export function CreateTaskButton({
   projectId,
@@ -29,10 +31,21 @@ export function CreateTaskButton({
       <button className={btnPrimary} onClick={() => setOpen(true)}>
         <Plus size={16} /> Task baru
       </button>
+      <AnimatePresence>
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-          <form
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+        >
+          <motion.form
             className={cn(surface, "w-full max-w-lg rounded-3xl p-6")}
+            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={{ duration: 0.25, ease: easeOutSoft }}
             action={async (formData) => {
               await createTask(projectId, formData);
               setOpen(false);
@@ -88,9 +101,10 @@ export function CreateTaskButton({
               </button>
               <button className={btnPrimary}>Simpan</button>
             </div>
-          </form>
-        </div>
+          </motion.form>
+        </motion.div>
       ) : null}
+      </AnimatePresence>
     </>
   );
 }
