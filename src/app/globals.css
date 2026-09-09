@@ -163,6 +163,15 @@ html.dark *::-webkit-scrollbar-thumb:hover {
   }
 }
 
+@keyframes create-progress {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skeleton::after {
     animation: none;
