@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { supabase, unwrap } from "@/lib/supabase";
 import { mapUser, type UserRow } from "@/lib/mappers";
+import { cookieOptions } from "@/lib/site";
 
 export const USER_COOKIE = "nara_user";
 
@@ -40,12 +41,7 @@ export async function requireProjectMember(projectId: string) {
 
 export async function setUserCookie(userId: string) {
   const store = await cookies();
-  store.set(USER_COOKIE, userId, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
-  });
+  store.set(USER_COOKIE, userId, cookieOptions(60 * 60 * 24 * 365));
 }
 
 export async function clearUserCookie() {

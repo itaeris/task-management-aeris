@@ -1,8 +1,11 @@
 import type { MetadataRoute } from "next";
+import { siteUrl } from "@/lib/site";
+
+const origin = siteUrl() || "https://pipeline.aerisbeaute.com";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    id: "/",
+    id: `${origin}/`,
     name: "Task Management",
     short_name: "Tasks",
     description:

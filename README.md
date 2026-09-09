@@ -32,6 +32,7 @@ Isi:
 | `NEXT_PUBLIC_SUPABASE_URL` | URL project Supabase |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key |
 | `SUPABASE_SECRET_KEY` | Secret key (server only, jangan di-commit) |
+| `APP_URL` | URL publik, production: `https://pipeline.aerisbeaute.com` |
 | `GOOGLE_CLIENT_ID` | OAuth client ID (opsional) |
 | `GOOGLE_CLIENT_SECRET` | OAuth client secret (opsional) |
 
@@ -77,13 +78,31 @@ Project demo: **Relia Pay**. Kode share: `RELI-7K2M`.
 
 ## Google login
 
-Di [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials, set Authorized redirect URI:
+Di [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials:
+
+Authorized JavaScript origins:
+
+```
+http://localhost:3000
+https://pipeline.aerisbeaute.com
+```
+
+Authorized redirect URIs:
 
 ```
 http://localhost:3000/api/auth/google/callback
+https://pipeline.aerisbeaute.com/api/auth/google/callback
 ```
 
 User Google dicocokkan/dibuat di `public.users` berdasarkan email.
+
+## Production (`pipeline.aerisbeaute.com`)
+
+1. Domain HTTPS (PWA dan cookie login butuh HTTPS).
+2. Di server, set `APP_URL=https://pipeline.aerisbeaute.com` plus env Supabase/Google.
+3. Google Console: tambah origin dan redirect URI production di atas.
+4. Build: `npm run build && npm run start` (atau proses manager di belakang reverse proxy). Proxy harus meneruskan `Host` dan `X-Forwarded-Proto: https`.
+5. PWA: service worker aktif otomatis di domain (bukan localhost). Install dari Chrome ⋮ → Install app, atau Settings → Pasang aplikasi. iOS: Safari Share → Add to Home Screen.
 
 ## PWA
 

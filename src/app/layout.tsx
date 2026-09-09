@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import { PwaRoot } from "@/components/pwa";
+import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -11,6 +12,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl() || "https://pipeline.aerisbeaute.com"),
   title: "Task Management",
   description:
     "Product log, scrum log, daily check, kanban, calendar, dan kolaborasi tim.",

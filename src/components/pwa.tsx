@@ -38,8 +38,11 @@ export function PwaRoot() {
     installed = isStandaloneDisplay();
     notify();
 
-    if (process.env.NODE_ENV !== "development" && "serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).catch(() => {});
+    if ("serviceWorker" in navigator) {
+      const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+      if (!isLocal) {
+        navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" }).catch(() => {});
+      }
     }
 
     const onPrompt = (event: Event) => {

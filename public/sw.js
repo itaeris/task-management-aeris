@@ -1,4 +1,4 @@
-const CACHE = "task-management-v1";
+const CACHE = "task-management-v2";
 const PRECACHE = ["/offline.html", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {

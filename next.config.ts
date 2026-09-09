@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: "12mb",
+      allowedOrigins: ["pipeline.aerisbeaute.com", "www.pipeline.aerisbeaute.com"],
     },
     useOffline: true,
   },

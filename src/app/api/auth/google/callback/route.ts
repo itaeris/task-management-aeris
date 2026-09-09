@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { USER_COOKIE, safeNextPath } from "@/lib/auth";
 import { findOrCreateGoogleUser } from "@/lib/google-user";
+import { cookieOptions, publicOrigin } from "@/lib/site";
 
 const STATE_COOKIE = "google_oauth_state";
 const NEXT_COOKIE = "google_oauth_next";
 
 function fail(request: NextRequest, code: string) {
-  const response = NextResponse.redirect(new URL(`/login?error=${code}`, request.url));
+  const origin = publicOrigin(request.nextUrl, request.headers);
+  const response = NextResponse.redirect(new URL(`/login?error=${code}`, `${origin}/`));
   response.cookies.delete(STATE_COOKIE);
   response.cookies.delete(NEXT_COOKIE);
   return response;
@@ -26,7 +28,7 @@ export async function GET(request: NextRequest) {
   const next = safeNextPath(request.cookies.get(NEXT_COOKIE)?.value);
   if (!code || !state || !expected || state !== expected) return fail(request, "google_state");
 
-  const redirectUri = new URL("/api/auth/google/callback", request.nextUrl.origin).toString();
+  const redirectUri = `${publicOrigin(request.nextUrl, request.headers)}/api/auth/google/callback`;
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -59,13 +61,8 @@ export async function GET(request: NextRequest) {
     return fail(request, "google_user");
   }
 
-  const response = NextResponse.redirect(new URL(next, request.url));
-  response.cookies.set(USER_COOKIE, userId, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
-  });
+  const response = NextResponse.redirect(new URL(next, `${publicOrigin(request.nextUrl, request.headers)}/`));
+  response.cookies.set(USER_COOKIE, userId, cookieOptions(60 * 60 * 24 * 365));
   response.cookies.delete(STATE_COOKIE);
   response.cookies.delete(NEXT_COOKIE);
   return response;
