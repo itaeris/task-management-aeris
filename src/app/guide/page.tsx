@@ -1,20 +1,20 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { SettingsForm } from "@/components/settings-form";
 import { PresenceProvider } from "@/components/presence";
 import { BrandLockup } from "@/components/brand-mark";
+import { UsageGuide } from "@/components/usage-guide";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { btnGhost } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 export const metadata = {
-  title: "Settings — Task Management",
+  title: "How to use — Task Management",
 };
 
-export default async function SettingsPage() {
+export default async function GuidePage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login?next=/settings");
+  if (!user) redirect("/login?next=/guide");
 
   return (
     <PresenceProvider>
@@ -23,24 +23,15 @@ export default async function SettingsPage() {
           <div className="flex items-center gap-2">
             <BrandLockup markClassName="h-6 w-6" textClassName="text-xs" />
           </div>
-          <ThemeToggle />
-        </div>
-        <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="font-serif text-4xl">Settings</h1>
-            <p className="mt-1 text-sm text-muted">Change your display name and reset your password.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/guide" className={cn(btnGhost, "self-start")}>
-              How to use
-            </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Link href="/" className={cn(btnGhost, "self-start")}>
               Back
             </Link>
           </div>
         </div>
-        <div className="mt-6">
-          <SettingsForm user={user} />
+        <div className="mt-4">
+          <UsageGuide />
         </div>
       </main>
     </PresenceProvider>

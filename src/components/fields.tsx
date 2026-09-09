@@ -95,7 +95,7 @@ function MenuPortal({
     <div
       ref={panelRef}
       className={cn(
-        "fixed z-[80] overflow-auto rounded-2xl border border-line bg-white p-1 shadow-[0_18px_40px_rgba(37,99,235,0.14)]",
+        "fixed z-[80] overflow-auto rounded-2xl border border-line bg-paper p-1 shadow-[0_18px_40px_rgba(37,99,235,0.14)]",
         className,
       )}
       style={{
@@ -118,7 +118,7 @@ export function Select({
   defaultValue = "",
   onChange,
   options,
-  placeholder = "Pilih",
+  placeholder = "Select",
   className,
   required,
 }: {
@@ -194,7 +194,7 @@ export function Select({
   );
 }
 
-const WEEKDAYS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 function parseKey(value: string) {
   const [year, month, day] = value.split("-").map(Number);
@@ -219,7 +219,7 @@ export function DatePicker({
   value,
   defaultValue = "",
   onChange,
-  placeholder = "Pilih tanggal",
+  placeholder = "Pick a date",
   className,
   required,
 }: {
@@ -291,7 +291,7 @@ export function DatePicker({
             type="button"
             className={iconBtn}
             onClick={() => setCursor((current) => addMonths(current, -1))}
-            aria-label="Bulan sebelumnya"
+            aria-label="Previous month"
           >
             ‹
           </button>
@@ -300,7 +300,7 @@ export function DatePicker({
             type="button"
             className={iconBtn}
             onClick={() => setCursor((current) => addMonths(current, 1))}
-            aria-label="Bulan berikutnya"
+            aria-label="Next month"
           >
             ›
           </button>
@@ -342,7 +342,7 @@ export function DatePicker({
             onClick={clear}
             className="mt-3 w-full rounded-xl px-2 py-1.5 text-xs font-semibold text-muted hover:bg-paper hover:text-ink"
           >
-            Hapus tanggal
+            Clear date
           </button>
         ) : null}
       </MenuPortal>

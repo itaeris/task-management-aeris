@@ -31,9 +31,9 @@ function OfflineBanner() {
         >
           <p
             role="status"
-            className="pointer-events-auto rounded-full bg-ink px-4 py-2 text-center text-sm font-medium text-white shadow-lg"
+            className="pointer-events-auto rounded-full bg-zinc-900 px-4 py-2 text-center text-sm font-medium text-white shadow-lg dark:bg-zinc-100 dark:text-zinc-900"
           >
-            Kamu sedang offline. Beberapa aksi mungkin tertunda.
+            You are offline. Some actions may be delayed.
           </p>
         </motion.div>
       ) : null}

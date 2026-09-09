@@ -6,7 +6,7 @@ import { Pencil } from "lucide-react";
 import { updateProjectIcon } from "@/lib/actions/projects";
 import { DEFAULT_PROJECT_ICON, FEATURED_PROJECT_ICONS, parseProjectMark } from "@/lib/project-icon";
 import { ProjectIcon } from "@/components/project-icon";
-import { field } from "@/components/ui";
+import { field, Skeleton } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 type IconHit = { id: string; name: string; family: string };
@@ -69,14 +69,20 @@ function IconSearch({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           className={field}
-          placeholder="Cari icon…"
-          aria-label="Cari icon Flaticon"
+          placeholder="Search icons…"
+          aria-label="Search Flaticon icons"
         />
       </div>
-      <div className={cn("mt-2 overflow-y-auto rounded-2xl border border-line bg-white p-2", compact ? "max-h-28" : "max-h-52")}>
-        {icons.length === 0 ? (
+      <div className={cn("mt-2 overflow-y-auto rounded-2xl border border-line bg-paper p-2", compact ? "max-h-28" : "max-h-52")}>
+        {loading ? (
+          <div className={cn("grid gap-1", compact ? "grid-cols-8" : "grid-cols-8 sm:grid-cols-10")}>
+            {Array.from({ length: compact ? 16 : 20 }).map((_, index) => (
+              <Skeleton key={index} className={cn(compact ? "h-8" : "h-10", "w-full rounded-xl")} />
+            ))}
+          </div>
+        ) : icons.length === 0 ? (
           <p className="px-2 py-4 text-center text-sm text-muted">
-            {loading ? "Mencari…" : "Tidak ketemu. Coba kata lain."}
+            No matches. Try another word.
           </p>
         ) : (
           <div className={cn("grid gap-1", compact ? "grid-cols-8" : "grid-cols-8 sm:grid-cols-10")}>
@@ -124,18 +130,18 @@ export function IconPicker({
         <button
           type="button"
           onClick={() => setOpen((current) => !current)}
-          className="flex w-full items-center gap-2 rounded-xl border border-line bg-white px-2 py-1.5 text-left"
+          className="flex w-full items-center gap-2 rounded-xl border border-line bg-paper px-2 py-1.5 text-left"
         >
           <ProjectIcon value={selected} size="sm" />
           <span className="min-w-0 flex-1 truncate text-sm">
-            {open ? "Tutup icon" : "Pilih icon"}
+            {open ? "Close icons" : "Choose icon"}
             <span className="ml-1 text-muted">· {selectedName}</span>
           </span>
         </button>
       ) : (
         <>
           <div className="flex items-end justify-between gap-2">
-            <p className="text-sm font-semibold">Icon project</p>
+            <p className="text-sm font-semibold">Project icon</p>
             <a
               href="https://www.flaticon.com/uicons"
               target="_blank"
@@ -145,7 +151,7 @@ export function IconPicker({
               UIcons by Flaticon
             </a>
           </div>
-          <p className="mt-0.5 text-xs text-muted">Cari dari ribuan icon Flaticon. Ketik nama seperti whatsapp, shop, atau dashboard.</p>
+          <p className="mt-0.5 text-xs text-muted">Search thousands of Flaticon icons. Try names like whatsapp, shop, or dashboard.</p>
         </>
       )}
       {open ? (
@@ -232,7 +238,7 @@ export function ProjectIconEditor({
         ref={triggerRef}
         type="button"
         disabled={pending}
-        title="Ganti icon"
+        title="Change icon"
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -245,23 +251,23 @@ export function ProjectIconEditor({
         )}
       >
         <ProjectIcon value={value} size={size} />
-        <span className="absolute -right-1 -bottom-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-line bg-white text-terracotta shadow-sm">
+        <span className="absolute -right-1 -bottom-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-line bg-paper text-terracotta shadow-sm">
           <Pencil size={10} />
         </span>
       </button>
       {legacyColor && size !== "sm" ? (
-        <span className="text-[10px] font-semibold text-terracotta">Ganti icon</span>
+        <span className="text-[10px] font-semibold text-terracotta">Change icon</span>
       ) : null}
       {open && pos && typeof document !== "undefined"
         ? createPortal(
             <div
               ref={panelRef}
-              className="fixed z-[80] rounded-2xl border border-line bg-white p-3 shadow-[0_18px_40px_rgba(37,99,235,0.14)]"
+              className="fixed z-[80] rounded-2xl border border-line bg-paper p-3 shadow-[0_18px_40px_rgba(37,99,235,0.14)]"
               style={{ top: pos.top, left: pos.left, width: pos.width }}
               onClick={(event) => event.stopPropagation()}
               onPointerDown={(event) => event.stopPropagation()}
             >
-              <p className="mb-2 text-sm font-semibold">Ganti icon project</p>
+              <p className="mb-2 text-sm font-semibold">Change project icon</p>
               <IconSearch
                 selected={selected}
                 onSelect={(id) => {

@@ -41,7 +41,7 @@ export function BacklogBoard({
         <div>
           <h1 className="font-serif text-3xl">Product log</h1>
           <p className="text-sm text-muted">
-            Backlog produk terurut prioritas. Tarik ke sprint dari detail task.
+            Backlog ordered by priority. Move items into a sprint from the task detail.
           </p>
         </div>
         <CreateTaskButton projectId={projectId} members={members} sprints={sprints} />
@@ -49,7 +49,7 @@ export function BacklogBoard({
       <div className="flex flex-wrap gap-2">
         <input
           className={cn(field, "max-w-xs")}
-          placeholder="Cari item..."
+          placeholder="Search items..."
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
@@ -58,7 +58,7 @@ export function BacklogBoard({
           value={priority}
           onChange={setPriority}
           options={[
-            { value: "all", label: "Semua prioritas" },
+            { value: "all", label: "All priorities" },
             { value: "urgent", label: "Urgent" },
             { value: "high", label: "High" },
             { value: "medium", label: "Medium" },
@@ -82,7 +82,7 @@ export function BacklogBoard({
             {rows.map((task) => (
               <tr
                 key={task.id}
-                className="cursor-pointer border-t border-line hover:bg-white/70"
+                className="cursor-pointer border-t border-line hover:bg-paper/70"
                 onClick={() => setOpenId(task.id)}
               >
                 <td className="px-4 py-3">

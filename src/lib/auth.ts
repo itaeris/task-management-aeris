@@ -17,7 +17,7 @@ export async function getCurrentUser() {
 
 export async function requireUser() {
   const user = await getCurrentUser();
-  if (!user) throw new Error("Kamu belum masuk. Silakan login dulu.");
+  if (!user) throw new Error("You are not signed in. Please log in first.");
   return user;
 }
 
@@ -31,7 +31,7 @@ export async function requireProjectMember(projectId: string) {
       .eq("user_id", user.id)
       .maybeSingle(),
   ) as { id: string; role: string } | null;
-  if (!membership) throw new Error("Kamu bukan anggota project ini.");
+  if (!membership) throw new Error("You are not a member of this project.");
 
   const project = unwrap(
     await supabase.from("projects").select("*").eq("id", projectId).single(),

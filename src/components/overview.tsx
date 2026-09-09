@@ -42,10 +42,10 @@ export function Overview({
           <Stat label="Done" value={String(done)} />
         </StaggerItem>
         <StaggerItem>
-          <Stat label="Daily check hari ini" value={`${todayCheckins}/${memberCount}`} />
+          <Stat label="Daily check today" value={`${todayCheckins}/${memberCount}`} />
         </StaggerItem>
         <StaggerItem>
-          <Stat label="Sprint aktif" value={active ? active.name.replace(/Sprint \d+ — /, "") : "Tidak ada"} />
+          <Stat label="Active sprint" value={active ? active.name.replace(/Sprint \d+ — /, "") : "None"} />
         </StaggerItem>
       </Stagger>
       {active ? (
@@ -71,7 +71,7 @@ export function Overview({
       ) : null}
       <FadeIn delay={0.16} className="grid gap-4 lg:grid-cols-2">
         <section className={cn(surface, "rounded-3xl p-5")}>
-          <h2 className="font-serif text-2xl">Deadline dekat</h2>
+          <h2 className="font-serif text-2xl">Upcoming deadlines</h2>
           <ul className="mt-3 divide-y divide-line">
             {upcoming.map((task) => (
               <li key={task.id} className="flex items-center justify-between gap-2 py-3">
@@ -85,7 +85,7 @@ export function Overview({
           </ul>
         </section>
         <section className={cn(surface, "rounded-3xl p-5")}>
-          <h2 className="font-serif text-2xl">Aktivitas</h2>
+          <h2 className="font-serif text-2xl">Activity</h2>
           <ul className="mt-3 space-y-3">
             {activities.map((item) => (
               <li key={item.id} className="flex gap-3">

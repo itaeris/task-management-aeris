@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 function required(name: string) {
   const value = process.env[name];
-  if (!value) throw new Error(`${name} belum di-set di .env`);
+  if (!value) throw new Error(`${name} is not set in .env`);
   return value;
 }
 

@@ -63,7 +63,7 @@ export function formatBytes(bytes: number) {
 
 export function formatDay(value: Date | string) {
   const date = typeof value === "string" ? new Date(value) : value;
-  return date.toLocaleDateString("id-ID", {
+  return date.toLocaleDateString("en-US", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -71,7 +71,7 @@ export function formatDay(value: Date | string) {
 }
 
 export function formatMonthYear(date: Date) {
-  return date.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
 export function startOfMonth(date: Date) {

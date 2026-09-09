@@ -29,7 +29,7 @@ export function ScrumView({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl">Scrum log</h1>
-          <p className="text-sm text-muted">Sprint planning, goal, dan item yang masuk ke iterasi.</p>
+          <p className="text-sm text-muted">Sprint planning, goals, and items in this iteration.</p>
         </div>
         <CreateTaskButton
           projectId={projectId}
@@ -43,11 +43,11 @@ export function ScrumView({
         className={cn(surface, "grid gap-3 rounded-3xl p-5 md:grid-cols-4")}
         action={(formData) => createSprint(projectId, formData)}
       >
-        <input name="name" className={cn(field, "md:col-span-2")} placeholder="Nama sprint" required />
-        <DatePicker name="startDate" placeholder="Tanggal mulai" required />
-        <DatePicker name="endDate" placeholder="Tanggal selesai" required />
+        <input name="name" className={cn(field, "md:col-span-2")} placeholder="Sprint name" required />
+        <DatePicker name="startDate" placeholder="Start date" required />
+        <DatePicker name="endDate" placeholder="End date" required />
         <input name="goal" className={cn(field, "md:col-span-3")} placeholder="Sprint goal" />
-        <button className={btnPrimary}>Buat sprint</button>
+        <button className={btnPrimary}>Create sprint</button>
       </form>
 
       <div className="grid gap-4">
@@ -62,7 +62,7 @@ export function ScrumView({
                     <h2 className="font-serif text-2xl">{sprint.name}</h2>
                     <span className={cn(chip, "bg-paper-2 text-ink")}>{sprint.status}</span>
                   </div>
-                  <p className="mt-1 max-w-2xl text-sm text-muted">{sprint.goal || "Belum ada goal."}</p>
+                  <p className="mt-1 max-w-2xl text-sm text-muted">{sprint.goal || "No goal yet."}</p>
                   <p className="mt-2 text-xs text-muted">
                     {formatDay(sprint.startDate)} — {formatDay(sprint.endDate)} · {sprint.doneCount}/{sprint.taskCount} done
                   </p>
@@ -70,12 +70,12 @@ export function ScrumView({
                 <div className="flex gap-2">
                   {sprint.status !== "active" ? (
                     <form action={updateSprintStatus.bind(null, projectId, sprint.id, "active")}>
-                      <button className={btnPrimary}>Aktifkan</button>
+                      <button className={btnPrimary}>Activate</button>
                     </form>
                   ) : null}
                   {sprint.status !== "completed" ? (
                     <form action={updateSprintStatus.bind(null, projectId, sprint.id, "completed")}>
-                      <button className={btnGhost}>Selesai</button>
+                      <button className={btnGhost}>Complete</button>
                     </form>
                   ) : null}
                 </div>
@@ -85,7 +85,7 @@ export function ScrumView({
               </div>
               <ul className="mt-4 divide-y divide-line">
                 {items.length === 0 ? (
-                  <li className="py-4 text-sm text-muted">Belum ada item di sprint ini.</li>
+                  <li className="py-4 text-sm text-muted">No items in this sprint yet.</li>
                 ) : (
                   items.map((task) => (
                     <li key={task.id}>

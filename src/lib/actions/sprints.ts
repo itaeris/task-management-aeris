@@ -16,7 +16,7 @@ export async function createSprint(projectId: string, formData: FormData) {
   const startDate = parseDateInput(formData.get("startDate"));
   const endDate = parseDateInput(formData.get("endDate"));
   if (!name || !startDate || !endDate) {
-    throw new Error("Nama sprint, tanggal mulai, dan tanggal selesai wajib.");
+    throw new Error("Sprint name, start date, and end date are required.");
   }
 
   unwrap(
@@ -33,7 +33,7 @@ export async function createSprint(projectId: string, formData: FormData) {
     await supabase.from("activities").insert({
       project_id: projectId,
       user_id: user.id,
-      message: `membuat sprint ${name}`,
+      message: `created sprint ${name}`,
     }),
   );
   refresh(projectId);
@@ -53,7 +53,7 @@ export async function updateSprintStatus(projectId: string, sprintId: string, st
     await supabase.from("activities").insert({
       project_id: projectId,
       user_id: user.id,
-      message: `mengubah ${sprint.name} menjadi ${status}`,
+      message: `changed ${sprint.name} to ${status}`,
     }),
   );
   refresh(projectId);

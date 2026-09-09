@@ -41,44 +41,44 @@ export function DailyView({
     <div className="space-y-6">
       <div>
         <h1 className="font-serif text-3xl">Daily check</h1>
-        <p className="text-sm text-muted">Standup harian: kemarin, hari ini, dan blocker.</p>
+        <p className="text-sm text-muted">Daily standup: yesterday, today, and blockers.</p>
       </div>
 
       <section className={cn(surface, "rounded-3xl p-5")}>
-        <h2 className="font-serif text-xl">Check-in kamu · {today}</h2>
+        <h2 className="font-serif text-xl">Your check-in · {today}</h2>
         <form className="mt-4 grid gap-3" action={(formData) => saveDailyLog(projectId, formData)}>
           <input type="hidden" name="date" value={today} />
           <textarea
             name="yesterday"
             className={field}
             rows={3}
-            placeholder="Kemarin saya..."
+            placeholder="Yesterday I..."
             defaultValue={mine?.yesterday}
           />
           <textarea
             name="today"
             className={field}
             rows={3}
-            placeholder="Hari ini saya..."
+            placeholder="Today I..."
             defaultValue={mine?.today}
           />
           <textarea
             name="blockers"
             className={field}
             rows={2}
-            placeholder="Blocker (opsional)"
+            placeholder="Blockers (optional)"
             defaultValue={mine?.blockers}
           />
-          <button className={cn(btnPrimary, "self-start")}>Simpan daily</button>
+          <button className={cn(btnPrimary, "self-start")}>Save daily</button>
         </form>
       </section>
 
       {missing.length > 0 ? (
         <p className="text-sm text-muted">
-          Belum check-in hari ini: {missing.map((member) => member.name).join(", ")}
+          Not checked in today: {missing.map((member) => member.name).join(", ")}
         </p>
       ) : (
-        <p className="text-sm text-forest">Semua anggota sudah daily check hari ini.</p>
+        <p className="text-sm text-forest">Everyone has checked in today.</p>
       )}
 
       {dates.map((date) => (
@@ -94,9 +94,9 @@ export function DailyView({
                     <p className="text-xs text-muted">{log.user.role === "owner" ? "Owner" : "Member"}</p>
                   </div>
                 </div>
-                <Field label="Kemarin" value={log.yesterday} />
-                <Field label="Hari ini" value={log.today} />
-                <Field label="Blocker" value={log.blockers || "Tidak ada"} />
+                <Field label="Yesterday" value={log.yesterday} />
+                <Field label="Today" value={log.today} />
+                <Field label="Blocker" value={log.blockers || "None"} />
               </article>
             ))}
           </div>

@@ -41,7 +41,7 @@ export function TimelineView({
     <div className="space-y-5">
       <div>
         <h1 className="font-serif text-3xl">Timeline</h1>
-        <p className="text-sm text-muted">Gantt sederhana dari start date ke due date.</p>
+        <p className="text-sm text-muted">Simple Gantt from start date to due date.</p>
       </div>
       <div className={cn(surface, "overflow-x-auto rounded-3xl")}>
         <div className="min-w-full" style={{ width: width + 240 }}>
@@ -66,30 +66,32 @@ export function TimelineView({
             </div>
           </div>
           {ranged.length === 0 ? (
-            <p className="px-5 py-10 text-sm text-muted">Belum ada task dengan tanggal mulai/selesai.</p>
+            <p className="px-5 py-10 text-sm text-muted">No tasks with a start or due date yet.</p>
           ) : (
             ranged.map((task) => {
               const from = startOfDay(new Date(task.startDate ?? task.dueDate ?? start));
               const to = startOfDay(new Date(task.dueDate ?? task.startDate ?? start));
               const offset = Math.max(0, Math.round((from.getTime() - start.getTime()) / 86400000));
               const span = Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000) + 1);
+              const barWidth = span * dayWidth;
               return (
                 <div key={task.id} className="flex items-center border-t border-line">
                   <button
-                    className="w-60 shrink-0 truncate px-4 py-3 text-left text-sm font-medium hover:text-terracotta"
+                    className="w-60 shrink-0 truncate px-4 py-3.5 text-left text-sm font-medium hover:text-terracotta"
                     onClick={() => setOpenId(task.id)}
                   >
                     {task.title}
                   </button>
-                  <div className="relative h-12" style={{ width }}>
+                  <div className="relative h-14" style={{ width }}>
                     <button
                       onClick={() => setOpenId(task.id)}
-                      className="absolute top-3 h-6 rounded-full bg-terracotta/90 text-left text-[10px] font-semibold text-white"
-                      style={{ left: offset * dayWidth, width: span * dayWidth }}
+                      title={task.title}
+                      className="absolute top-1/2 h-8 -translate-y-1/2 overflow-hidden rounded-full bg-terracotta/90 text-left text-[11px] leading-none font-semibold text-white"
+                      style={{ left: offset * dayWidth, width: barWidth }}
                     >
-                      <span className="flex h-full items-center gap-1 overflow-hidden px-2">
-                        {task.assignee ? <Avatar {...task.assignee} size="sm" /> : null}
-                        <span className="truncate">{task.title}</span>
+                      <span className="flex h-full min-w-0 items-center gap-1.5 overflow-hidden px-2">
+                        {barWidth >= 64 && task.assignee ? <Avatar {...task.assignee} size="xs" /> : null}
+                        <span className="min-w-0 truncate whitespace-nowrap">{task.title}</span>
                       </span>
                     </button>
                   </div>

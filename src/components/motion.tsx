@@ -32,7 +32,7 @@ export function FadeIn({
       className={className}
       initial={reduce ? false : { opacity: 0, y }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay, ease: easeOutSoft }}
+      transition={{ duration: 0.22, delay, ease: easeOutSoft }}
       {...props}
     >
       {children}

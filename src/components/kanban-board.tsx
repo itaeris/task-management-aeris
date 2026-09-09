@@ -64,7 +64,7 @@ function Column({
     >
       <header className="mb-3 flex shrink-0 items-center justify-between px-1">
         <h3 className="text-sm font-semibold">{title}</h3>
-        <span className={cn(chip, "bg-white text-muted")}>{tasks.length}</span>
+        <span className={cn(chip, "bg-paper text-muted")}>{tasks.length}</span>
       </header>
       <div ref={setNodeRef} className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
         <SortableContext items={tasks.map((task) => task.id)} strategy={verticalListSortingStrategy}>
@@ -152,7 +152,7 @@ export function KanbanBoard({
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-3xl">Kanban check</h1>
-          <p className="text-sm text-muted">Geser kartu antar kolom. Klik untuk lampiran, komentar, dan tanggal.</p>
+          <p className="text-sm text-muted">Drag cards between columns. Click for attachments, comments, and dates.</p>
         </div>
         <div className="flex items-center gap-2">
           <Select
@@ -160,7 +160,7 @@ export function KanbanBoard({
             value={sprintFilter}
             onChange={setSprintFilter}
             options={[
-              { value: "all", label: "Semua sprint" },
+              { value: "all", label: "All sprints" },
               ...sprints.map((sprint) => ({ value: sprint.id, label: sprint.name })),
             ]}
           />

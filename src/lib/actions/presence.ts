@@ -19,8 +19,9 @@ export type PresencePerson = {
 };
 
 function pageLabel(path: string) {
-  if (path === "/" || path === "") return "Beranda";
+  if (path === "/" || path === "") return "Home";
   if (path.startsWith("/settings")) return "Settings";
+  if (path.startsWith("/guide")) return "How to use";
   if (path.startsWith("/join/")) return "Join project";
   const rest = path.replace(/^\/projects\/[^/]+/, "") || "/";
   const labels: Record<string, string> = {
@@ -32,6 +33,7 @@ function pageLabel(path: string) {
     "/calendar": "Calendar",
     "/timeline": "Timeline",
     "/share": "Share",
+    "/guide": "How to use",
   };
   return labels[rest] ?? "Workspace";
 }

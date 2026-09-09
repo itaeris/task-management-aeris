@@ -13,7 +13,8 @@ import {
   Sunrise,
 } from "lucide-react";
 import { login, type LoginState } from "@/lib/actions/identity";
-import { BrandMark } from "@/components/brand-mark";
+import { BrandLockup } from "@/components/brand-mark";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { motion, useReducedMotion } from "framer-motion";
 import { easeOutSoft, fadeUp, stagger } from "@/components/motion";
 
@@ -56,13 +57,13 @@ function GoogleMark() {
 }
 
 const GOOGLE_ERRORS: Record<string, string> = {
-  google_config: "Google login belum dikonfigurasi.",
-  google_denied: "Login Google dibatalkan.",
-  google_state: "Sesi Google kedaluwarsa. Coba lagi.",
-  google_token: "Gagal verifikasi ke Google.",
-  google_profile: "Gagal mengambil profil Google.",
-  google_email: "Akun Google tidak punya email.",
-  google_user: "Gagal membuat atau masuk ke akun.",
+  google_config: "Google login is not configured.",
+  google_denied: "Google login was cancelled.",
+  google_state: "Google session expired. Try again.",
+  google_token: "Could not verify with Google.",
+  google_profile: "Could not load your Google profile.",
+  google_email: "This Google account has no email.",
+  google_user: "Could not create or sign in to the account.",
 };
 
 export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?: string }) {
@@ -73,18 +74,15 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
   const reduce = useReducedMotion();
 
   return (
-    <main className="flex min-h-dvh flex-col bg-gradient-to-b from-white via-sky-50 to-sky-100 text-ink lg:grid lg:grid-cols-2">
-      <section className="relative flex min-h-[38vh] flex-col bg-[radial-gradient(circle_at_28%_42%,#bfdbfe,transparent_58%),linear-gradient(180deg,#f8fbff_0%,#dbeafe_48%,#93c5fd_100%)] px-6 pb-10 pt-6 sm:px-10 lg:min-h-dvh lg:px-12 lg:py-10">
+    <main className="flex min-h-dvh flex-col bg-gradient-to-b from-paper via-sand to-paper-2 text-ink lg:grid lg:grid-cols-2">
+      <section className="login-hero relative flex min-h-[38vh] flex-col px-6 pb-10 pt-6 sm:px-10 lg:min-h-dvh lg:px-12 lg:py-10">
         <motion.div
           className="flex items-center gap-3"
           initial={reduce ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: easeOutSoft }}
         >
-          <BrandMark className="h-9 w-9" />
-          <div>
-            <p className="text-[13px] font-semibold tracking-[0.18em] text-ink">TASK MANAGEMENT</p>
-          </div>
+          <BrandLockup markClassName="h-9 w-9" textClassName="text-[13px] tracking-[0.18em] text-ink" />
         </motion.div>
 
         <motion.div
@@ -93,7 +91,7 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
           animate="show"
           variants={stagger}
         >
-          <motion.p variants={fadeUp} className="text-[11px] font-semibold tracking-[0.28em] text-sky-700/80">
+          <motion.p variants={fadeUp} className="text-[11px] font-semibold tracking-[0.28em] text-terracotta">
             {greeting}
           </motion.p>
           <motion.h1
@@ -102,8 +100,8 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
           >
             Your product workspace.
           </motion.h1>
-          <motion.p variants={fadeUp} className="mt-4 max-w-md text-sm leading-relaxed text-slate-600 lg:text-[15px]">
-            Product log, scrum, daily check, dan kanban untuk tim dalam satu tempat.
+          <motion.p variants={fadeUp} className="mt-4 max-w-md text-sm leading-relaxed text-muted lg:text-[15px]">
+            Product log, scrum, daily check, and kanban for the team — in one place.
           </motion.p>
 
           <motion.div variants={fadeUp} className="mt-8 hidden flex-wrap gap-2 lg:flex">
@@ -112,7 +110,7 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
               return (
                 <span
                   key={item.label}
-                  className="inline-flex items-center gap-2 rounded-full border border-sky-300/80 bg-white/60 px-3.5 py-2 text-[12px] text-ink"
+                  className="inline-flex items-center gap-2 rounded-full border border-line bg-paper/60 px-3.5 py-2 text-[12px] text-ink"
                 >
                   <Icon size={14} />
                   {item.label}
@@ -128,7 +126,7 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
                 <span
                   key={item.label}
                   title={item.label}
-                  className="grid h-11 w-11 place-items-center rounded-full border border-sky-300/80 bg-white/50 text-ink"
+                  className="grid h-11 w-11 place-items-center rounded-full border border-line bg-paper/50 text-ink"
                 >
                   <Icon size={16} />
                 </span>
@@ -137,17 +135,20 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
           </motion.div>
         </motion.div>
 
-        <p className="mt-8 hidden text-xs text-slate-500 lg:block">Task Management</p>
+        <p className="mt-8 hidden text-xs text-muted lg:block">Task Management</p>
       </section>
 
-      <section className="relative -mt-6 flex-1 rounded-t-[2.4rem] bg-white px-6 pt-4 pb-8 sm:px-8 lg:mt-0 lg:flex lg:items-center lg:justify-center lg:rounded-none lg:bg-transparent lg:px-10 lg:py-12">
+      <section className="relative -mt-6 flex-1 rounded-t-[2.4rem] bg-paper px-6 pt-4 pb-8 sm:px-8 lg:mt-0 lg:flex lg:items-center lg:justify-center lg:rounded-none lg:bg-transparent lg:px-10 lg:py-12">
+        <div className="absolute top-4 right-4 z-10 lg:top-6 lg:right-6">
+          <ThemeToggle />
+        </div>
         <motion.div
-          className="relative lg:w-full lg:max-w-[440px] lg:rounded-[32px] lg:bg-white/90 lg:px-9 lg:py-10 lg:shadow-[0_24px_60px_rgba(37,99,235,0.12)] lg:backdrop-blur"
+          className="relative lg:w-full lg:max-w-[440px] lg:rounded-[32px] lg:bg-paper/90 lg:px-9 lg:py-10 lg:shadow-[0_24px_60px_rgba(37,99,235,0.12)] lg:backdrop-blur"
           initial={reduce ? false : { opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.12, ease: easeOutSoft }}
         >
-          <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-sky-200 lg:hidden" />
+          <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-paper-2 lg:hidden" />
 
           <h2 className="font-serif text-[2rem] leading-none text-ink">Welcome back</h2>
           <p className="mt-2 text-sm text-muted">Sign in to continue to Task Management</p>
@@ -165,7 +166,7 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
                   autoComplete="username"
                   required
                   placeholder="it@aerisbeaute.com"
-                  className="h-12 w-full rounded-xl border border-line bg-input pr-3 pl-10 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-terracotta/40 focus:ring-2 focus:ring-terracotta/15"
+                  className="h-12 w-full rounded-xl border border-line bg-input pr-3 pl-10 text-sm text-ink outline-none transition placeholder:text-muted focus:border-terracotta/40 focus:ring-2 focus:ring-terracotta/15"
                 />
               </span>
             </label>
@@ -185,7 +186,7 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
                   type="button"
                   onClick={() => setShowPassword((value) => !value)}
                   className="absolute top-1/2 right-3 -translate-y-1/2 text-sky-400 hover:text-ink"
-                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -193,7 +194,7 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
             </label>
 
             {state.error ? (
-              <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>
+              <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">{state.error}</p>
             ) : null}
             {notice ? <p className="text-sm text-muted">{notice}</p> : null}
 
@@ -205,7 +206,7 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
             </button>
           </form>
 
-          <div className="mt-6 flex items-center gap-3 text-[10px] font-semibold tracking-[0.18em] text-slate-400">
+          <div className="mt-6 flex items-center gap-3 text-[10px] font-semibold tracking-[0.18em] text-muted">
             <span className="h-px flex-1 bg-line" />
             OR CONTINUE WITH
             <span className="h-px flex-1 bg-line" />
@@ -213,7 +214,7 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
 
           <a
             href={`/api/auth/google?next=${encodeURIComponent(nextPath)}`}
-            className="mt-5 inline-flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-line bg-white text-sm font-medium text-ink transition hover:bg-sand"
+            className="mt-5 inline-flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-line bg-paper text-sm font-medium text-ink transition hover:bg-sand"
           >
             <GoogleMark />
             Sign in with Google
@@ -221,10 +222,10 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
 
           <button
             type="button"
-            onClick={() => setNotice("Hubungi admin IT untuk reset password.")}
+            onClick={() => setNotice("Contact the IT admin to reset your password.")}
             className="mt-5 block w-full text-center text-sm font-medium text-terracotta hover:underline"
           >
-            Lupa password?
+            Forgot password?
           </button>
         </motion.div>
       </section>

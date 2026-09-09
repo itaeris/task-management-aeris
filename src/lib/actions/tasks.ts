@@ -5,6 +5,7 @@ import { supabase, unwrap } from "@/lib/supabase";
 import { requireProjectMember, requireUser } from "@/lib/auth";
 import { parseDateInput } from "@/lib/utils";
 import { getTaskDetail } from "@/lib/queries";
+import { notifyGoogleCalendarTaskChanged, notifyGoogleCalendarTaskDeleted } from "@/lib/google-calendar";
 
 function refresh(projectId: string) {
   revalidatePath(`/projects/${projectId}`, "layout");
@@ -26,7 +27,7 @@ async function nextRank(projectId: string) {
 export async function createTask(projectId: string, formData: FormData) {
   const { user } = await requireProjectMember(projectId);
   const title = String(formData.get("title") ?? "").trim();
-  if (!title) throw new Error("Judul task wajib diisi.");
+  if (!title) throw new Error("Task title is required.");
   const pointsRaw = String(formData.get("points") ?? "").trim();
 
   const task = unwrap(
@@ -54,9 +55,10 @@ export async function createTask(projectId: string, formData: FormData) {
     await supabase.from("activities").insert({
       project_id: projectId,
       user_id: user.id,
-      message: `menambahkan "${task.title}"`,
+      message: `added "${task.title}"`,
     }),
   );
+  await notifyGoogleCalendarTaskChanged(task.id);
   refresh(projectId);
   return task.id;
 }
@@ -65,7 +67,7 @@ export async function updateTask(taskId: string, formData: FormData) {
   const existing = unwrap(
     await supabase.from("tasks").select("*").eq("id", taskId).maybeSingle(),
   ) as { project_id: string; title: string } | null;
-  if (!existing) throw new Error("Task tidak ditemukan.");
+  if (!existing) throw new Error("Task not found.");
   const { user } = await requireProjectMember(existing.project_id);
   const pointsRaw = String(formData.get("points") ?? "").trim();
 
@@ -91,9 +93,10 @@ export async function updateTask(taskId: string, formData: FormData) {
     await supabase.from("activities").insert({
       project_id: existing.project_id,
       user_id: user.id,
-      message: `memperbarui "${existing.title}"`,
+      message: `updated "${existing.title}"`,
     }),
   );
+  await notifyGoogleCalendarTaskChanged(taskId);
   refresh(existing.project_id);
 }
 
@@ -101,7 +104,7 @@ export async function moveTask(taskId: string, status: string, rank: number, spr
   const existing = unwrap(
     await supabase.from("tasks").select("project_id").eq("id", taskId).maybeSingle(),
   ) as { project_id: string } | null;
-  if (!existing) throw new Error("Task tidak ditemukan.");
+  if (!existing) throw new Error("Task not found.");
   await requireProjectMember(existing.project_id);
   unwrap(
     await supabase
@@ -114,6 +117,7 @@ export async function moveTask(taskId: string, status: string, rank: number, spr
       })
       .eq("id", taskId),
   );
+  await notifyGoogleCalendarTaskChanged(taskId);
   refresh(existing.project_id);
 }
 
@@ -131,14 +135,15 @@ export async function deleteTask(taskId: string) {
   const existing = unwrap(
     await supabase.from("tasks").select("project_id, title").eq("id", taskId).maybeSingle(),
   ) as { project_id: string; title: string } | null;
-  if (!existing) throw new Error("Task tidak ditemukan.");
+  if (!existing) throw new Error("Task not found.");
   const { user } = await requireProjectMember(existing.project_id);
+  await notifyGoogleCalendarTaskDeleted(taskId);
   unwrap(await supabase.from("tasks").delete().eq("id", taskId));
   unwrap(
     await supabase.from("activities").insert({
       project_id: existing.project_id,
       user_id: user.id,
-      message: `menghapus "${existing.title}"`,
+      message: `deleted "${existing.title}"`,
     }),
   );
   refresh(existing.project_id);
@@ -148,10 +153,10 @@ export async function addComment(taskId: string, formData: FormData) {
   const existing = unwrap(
     await supabase.from("tasks").select("project_id").eq("id", taskId).maybeSingle(),
   ) as { project_id: string } | null;
-  if (!existing) throw new Error("Task tidak ditemukan.");
+  if (!existing) throw new Error("Task not found.");
   const { user } = await requireProjectMember(existing.project_id);
   const body = String(formData.get("body") ?? "").trim();
-  if (!body) throw new Error("Komentar tidak boleh kosong.");
+  if (!body) throw new Error("Comment cannot be empty.");
   unwrap(await supabase.from("comments").insert({ task_id: taskId, user_id: user.id, body }));
   refresh(existing.project_id);
 }
@@ -159,6 +164,6 @@ export async function addComment(taskId: string, formData: FormData) {
 export async function loadTaskDetail(taskId: string) {
   const user = await requireUser();
   const task = await getTaskDetail(taskId, user.id);
-  if (!task) throw new Error("Task tidak ditemukan.");
+  if (!task) throw new Error("Task not found.");
   return task;
 }

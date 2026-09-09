@@ -65,6 +65,12 @@ export type Profile = {
   role?: string;
 };
 
+export type CalendarConnectionPublic = {
+  connected: boolean;
+  email: string | null;
+  lastSyncedAt: string | null;
+};
+
 export function memberFromUser(
   user: Pick<Profile, "id" | "name" | "email" | "initials" | "color">,
   role = "member",

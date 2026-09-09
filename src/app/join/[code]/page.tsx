@@ -17,8 +17,8 @@ export default async function JoinPage({
   if (!project) {
     return (
       <main className="relative mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6">
-        <h1 className="font-serif text-4xl">Kode share tidak valid</h1>
-        <p className="mt-2 text-muted">Minta tautan baru ke owner project.</p>
+        <h1 className="font-serif text-4xl">Invalid share code</h1>
+        <p className="mt-2 text-muted">Ask the project owner for a new link.</p>
       </main>
     );
   }
@@ -38,10 +38,10 @@ export default async function JoinPage({
         <h1 className="font-serif text-4xl">{project.name}</h1>
         <p className="mt-2 text-sm text-muted">{project.description}</p>
         <p className="mt-3 text-xs text-muted">
-          {project._count.members} anggota · {project._count.tasks} task
+          {project._count.members} {project._count.members === 1 ? "member" : "members"} · {project._count.tasks} {project._count.tasks === 1 ? "task" : "tasks"}
         </p>
         <form className="mt-6" action={joinProjectByCode.bind(null, project.shareCode)}>
-          <button className={btnPrimary}>Gabung project</button>
+          <button className={btnPrimary}>Join project</button>
         </form>
       </div>
     </main>

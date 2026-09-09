@@ -8,8 +8,8 @@ import type { Profile } from "@/lib/types";
 import { FadeIn } from "@/components/motion";
 
 function Message({ state }: { state: SettingsState }) {
-  if (state.error) return <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>;
-  if (state.success) return <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{state.success}</p>;
+  if (state.error) return <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">{state.error}</p>;
+  if (state.success) return <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">{state.success}</p>;
   return null;
 }
 
@@ -20,11 +20,11 @@ export function SettingsForm({ user }: { user: Profile }) {
   return (
     <FadeIn className="grid gap-5 lg:grid-cols-2 lg:items-start">
       <form action={profileAction} className={cn(surface, "flex h-full flex-col rounded-3xl p-6")}>
-        <h2 className="font-serif text-2xl">Profil</h2>
-        <p className="mt-1 text-sm text-muted">Nama ini yang dilihat user lain di workspace.</p>
+        <h2 className="font-serif text-2xl">Profile</h2>
+        <p className="mt-1 text-sm text-muted">This is the name other people see in the workspace.</p>
         <div className="mt-5 grid gap-3">
           <label className="grid gap-1.5">
-            <span className="text-sm font-semibold">Nama</span>
+            <span className="text-sm font-semibold">Name</span>
             <input name="name" className={field} defaultValue={user.name} required />
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -39,32 +39,32 @@ export function SettingsForm({ user }: { user: Profile }) {
           </div>
           <Message state={profileState} />
           <button className={cn(btnPrimary, "mt-auto self-start")} disabled={profilePending}>
-            {profilePending ? "Menyimpan..." : "Simpan nama"}
+            {profilePending ? "Saving..." : "Save name"}
           </button>
         </div>
       </form>
 
       <form action={passwordAction} className={cn(surface, "flex h-full flex-col rounded-3xl p-6")}>
         <h2 className="font-serif text-2xl">Reset password</h2>
-        <p className="mt-1 text-sm text-muted">Password saat ini, lalu password baru.</p>
+        <p className="mt-1 text-sm text-muted">Current password, then a new one.</p>
         <div className="mt-5 grid gap-3">
           <label className="grid gap-1.5">
-            <span className="text-sm font-semibold">Password saat ini</span>
+            <span className="text-sm font-semibold">Current password</span>
             <input name="currentPassword" type="password" className={field} required autoComplete="current-password" />
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1.5">
-              <span className="text-sm font-semibold">Password baru</span>
+              <span className="text-sm font-semibold">New password</span>
               <input name="newPassword" type="password" className={field} required minLength={8} autoComplete="new-password" />
             </label>
             <label className="grid gap-1.5">
-              <span className="text-sm font-semibold">Konfirmasi</span>
+              <span className="text-sm font-semibold">Confirm</span>
               <input name="confirmPassword" type="password" className={field} required minLength={8} autoComplete="new-password" />
             </label>
           </div>
           <Message state={passwordState} />
           <button className={cn(btnPrimary, "mt-auto self-start")} disabled={passwordPending}>
-            {passwordPending ? "Menyimpan..." : "Ganti password"}
+            {passwordPending ? "Saving..." : "Change password"}
           </button>
         </div>
       </form>

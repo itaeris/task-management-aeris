@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { listPresence, pingPresence, type PresencePerson } from "@/lib/actions/presence";
-import { Avatar, surface } from "@/components/ui";
+import { Avatar, Skeleton, surface } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 const PresenceTask = createContext<(id: string | null) => void>(() => {});
@@ -41,6 +41,7 @@ export function PresenceBoard({
   variant?: "card" | "sidebar" | "header";
 }) {
   const [people, setPeople] = useState<PresencePerson[]>([]);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,6 +51,8 @@ export function PresenceBoard({
         if (!cancelled) setPeople(rows);
       } catch {
         if (!cancelled) setPeople([]);
+      } finally {
+        if (!cancelled) setReady(true);
       }
     };
     void load();
@@ -66,19 +69,27 @@ export function PresenceBoard({
   if (variant === "header") {
     return (
       <div className="flex min-w-0 flex-1 items-center gap-3">
+        <span className="hidden shrink-0 select-none text-[13px] font-light text-muted/70 sm:inline" aria-hidden>
+          |
+        </span>
         <span className="hidden shrink-0 text-[11px] font-semibold tracking-wide text-muted uppercase sm:inline">
-          Sedang aktif
+          Active now
         </span>
         <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
         <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
-          {items.length === 0 ? (
-            <p className="truncate text-sm text-muted">Hanya kamu</p>
+          {!ready ? (
+            <>
+              <Skeleton className="h-8 w-28 !rounded-full" />
+              <Skeleton className="h-8 w-32 !rounded-full" />
+            </>
+          ) : items.length === 0 ? (
+            <p className="truncate text-sm text-muted">Just you</p>
           ) : (
             items.map((person) => (
               <Link
                 key={person.userId}
                 href={person.projectId ? `/projects/${person.projectId}` : person.path}
-                className="flex shrink-0 items-center gap-2 rounded-full border border-line bg-white px-2 py-1 pr-3"
+                className="flex shrink-0 items-center gap-2 rounded-full border border-line bg-paper px-2 py-1 pr-3"
                 title={
                   person.taskTitle
                     ? `${person.name} · ${person.taskTitle}`
@@ -104,16 +115,26 @@ export function PresenceBoard({
     <section className={cn(variant !== "sidebar" && surface, variant !== "sidebar" && "rounded-3xl p-5")}>
       <div className="flex items-center justify-between gap-2">
         <h2 className={variant === "sidebar" ? "text-[11px] font-semibold tracking-wide text-muted uppercase" : "font-serif text-2xl"}>
-          {variant === "sidebar" ? "Sedang aktif" : "Sedang dikerjakan"}
+          {variant === "sidebar" ? "Active now" : "Working now"}
         </h2>
         <span className="h-2 w-2 rounded-full bg-emerald-400" />
       </div>
       {variant === "card" ? (
-        <p className="mt-1 text-sm text-muted">Semua user bisa lihat siapa yang sedang buka project atau task.</p>
+        <p className="mt-1 text-sm text-muted">Everyone can see who has a project or task open.</p>
       ) : null}
       <ul className={cn("space-y-2", variant === "sidebar" ? "mt-3" : "mt-4")}>
-        {items.length === 0 ? (
-          <li className="text-sm text-muted">{variant === "sidebar" ? "Hanya kamu." : "Belum ada user lain yang aktif."}</li>
+        {!ready ? (
+          Array.from({ length: 3 }).map((_, index) => (
+            <li key={index} className="flex items-start gap-3">
+              <Skeleton className="h-8 w-8 !rounded-full" />
+              <div className="min-w-0 flex-1">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="mt-1.5 h-3 w-40" />
+              </div>
+            </li>
+          ))
+        ) : items.length === 0 ? (
+          <li className="text-sm text-muted">{variant === "sidebar" ? "Just you." : "No one else is active yet."}</li>
         ) : (
           items.map((person) => (
             <li key={person.userId} className="flex items-start gap-3">
@@ -121,7 +142,7 @@ export function PresenceBoard({
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">
                   {person.name}
-                  {person.isMe ? <span className="ml-1 text-xs font-medium text-muted">(kamu)</span> : null}
+                  {person.isMe ? <span className="ml-1 text-xs font-medium text-muted">(you)</span> : null}
                 </p>
                 <p className="truncate text-xs text-muted">
                   {person.taskTitle
@@ -135,7 +156,7 @@ export function PresenceBoard({
                     href={person.taskId ? person.path : `/projects/${person.projectId}`}
                     className="text-[11px] font-semibold text-terracotta hover:underline"
                   >
-                    Lihat
+                    View
                   </Link>
                 ) : null}
               </div>

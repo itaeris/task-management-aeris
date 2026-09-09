@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl() || "https://pipeline.aerisbeaute.com"),
   title: "Task Management",
   description:
-    "Product log, scrum log, daily check, kanban, calendar, dan kolaborasi tim.",
+    "Product log, scrum log, daily check, kanban, calendar, and team collaboration.",
   applicationName: "Task Management",
   appleWebApp: {
     capable: true,
@@ -37,10 +37,16 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="id"
+      lang="en"
+      suppressHydrationWarning
       className={`${poppins.variable} ${poppins.className} h-full antialiased`}
     >
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(()=>{try{const t=localStorage.getItem("nara_theme");const d=t==="dark"||((!t||t==="system")&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(t==="light")document.documentElement.classList.remove("dark");else if(d)document.documentElement.classList.add("dark");if(d&&t!=="light"){const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content","#0b1220")}}catch(e){}})();`,
+          }}
+        />
         <link
           rel="stylesheet"
           href="https://cdn-uicons.flaticon.com/2.6.0/uicons-solid-rounded/css/uicons-solid-rounded.css"

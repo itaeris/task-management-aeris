@@ -29,7 +29,7 @@ export function CreateTaskButton({
   return (
     <>
       <button className={btnPrimary} onClick={() => setOpen(true)}>
-        <Plus size={16} /> Task baru
+        <Plus size={16} /> New task
       </button>
       <AnimatePresence>
       {open ? (
@@ -51,11 +51,11 @@ export function CreateTaskButton({
               setOpen(false);
             }}
           >
-            <h2 className="font-serif text-2xl">Task baru</h2>
-            <p className="mb-4 text-sm text-muted">Masuk ke product log, bisa langsung di-assign ke sprint.</p>
+            <h2 className="font-serif text-2xl">New task</h2>
+            <p className="mb-4 text-sm text-muted">Added to the product log. You can assign it to a sprint right away.</p>
             <div className="grid gap-3">
-              <input name="title" className={field} placeholder="Judul" required />
-              <textarea name="description" className={field} rows={3} placeholder="Deskripsi" />
+              <input name="title" className={field} placeholder="Title" required />
+              <textarea name="description" className={field} rows={3} placeholder="Description" />
               <div className="grid grid-cols-2 gap-3">
                 <Select
                   name="type"
@@ -75,9 +75,9 @@ export function CreateTaskButton({
                 <Select
                   name="sprintId"
                   defaultValue={defaultSprintId ?? ""}
-                  placeholder="Tanpa sprint"
+                  placeholder="No sprint"
                   options={[
-                    { value: "", label: "Tanpa sprint" },
+                    { value: "", label: "No sprint" },
                     ...sprints.map((sprint) => ({ value: sprint.id, label: sprint.name })),
                   ]}
                 />
@@ -91,15 +91,15 @@ export function CreateTaskButton({
                   ]}
                 />
                 <input name="points" type="number" min={0} className={field} placeholder="Points" />
-                <DatePicker name="startDate" placeholder="Tanggal mulai" />
+                <DatePicker name="startDate" placeholder="Start date" />
                 <DatePicker name="dueDate" placeholder="Due date" />
               </div>
             </div>
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" className={btnGhost} onClick={() => setOpen(false)}>
-                Batal
+                Cancel
               </button>
-              <button className={btnPrimary}>Simpan</button>
+              <button className={btnPrimary}>Save</button>
             </div>
           </motion.form>
         </motion.div>

@@ -7,8 +7,9 @@ import { deleteAttachment, uploadAttachment } from "@/lib/actions/attachments";
 import { PRIORITIES, STATUSES, TASK_TYPES } from "@/lib/constants";
 import { cn, formatBytes, formatDay } from "@/lib/utils";
 import type { MemberDTO, SprintDTO, TaskDTO, TaskDetailDTO } from "@/lib/types";
-import { Avatar, PriorityBadge, TypeBadge, btnGhost, btnPrimary, field, iconBtn } from "@/components/ui";
+import { Avatar, PriorityBadge, TypeBadge, btnGhost, btnPrimary, field, iconBtn, Skeleton } from "@/components/ui";
 import { DatePicker, Select } from "@/components/fields";
+import { TaskDrawerSkeleton } from "@/components/skeletons";
 import { useSetActiveTask } from "@/components/presence";
 import { AnimatePresence, motion } from "framer-motion";
 import { easeOutSoft } from "@/components/motion";
@@ -45,6 +46,7 @@ export function TaskDrawer({
       setDetail(null);
       return;
     }
+    setDetail(null);
     let cancelled = false;
     loadTaskDetail(taskId).then((data) => {
       if (!cancelled) setDetail(data);
@@ -72,29 +74,30 @@ export function TaskDrawer({
         exit={{ opacity: 0 }}
         transition={{ duration: 0.18 }}
       >
-        <button className="h-full flex-1 bg-black/30" onClick={onClose} aria-label="Tutup" />
+        <button className="h-full flex-1 bg-black/30" onClick={onClose} aria-label="Close" />
         <motion.aside
-          className="flex h-full w-full max-w-xl flex-col overflow-y-auto bg-white shadow-2xl"
+          className="flex h-full w-full max-w-xl flex-col overflow-y-auto bg-paper shadow-2xl"
           initial={{ x: 32 }}
           animate={{ x: 0 }}
           exit={{ x: 32 }}
           transition={{ duration: 0.28, ease: easeOutSoft }}
         >
+        {detail ? (
+        <>
         <div className="flex items-start justify-between border-b border-line px-6 py-5">
           <div>
             <p className="text-xs font-semibold tracking-[0.18em] text-muted uppercase">
               Task detail
             </p>
             <h2 className="font-serif mt-1 text-2xl leading-tight">
-              {detail?.title ?? "Memuat..."}
+              {detail.title}
             </h2>
           </div>
-          <button type="button" className={iconBtn} onClick={onClose} aria-label="Tutup">
+          <button type="button" className={iconBtn} onClick={onClose} aria-label="Close">
             ×
           </button>
         </div>
 
-        {detail ? (
           <form
             key={[
               detail.id,
@@ -117,10 +120,10 @@ export function TaskDrawer({
               });
             }}
           >
-            <label className="text-xs font-semibold text-muted">Judul</label>
+            <label className="text-xs font-semibold text-muted">Title</label>
             <input name="title" className={field} defaultValue={detail.title} />
 
-            <label className="text-xs font-semibold text-muted">Deskripsi</label>
+            <label className="text-xs font-semibold text-muted">Description</label>
             <textarea
               name="description"
               rows={4}
@@ -147,9 +150,9 @@ export function TaskDrawer({
               <Select
                 name="sprintId"
                 defaultValue={detail.sprintId ?? ""}
-                placeholder="Tanpa sprint"
+                placeholder="No sprint"
                 options={[
-                  { value: "", label: "Tanpa sprint" },
+                  { value: "", label: "No sprint" },
                   ...sprints.map((sprint) => ({ value: sprint.id, label: sprint.name })),
                 ]}
               />
@@ -173,7 +176,7 @@ export function TaskDrawer({
               <DatePicker
                 name="startDate"
                 defaultValue={dateInput(detail.startDate)}
-                placeholder="Tanggal mulai"
+                placeholder="Start date"
               />
               <DatePicker
                 name="dueDate"
@@ -183,17 +186,15 @@ export function TaskDrawer({
             </div>
 
             <button className={cn(btnPrimary, "self-start")} disabled={pending}>
-              {pending ? "Menyimpan..." : "Simpan perubahan"}
+              {pending ? "Saving..." : "Save changes"}
             </button>
           </form>
-        ) : null}
 
-        {detail ? (
           <div className="border-t border-line px-6 py-5">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold">Attachment</h3>
               <button className={btnGhost} onClick={() => fileRef.current?.click()}>
-                <Paperclip size={14} /> Unggah
+                <Paperclip size={14} /> Upload
               </button>
               <input
                 ref={fileRef}
@@ -214,16 +215,16 @@ export function TaskDrawer({
             </div>
             <ul className="space-y-2">
               {detail.attachments.length === 0 ? (
-                <li className="text-sm text-muted">Belum ada file.</li>
+                <li className="text-sm text-muted">No files yet.</li>
               ) : (
                 detail.attachments.map((file) => (
-                  <li key={file.id} className="flex items-center justify-between rounded-2xl border border-line bg-white px-3 py-2">
+                  <li key={file.id} className="flex items-center justify-between rounded-2xl border border-line bg-paper px-3 py-2">
                     <a href={`/api/files/${file.id}`} target="_blank" className="min-w-0 truncate text-sm font-medium hover:underline">
                       {file.filename}
                     </a>
                     <span className="ml-3 shrink-0 text-xs text-muted">{formatBytes(file.size)}</span>
                     <button
-                      className="ml-2 text-muted hover:text-red-700"
+                      className="ml-2 text-muted hover:text-red-700 dark:hover:text-red-400"
                       onClick={() =>
                         startTransition(async () => {
                           await deleteAttachment(file.id);
@@ -238,16 +239,14 @@ export function TaskDrawer({
               )}
             </ul>
           </div>
-        ) : null}
 
-        {detail ? (
           <div className="border-t border-line px-6 py-5">
-            <h3 className="mb-3 text-sm font-semibold">Kolaborasi — komentar</h3>
+            <h3 className="mb-3 text-sm font-semibold">Collaboration — comments</h3>
             <ul className="space-y-3">
               {detail.comments.map((comment) => (
                 <li key={comment.id} className="flex gap-3">
                   <Avatar {...comment.user} size="sm" />
-                  <div className="flex-1 rounded-2xl bg-white px-3 py-2">
+                  <div className="flex-1 rounded-2xl bg-paper px-3 py-2">
                     <p className="text-xs text-muted">
                       {comment.user.name} · {formatDay(comment.createdAt)}
                     </p>
@@ -265,16 +264,14 @@ export function TaskDrawer({
                 });
               }}
             >
-              <input name="body" className={field} placeholder="Tulis komentar..." />
-              <button className={btnPrimary}>Kirim</button>
+              <input name="body" className={field} placeholder="Write a comment..." />
+              <button className={btnPrimary}>Send</button>
             </form>
           </div>
-        ) : null}
 
-        {detail ? (
           <div className="mt-auto border-t border-line px-6 py-4">
             <button
-              className={cn(btnGhost, "text-red-700")}
+              className={cn(btnGhost, "text-red-700 dark:text-red-400")}
               onClick={() =>
                 startTransition(async () => {
                   await deleteTask(detail.id);
@@ -283,10 +280,26 @@ export function TaskDrawer({
                 })
               }
             >
-              <Trash2 size={14} /> Hapus task
+              <Trash2 size={14} /> Delete task
             </button>
           </div>
-        ) : null}
+        </>
+        ) : (
+          <>
+            <div className="flex items-start justify-between border-b border-line px-6 py-5">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold tracking-[0.18em] text-muted uppercase">
+                  Task detail
+                </p>
+                <Skeleton className="mt-2 h-8 w-3/4" />
+              </div>
+              <button type="button" className={iconBtn} onClick={onClose} aria-label="Close">
+                ×
+              </button>
+            </div>
+            <TaskDrawerSkeleton />
+          </>
+        )}
         </motion.aside>
       </motion.div>
       ) : null}
@@ -309,7 +322,7 @@ export function TaskChip({
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") onOpen(task.id);
       }}
-      className="w-full cursor-pointer rounded-2xl border border-line bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      className="w-full cursor-pointer rounded-2xl border border-line bg-paper p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
     >
       <div className="flex items-center justify-between gap-2">
         <TypeBadge type={task.type} />

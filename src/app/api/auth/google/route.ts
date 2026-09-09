@@ -33,5 +33,6 @@ export async function GET(request: NextRequest) {
   const cookie = cookieOptions(60 * 10);
   response.cookies.set(STATE_COOKIE, state, cookie);
   response.cookies.set(NEXT_COOKIE, next, cookie);
+  response.cookies.set("google_oauth_intent", "login", cookie);
   return response;
 }

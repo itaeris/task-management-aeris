@@ -1,17 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Search, Settings } from "lucide-react";
-import { logout } from "@/lib/actions/identity";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { createProject, joinProject } from "@/lib/actions/projects";
-import { Avatar, AvatarStack, btnGhost, btnPrimary, field, iconBtn, surface } from "@/components/ui";
+import { AvatarStack, btnGhost, btnPrimary, field, iconBtn, surface } from "@/components/ui";
 import { IconPicker, ProjectIconEditor } from "@/components/icon-picker";
 import { PresenceBoard, PresenceProvider } from "@/components/presence";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { easeOutSoft, FadeIn } from "@/components/motion";
-import { BrandMark } from "@/components/brand-mark";
+import { BrandLockup } from "@/components/brand-mark";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { UserMenu } from "@/components/user-menu";
 
 type ProjectCard = {
   id: string;
@@ -46,7 +47,7 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
   const width = `${Math.max(value, value > 0 ? 4 : 0)}%`;
   return (
     <div className="flex items-center gap-2 sm:gap-3">
-      <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-sky-100">
+      <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-paper-2">
         <motion.div
           className="h-full rounded-full bg-terracotta"
           initial={{ width: 0 }}
@@ -97,7 +98,7 @@ export function HomeProjects({
         project.name,
         project.description,
         project.ownerName ?? "",
-        project.role === "owner" ? "punya kamu" : "diikuti",
+        project.role === "owner" ? "yours" : "joined",
       ]
         .join(" ")
         .toLowerCase();
@@ -113,50 +114,38 @@ export function HomeProjects({
     <PresenceProvider>
       <main className="relative mx-auto flex min-h-dvh w-full max-w-[1600px] flex-col gap-3 p-3 sm:p-4 lg:h-dvh lg:overflow-hidden">
         <FadeIn className="shrink-0">
-        <header className="flex shrink-0 items-center gap-2 rounded-3xl border border-line bg-white/80 px-3 py-2.5 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4">
+        <header className="flex shrink-0 items-center gap-2 rounded-3xl border border-line bg-paper/80 px-3 py-2.5 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
-            <BrandMark className="h-5 w-5 shrink-0" />
-            <p className="text-[10px] font-semibold tracking-[0.22em] text-terracotta uppercase sm:text-[11px]">Task Management</p>
+            <BrandLockup />
           </div>
           <div className="hidden min-w-0 flex-1 md:flex">
             <PresenceBoard variant="header" />
           </div>
           <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2">
-            <h1 className="font-serif max-w-[8rem] truncate text-base leading-tight sm:max-w-none sm:text-lg">
-              Hai, {user.name.split(" ")[0]}
-            </h1>
-            <Avatar {...user} size="sm" />
-            <Link href="/settings" className={cn(btnGhost, "hidden sm:inline-flex")}>
-              Settings
-            </Link>
-            <Link href="/settings" className={cn(iconBtn, "sm:hidden")} aria-label="Settings">
-              <Settings size={16} />
-            </Link>
-            <form action={logout}>
-              <button className={btnPrimary}>Keluar</button>
-            </form>
+            <UserMenu user={user} />
+            <ThemeToggle />
           </div>
         </header>
         </FadeIn>
 
-        <FadeIn delay={0.05} className="grid shrink-0 grid-cols-2 gap-2 sm:gap-3">
+        <FadeIn delay={0.02} className="grid shrink-0 grid-cols-2 gap-2 sm:gap-3">
           <article className={cn(surface, "rounded-2xl px-3 py-2.5 sm:rounded-3xl sm:px-4 sm:py-3")}>
             <div className="mb-2 flex flex-wrap items-baseline gap-x-2">
-              <p className="text-[10px] font-semibold tracking-wide text-muted uppercase sm:text-[11px]">Project kamu</p>
+              <p className="text-[10px] font-semibold tracking-wide text-muted uppercase sm:text-[11px]">Your projects</p>
               <p className="text-sm font-semibold">{mine.length}</p>
             </div>
             <ProgressBar done={mineProgress.done} total={mineProgress.total} />
           </article>
           <article className={cn(surface, "rounded-2xl px-3 py-2.5 sm:rounded-3xl sm:px-4 sm:py-3")}>
             <div className="mb-2 flex flex-wrap items-baseline gap-x-2">
-              <p className="text-[10px] font-semibold tracking-wide text-muted uppercase sm:text-[11px]">Orang lain</p>
-              <p className="text-sm font-semibold">{others.length} diikuti</p>
+              <p className="text-[10px] font-semibold tracking-wide text-muted uppercase sm:text-[11px]">Following</p>
+              <p className="text-sm font-semibold">{others.length} joined</p>
             </div>
             <ProgressBar done={othersProgress.done} total={othersProgress.total} />
           </article>
         </FadeIn>
 
-        <FadeIn delay={0.1} className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <FadeIn delay={0.04} className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <section className={cn(surface, "flex min-h-[24rem] flex-col overflow-hidden rounded-3xl lg:min-h-0")}>
             <div className="flex shrink-0 flex-col gap-2 border-b border-line px-3 py-3 sm:flex-row sm:items-center sm:px-4">
               <div className="flex items-center justify-between gap-2">
@@ -174,27 +163,27 @@ export function HomeProjects({
                     setPage(1);
                   }}
                   className={cn(field, "h-10 pl-9")}
-                  placeholder="Cari project…"
-                  aria-label="Cari project"
+                  placeholder="Search projects…"
+                  aria-label="Search projects"
                 />
               </label>
               <p className="hidden shrink-0 text-sm text-muted sm:block">
-                {filtered.length} dari {projects.length}
+                {filtered.length} of {projects.length}
               </p>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-2">
               {projects.length === 0 ? (
                 <div className="flex h-full items-center justify-center p-8 text-center">
                   <div>
-                    <p className="font-semibold">Belum ada project</p>
-                    <p className="mt-1 text-sm text-muted">Buat baru atau join lewat kode.</p>
+                    <p className="font-semibold">No projects yet</p>
+                    <p className="mt-1 text-sm text-muted">Create one or join with a share code.</p>
                   </div>
                 </div>
               ) : paged.length === 0 ? (
                 <div className="flex h-full items-center justify-center p-8 text-center">
                   <div>
-                    <p className="font-semibold">Tidak ketemu</p>
-                    <p className="mt-1 text-sm text-muted">Coba kata lain, atau hapus pencarian.</p>
+                    <p className="font-semibold">No matches</p>
+                    <p className="mt-1 text-sm text-muted">Try another term, or clear the search.</p>
                   </div>
                 </div>
               ) : (
@@ -221,7 +210,7 @@ export function HomeProjects({
                             <div className="flex min-w-0 items-center gap-2">
                               <h3 className="truncate font-semibold">{project.name}</h3>
                               <span className="hidden shrink-0 rounded-full bg-paper-2 px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted uppercase sm:inline">
-                                {project.role === "owner" ? "Punya kamu" : "Diikuti"}
+                                {project.role === "owner" ? "Yours" : "Joined"}
                               </span>
                             </div>
                             <p className="mt-0.5 truncate text-sm text-muted">{project.description}</p>
@@ -233,9 +222,9 @@ export function HomeProjects({
                         <div className="mt-3 sm:pl-11">
                           <ProgressBar done={project.doneCount} total={project.taskCount} />
                           <p className="mt-1 truncate text-[11px] text-muted">
-                            {project.role === "owner" ? "Punya kamu" : "Diikuti"}
+                            {project.role === "owner" ? "Yours" : "Joined"}
                             {" · "}
-                            {project.memberCount} anggota
+                            {project.memberCount} {project.memberCount === 1 ? "member" : "members"}
                             {project.role !== "owner" && project.ownerName ? ` · owner ${project.ownerName}` : ""}
                           </p>
                         </div>
@@ -248,7 +237,7 @@ export function HomeProjects({
             </div>
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-line px-3 py-2 sm:px-4 sm:py-2.5">
               <p className="text-xs text-muted">
-                {filtered.length === 0 ? "Tidak ada hasil" : `Halaman ${currentPage} dari ${pageCount}`}
+                {filtered.length === 0 ? "No results" : `Page ${currentPage} of ${pageCount}`}
               </p>
               <div className="flex items-center gap-1">
                 <button
@@ -256,7 +245,7 @@ export function HomeProjects({
                   className={iconBtn}
                   disabled={currentPage <= 1}
                   onClick={() => setPage((value) => Math.max(1, value - 1))}
-                  aria-label="Halaman sebelumnya"
+                  aria-label="Previous page"
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -294,7 +283,7 @@ export function HomeProjects({
                   className={iconBtn}
                   disabled={currentPage >= pageCount}
                   onClick={() => setPage((value) => Math.min(pageCount, value + 1))}
-                  aria-label="Halaman berikutnya"
+                  aria-label="Next page"
                 >
                   <ChevronRight size={16} />
                 </button>
@@ -304,19 +293,19 @@ export function HomeProjects({
 
           <aside className={cn(surface, "flex min-h-0 flex-col overflow-hidden rounded-3xl")}>
             <form action={createProject} className="min-h-0 flex-1 overflow-y-auto p-4">
-              <h2 className="font-serif text-xl">Project baru</h2>
+              <h2 className="font-serif text-xl">New project</h2>
               <div className="mt-3 grid gap-2">
-                <input name="name" className={field} placeholder="Nama project" required />
-                <textarea name="description" className={field} rows={2} placeholder="Ringkasan produk" />
+                <input name="name" className={field} placeholder="Project name" required />
+                <textarea name="description" className={field} rows={2} placeholder="Product summary" />
                 <IconPicker compact />
-                <button className={cn(btnPrimary, "w-full")}>Buat project</button>
+                <button className={cn(btnPrimary, "w-full")}>Create project</button>
               </div>
             </form>
             <form action={joinProject} className="shrink-0 border-t border-line p-4">
-              <h2 className="text-sm font-semibold">Join lewat kode</h2>
+              <h2 className="text-sm font-semibold">Join with a code</h2>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row">
                 <input name="code" className={cn(field, "uppercase")} placeholder="XXXX-XXXX" required />
-                <button className={cn(btnGhost, "shrink-0")}>Gabung</button>
+                <button className={cn(btnGhost, "shrink-0")}>Join</button>
               </div>
             </form>
           </aside>

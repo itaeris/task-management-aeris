@@ -1,54 +1,54 @@
 # Task Management
 
-Webapp kolaborasi task untuk tim: product log, scrum, daily check, kanban, calendar, timeline, share project, attachment, dan siapa yang sedang aktif.
+A team collaboration workspace: product log, scrum, daily check, kanban, calendar, timeline, project sharing, attachments, and who is active now.
 
 Stack: **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4**, **Framer Motion**, **Supabase**.
 
-## Fitur
+## Features
 
-- Login dengan email/username + password, atau Google OAuth
-- Buat project, join lewat kode share, ganti icon Flaticon (UIcons)
+- Sign in with email/username + password, or Google OAuth
+- Create a project, join with a share code, change the Flaticon icon (UIcons)
 - Product log, Scrum log, Daily check, Kanban, Calendar, Timeline
-- Komentar, attachment, dan aktivitas project
-- Presence di header: siapa sedang buka halaman atau task
-- Settings: ubah nama tampilan dan reset password
-- Loading pakai skeleton, bukan spinner
-- Bisa dipasang sebagai aplikasi (PWA) di HP dan desktop
+- Comments, attachments, and project activity
+- Presence in the header: who has a page or task open
+- Settings: change display name and reset password
+- Loading uses skeletons, not a spinner
+- Installable as an app (PWA) on phone and desktop
 
 ## Setup
 
 ### 1. Environment
 
-Salin `.env.example` ke `.env`:
+Copy `.env.example` to `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-Isi:
+Fill in:
 
-| Variable | Keterangan |
+| Variable | Description |
 | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | URL project Supabase |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key |
-| `SUPABASE_SECRET_KEY` | Secret key (server only, jangan di-commit) |
-| `APP_URL` | URL publik, production: `https://pipeline.aerisbeaute.com` |
-| `GOOGLE_CLIENT_ID` | OAuth client ID (opsional) |
-| `GOOGLE_CLIENT_SECRET` | OAuth client secret (opsional) |
+| `SUPABASE_SECRET_KEY` | Secret key (server only, do not commit) |
+| `APP_URL` | Public URL, production: `https://pipeline.aerisbeaute.com` |
+| `GOOGLE_CLIENT_ID` | OAuth client ID (optional) |
+| `GOOGLE_CLIENT_SECRET` | OAuth client secret (optional) |
 
-Jangan commit `.env`.
+Do not commit `.env`.
 
 ### 2. Database
 
-Di Supabase SQL Editor:
+In the Supabase SQL Editor:
 
-1. Project baru: jalankan `supabase/schema.sql`
-2. Kalau tabel `users` sudah ada: jalankan `supabase/migration_auth.sql`
-3. Fitur “sedang aktif”: jalankan `supabase/migration_presence.sql`
+1. New project: run `supabase/schema.sql`
+2. If the `users` table already exists: run `supabase/migration_auth.sql`
+3. Presence (“active now”): run `supabase/migration_presence.sql`
 
-Schema juga membuat bucket storage `attachments` (private).
+The schema also creates a private storage bucket named `attachments`.
 
-### 3. Install dan seed
+### 3. Install and seed
 
 ```bash
 npm install
@@ -56,17 +56,17 @@ npm run db:seed
 npm run dev
 ```
 
-Hanya butuh akun admin, tanpa data demo:
+Admin account only, no demo data:
 
 ```bash
 npm run db:admin
 ```
 
-Buka [http://localhost:3000/login](http://localhost:3000/login).
+Open [http://localhost:3000/login](http://localhost:3000/login).
 
-## Login demo
+## Demo login
 
-Setelah seed:
+After seed:
 
 | | |
 | --- | --- |
@@ -74,11 +74,11 @@ Setelah seed:
 | Email | `it@aerisbeaute.com` |
 | Password | `aerisbeaute` |
 
-Project demo: **Relia Pay**. Kode share: `RELI-7K2M`.
+Demo project: **Relia Pay**. Share code: `RELI-7K2M`.
 
 ## Google login
 
-Di [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials:
+In [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials:
 
 Authorized JavaScript origins:
 
@@ -94,51 +94,78 @@ http://localhost:3000/api/auth/google/callback
 https://pipeline.aerisbeaute.com/api/auth/google/callback
 ```
 
-User Google dicocokkan/dibuat di `public.users` berdasarkan email.
+Google users are matched or created in `public.users` by email.
+
+## Google Calendar
+
+On Calendar, **Connect Google Calendar** uses the same OAuth client (`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`). The redirect URI is the same as login:
+
+```
+http://localhost:3000/api/auth/google/callback
+https://pipeline.aerisbeaute.com/api/auth/google/callback
+```
+
+In Google Cloud Console:
+
+1. Enable **Google Calendar API** (CalDAV is covered by the Calendar scope).
+2. OAuth consent screen: add scope `https://www.googleapis.com/auth/calendar`.
+3. Run `supabase/migration_google_calendar.sql` in the SQL Editor.
+
+Tasks with a due date sync to the **primary** calendar of the connected Google account. **Sync** forces a refresh; create/update/delete also push while the connection is active.
 
 ## Production (`pipeline.aerisbeaute.com`)
 
-1. Domain HTTPS (PWA dan cookie login butuh HTTPS).
-2. Di server, set `APP_URL=https://pipeline.aerisbeaute.com` plus env Supabase/Google.
-3. Google Console: tambah origin dan redirect URI production di atas.
-4. Build: `npm run build && npm run start` (atau proses manager di belakang reverse proxy). Proxy harus meneruskan `Host` dan `X-Forwarded-Proto: https`.
-5. PWA: service worker aktif otomatis di domain (bukan localhost). Chrome/Edge: menu ⋮ → Install app. iOS: Safari Share → Add to Home Screen.
+1. HTTPS domain (PWA and login cookies require HTTPS).
+2. In **Vercel → Project → Settings → Environment Variables**, set (Production + Preview), copied from local `.env`:
+
+   | Name | Required |
+   | --- | --- |
+   | `NEXT_PUBLIC_SUPABASE_URL` | yes |
+   | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes |
+   | `SUPABASE_SECRET_KEY` | yes |
+   | `APP_URL` | `https://pipeline.aerisbeaute.com` |
+   | `GOOGLE_CLIENT_ID` | yes, if you use Google login |
+   | `GOOGLE_CLIENT_SECRET` | yes, if you use Google login |
+
+   Then **Redeploy**.
+3. Google Console: add the production origin and redirect URI above.
+4. PWA: the service worker activates automatically on the domain. Chrome/Edge: menu ⋮ → Install app. iOS: Safari Share → Add to Home Screen.
 
 ## PWA
 
-App bisa dipasang ke home screen / desktop (standalone).
+The app can be installed to the home screen / desktop (standalone).
 
 - Manifest: `/manifest.webmanifest`
-- Ikon: `public/icons/`
-- Service worker (production): `public/sw.js` — halaman offline jika navigasi gagal
+- Icons: `public/icons/`
+- Service worker (production): `public/sw.js` — offline page if navigation fails
 - Chrome/Edge: menu ⋮ → Install app
 - iOS Safari: Share → Add to Home Screen
-- Banner muncul saat koneksi terputus
+- A banner appears when the connection drops
 
-Service worker tidak aktif di `next dev` supaya cache tidak mengganggu HMR. Tes install di `npm run build && npm run start`, atau pakai Chrome di `localhost`.
+The service worker is not active in `next dev` so cache does not interfere with HMR. Test install with `npm run build && npm run start`, or use Chrome on `localhost`.
 
 ## Scripts
 
-| Command | Fungsi |
+| Command | Purpose |
 | --- | --- |
 | `npm run dev` | Dev server (Turbopack) |
 | `npm run build` | Production build |
-| `npm run start` | Jalankan hasil build |
+| `npm run start` | Run the production build |
 | `npm run lint` | ESLint |
-| `npm run db:seed` | Seed user + project demo |
-| `npm run db:admin` | Buat/update akun admin `itaeris` |
+| `npm run db:seed` | Seed users + demo project |
+| `npm run db:admin` | Create/update admin account `itaeris` |
 
-Ikon PWA bisa digenerate ulang: `node scripts/generate-pwa-icons.mjs`.
+Regenerate PWA icons with `node scripts/generate-pwa-icons.mjs`.
 
-## Alur singkat
+## Quick flow
 
-1. Login, lalu buat project atau join pakai kode.
-2. Pilih icon Flaticon saat buat project. Project lama yang masih lingkaran warna: klik icon (ada pensil) di kartu beranda atau sidebar — owner only.
-3. Kerja di menu project: Overview, Product log, Scrum log, Daily check, Kanban, Calendar, Timeline, Share.
-4. Share mengundang anggota. Owner bisa rotasi kode dan ubah nama/deskripsi/icon.
-5. Header menampilkan siapa yang sedang aktif di app.
+1. Sign in, then create a project or join with a code.
+2. Pick a Flaticon icon when creating a project. Older projects that still use a color circle: click the icon (pencil) on the home card or sidebar — owner only.
+3. Work in the project menu: Overview, Product log, Scrum log, Daily check, Kanban, Calendar, Timeline, Share.
+4. Share invites members. The owner can rotate the code and change the name/description/icon.
+5. The header shows who is active in the app.
 
-## Struktur
+## Structure
 
 ```
 src/app/                 # routes, loading skeleton, API
@@ -149,4 +176,4 @@ supabase/                # schema + migrations
 scripts/                 # seed & admin
 ```
 
-Icon Flaticon diambil dari [UIcons](https://www.flaticon.com/uicons) (solid rounded + brands).
+Flaticon icons come from [UIcons](https://www.flaticon.com/uicons) (solid rounded + brands).

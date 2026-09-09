@@ -17,7 +17,7 @@ async function uniqueUsername(base: string) {
 export async function findOrCreateGoogleUser(profile: { email: string; name: string }) {
   const email = profile.email.trim().toLowerCase();
   const name = profile.name.trim() || email.split("@")[0];
-  if (!email) throw new Error("Google tidak mengembalikan email.");
+  if (!email) throw new Error("Google did not return an email.");
 
   const existing = unwrap(
     await supabase.from("users").select("*").eq("email", email).maybeSingle(),

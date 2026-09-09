@@ -124,6 +124,28 @@ create table public.presences (
 
 create index presences_updated_idx on public.presences (updated_at desc);
 
+create table public.google_calendar_connections (
+  user_id text primary key references public.users (id) on delete cascade,
+  google_email text not null,
+  calendar_id text not null default 'primary',
+  access_token text not null,
+  refresh_token text not null,
+  token_expiry timestamptz not null,
+  connected_at timestamptz not null default now(),
+  last_synced_at timestamptz
+);
+
+create table public.google_calendar_events (
+  id text primary key default gen_random_uuid()::text,
+  user_id text not null references public.users (id) on delete cascade,
+  task_id text not null references public.tasks (id) on delete cascade,
+  event_id text not null,
+  calendar_id text not null default 'primary',
+  unique (user_id, task_id)
+);
+
+create index google_calendar_events_task_idx on public.google_calendar_events (task_id);
+
 alter table public.users enable row level security;
 alter table public.projects enable row level security;
 alter table public.project_members enable row level security;
@@ -134,6 +156,8 @@ alter table public.attachments enable row level security;
 alter table public.daily_logs enable row level security;
 alter table public.activities enable row level security;
 alter table public.presences enable row level security;
+alter table public.google_calendar_connections enable row level security;
+alter table public.google_calendar_events enable row level security;
 
 insert into storage.buckets (id, name, public)
 values ('attachments', 'attachments', false)

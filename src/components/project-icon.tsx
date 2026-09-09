@@ -34,7 +34,7 @@ export function ProjectIcon({
   if (mark.type === "url") {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={mark.src} alt="" className={cn(box, "bg-white object-contain p-1")} />
+      <img src={mark.src} alt="" className={cn(box, "bg-paper object-contain p-1")} />
     );
   }
 

@@ -13,7 +13,7 @@ for (const line of readFileSync(resolve(process.cwd(), ".env"), "utf8").split("\
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secret = process.env.SUPABASE_SECRET_KEY;
-  if (!url || !secret) throw new Error("Supabase env belum di-set.");
+  if (!url || !secret) throw new Error("Supabase env is not set.");
 
   const supabase = createClient(url, secret, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -39,7 +39,7 @@ async function main() {
   if (lookupError) {
     if (lookupError.code === "42703" || /username|password_hash/i.test(lookupError.message)) {
       throw new Error(
-        "Kolom login belum ada. Jalankan supabase/migration_auth.sql di Supabase SQL Editor, lalu ulang npm run db:admin.",
+        "Login columns are missing. Run supabase/migration_auth.sql in the Supabase SQL Editor, then rerun npm run db:admin.",
       );
     }
     throw lookupError;

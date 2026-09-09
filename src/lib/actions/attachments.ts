@@ -13,14 +13,14 @@ export async function uploadAttachment(taskId: string, formData: FormData) {
   const existing = unwrap(
     await supabase.from("tasks").select("id, project_id, title").eq("id", taskId).maybeSingle(),
   ) as { id: string; project_id: string; title: string } | null;
-  if (!existing) throw new Error("Task tidak ditemukan.");
+  if (!existing) throw new Error("Task not found.");
   const { user } = await requireProjectMember(existing.project_id);
 
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) throw new Error("Pilih file dulu.");
-  if (file.size > MAX_UPLOAD_BYTES) throw new Error("Ukuran file maksimal 10MB.");
+  if (!(file instanceof File) || file.size === 0) throw new Error("Choose a file first.");
+  if (file.size > MAX_UPLOAD_BYTES) throw new Error("Maximum file size is 10MB.");
   const mimeType = file.type || "application/octet-stream";
-  if (!ALLOWED_MIME.has(mimeType)) throw new Error("Tipe file tidak didukung.");
+  if (!ALLOWED_MIME.has(mimeType)) throw new Error("File type is not supported.");
 
   const storedName = `${taskId}/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -58,9 +58,9 @@ export async function deleteAttachment(attachmentId: string) {
       .eq("id", attachmentId)
       .maybeSingle(),
   ) as { stored_name: string; tasks: { project_id: string } | { project_id: string }[] | null } | null;
-  if (!file) throw new Error("File tidak ditemukan.");
+  if (!file) throw new Error("File not found.");
   const task = Array.isArray(file.tasks) ? file.tasks[0] : file.tasks;
-  if (!task) throw new Error("Task tidak ditemukan.");
+  if (!task) throw new Error("Task not found.");
   await requireProjectMember(task.project_id);
   await supabase.storage.from("attachments").remove([file.stored_name]);
   unwrap(await supabase.from("attachments").delete().eq("id", attachmentId));

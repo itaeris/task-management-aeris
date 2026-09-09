@@ -1,23 +1,77 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --ink: #16324f;
+  --ink-soft: #1e4063;
+  --paper: #ffffff;
+  --paper-2: #e7f2fc;
+  --cream: #f7fbff;
+  --line: rgb(37 99 235 / 0.14);
+  --terracotta: #3b82f6;
+  --terracotta-dark: #2563eb;
+  --forest: #0ea5e9;
+  --gold: #7dd3fc;
+  --muted: #64748b;
+  --brown: #3b82f6;
+  --brown-deep: #1d4ed8;
+  --sand: #eef6ff;
+  --input: #f3f8fe;
+  --page: #d4e4f4;
+  --skeleton: #e7f2fc;
+  --skeleton-shine: rgb(255 255 255 / 0.35);
+  --page-gradient:
+    radial-gradient(1200px 620px at 0% -8%, #b6d4f0 0%, transparent 58%),
+    radial-gradient(900px 520px at 100% 0%, #c2dcf2 0%, transparent 52%),
+    linear-gradient(180deg, #e4eef7 0%, #d2e4f4 46%, #b4d0ea 100%);
+  color-scheme: light;
+}
+
+html.dark {
+  --ink: #e8eef6;
+  --ink-soft: #c9d7ea;
+  --paper: #152033;
+  --paper-2: #1c2b42;
+  --cream: #101826;
+  --line: rgb(147 197 253 / 0.16);
+  --terracotta: #60a5fa;
+  --terracotta-dark: #3b82f6;
+  --forest: #38bdf8;
+  --gold: #7dd3fc;
+  --muted: #94a3b8;
+  --brown: #60a5fa;
+  --brown-deep: #93c5fd;
+  --sand: #1a2740;
+  --input: #1a2740;
+  --page: #0b1220;
+  --skeleton: #1c2b42;
+  --skeleton-shine: rgb(255 255 255 / 0.08);
+  --page-gradient:
+    radial-gradient(1200px 620px at 0% -8%, #1e3a5f 0%, transparent 58%),
+    radial-gradient(900px 520px at 100% 0%, #16324f 0%, transparent 52%),
+    linear-gradient(180deg, #101a2b 0%, #0d1626 46%, #0b1220 100%);
+  color-scheme: dark;
+}
+
 @theme inline {
-  --color-ink: #16324f;
-  --color-ink-soft: #1e4063;
-  --color-paper: #ffffff;
-  --color-paper-2: #e7f2fc;
-  --color-cream: #f7fbff;
-  --color-line: rgb(37 99 235 / 0.14);
-  --color-terracotta: #3b82f6;
-  --color-terracotta-dark: #2563eb;
-  --color-forest: #0ea5e9;
-  --color-gold: #7dd3fc;
-  --color-muted: #64748b;
-  --color-brown: #3b82f6;
-  --color-brown-deep: #1d4ed8;
-  --color-sand: #eef6ff;
-  --color-input: #f3f8fe;
-  --color-background: #ffffff;
-  --color-foreground: #16324f;
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-cream: var(--cream);
+  --color-line: var(--line);
+  --color-terracotta: var(--terracotta);
+  --color-terracotta-dark: var(--terracotta-dark);
+  --color-forest: var(--forest);
+  --color-gold: var(--gold);
+  --color-muted: var(--muted);
+  --color-brown: var(--brown);
+  --color-brown-deep: var(--brown-deep);
+  --color-sand: var(--sand);
+  --color-input: var(--input);
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
   --font-sans: var(--font-poppins);
   --font-serif: var(--font-poppins);
   --font-mono: var(--font-poppins);
@@ -29,17 +83,18 @@ body {
 }
 
 body {
-  background-color: #ffffff;
-  background-image:
-    radial-gradient(1200px 620px at 0% -8%, #dbeafe 0%, transparent 58%),
-    radial-gradient(900px 520px at 100% 0%, #e0f2fe 0%, transparent 52%),
-    linear-gradient(180deg, #ffffff 0%, #f3f8ff 46%, #d7ebff 100%);
+  background-color: var(--page);
+  background-image: var(--page-gradient);
   background-attachment: fixed;
 }
 
 * {
   scrollbar-width: thin;
   scrollbar-color: #93c5fd transparent;
+}
+
+html.dark * {
+  scrollbar-color: #1e3a5f transparent;
 }
 
 *::-webkit-scrollbar {
@@ -59,8 +114,20 @@ body {
   border-radius: 999px;
 }
 
+html.dark *::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #334155 0%, #1e3a5f 100%);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
 *::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+html.dark *::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
   border: 2px solid transparent;
   background-clip: padding-box;
 }
@@ -78,7 +145,7 @@ body {
 .skeleton {
   position: relative;
   overflow: hidden;
-  background: #e7f2fc;
+  background: var(--skeleton);
 }
 
 .skeleton::after {
@@ -86,8 +153,8 @@ body {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent 0%, rgb(255 255 255 / 0.75) 50%, transparent 100%);
-  animation: skeleton-shimmer 1.35s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent 0%, var(--skeleton-shine) 50%, transparent 100%);
+  animation: skeleton-shimmer 0.8s ease-in-out infinite;
 }
 
 @keyframes skeleton-shimmer {
@@ -100,4 +167,16 @@ body {
   .skeleton::after {
     animation: none;
   }
+}
+
+.login-hero {
+  background:
+    radial-gradient(circle at 28% 42%, #bfdbfe, transparent 58%),
+    linear-gradient(180deg, #f8fbff 0%, #dbeafe 48%, #93c5fd 100%);
+}
+
+html.dark .login-hero {
+  background:
+    radial-gradient(circle at 28% 42%, #1e3a5f, transparent 58%),
+    linear-gradient(180deg, #0f172a 0%, #16324f 55%, #1d4ed8 100%);
 }
