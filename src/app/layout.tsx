@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import { PwaRoot } from "@/components/pwa";
+import { ToastHost } from "@/components/toast";
 import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="relative min-h-full font-sans text-ink">
         <PwaRoot />
+        <ToastHost />
         {children}
       </body>
     </html>

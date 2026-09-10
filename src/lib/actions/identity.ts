@@ -8,13 +8,14 @@ import type { UserRow } from "@/lib/mappers";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { initialsFromName } from "@/lib/utils";
 import { clearPresence } from "@/lib/actions/presence";
+import { revalidateHome } from "@/lib/revalidate";
 
 export type LoginState = {
   error?: string;
 };
 
 function revalidateApp() {
-  revalidatePath("/");
+  revalidateHome();
   revalidatePath("/login");
   revalidatePath("/settings");
 }

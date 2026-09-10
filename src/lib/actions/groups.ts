@@ -5,10 +5,10 @@ import { parseProjectAccess } from "@/lib/access";
 import { addGroupMembersToProject } from "@/lib/groups";
 import { requireProjectMember } from "@/lib/auth";
 import { supabase, unwrap } from "@/lib/supabase";
+import { revalidateProject } from "@/lib/revalidate";
 
 function refresh(projectId: string) {
-  revalidatePath("/");
-  revalidatePath(`/projects/${projectId}`, "layout");
+  revalidateProject(projectId);
   revalidatePath(`/projects/${projectId}/share`);
 }
 

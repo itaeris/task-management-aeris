@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getProjectByShareCode, isProjectMember } from "@/lib/queries";
-import { joinProjectByCode } from "@/lib/actions/projects";
 import { ProjectIcon } from "@/components/project-icon";
-import { PendingSubmit } from "@/components/pending-submit";
 import { surface } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { JoinProjectForm } from "./join-form";
 
 export default async function JoinPage({
   params,
@@ -41,9 +40,7 @@ export default async function JoinPage({
         <p className="mt-3 text-xs text-muted">
           {project._count.members} {project._count.members === 1 ? "member" : "members"} · {project._count.tasks} {project._count.tasks === 1 ? "task" : "tasks"}
         </p>
-        <form className="mt-6" action={joinProjectByCode.bind(null, project.shareCode)}>
-          <PendingSubmit idle="Join project" busy="Joining…" />
-        </form>
+        <JoinProjectForm code={project.shareCode} />
       </div>
     </main>
   );

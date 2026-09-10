@@ -18,6 +18,7 @@ import { BrandLockup } from "@/components/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
 import { usePersistSessionUser } from "@/lib/session-user";
+import { notifyChange } from "@/components/toast";
 
 type ProjectCard = {
   id: string;
@@ -126,7 +127,12 @@ export function HomeFrame({
           <div className="flex min-h-0 min-w-0 flex-col gap-3">{children}</div>
           <aside className={cn(surface, "flex min-h-0 flex-col overflow-hidden rounded-3xl")}>
             <CreateProjectForm userId={user.id} people={people} groups={groups} />
-            <form action={joinProject} className="shrink-0 border-t border-line p-4">
+            <form
+              action={async (formData) => {
+                await notifyChange(joinProject(formData), "Joined project");
+              }}
+              className="shrink-0 border-t border-line p-4"
+            >
               <h2 className="text-sm font-semibold">Join with a code</h2>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row">
                 <input name="code" className={cn(field, "uppercase")} placeholder="XXXX-XXXX" required />
@@ -338,7 +344,10 @@ export function HomeProjectList({ projects }: { projects: ProjectCard[] }) {
                                 if (next) setPage(1);
                                 startPin(async () => {
                                   try {
-                                    await toggleProjectPin(project.id);
+                                    await notifyChange(
+                                      toggleProjectPin(project.id),
+                                      next ? "Project pinned" : "Project unpinned",
+                                    );
                                   } catch (caught) {
                                     setPinDraft((current) => ({ ...current, [project.id]: pinned }));
                                     setPinError(

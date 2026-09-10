@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   canLeaveProject,
@@ -16,10 +15,11 @@ import { requireProjectMember, requireUser } from "@/lib/auth";
 import { removeProjectFromGoogleCalendar } from "@/lib/google-calendar";
 import { DEFAULT_PROJECT_ICON, encodeProjectIcon, isFlaticonId } from "@/lib/project-icon";
 import { shareCode } from "@/lib/utils";
+import { revalidateHome, revalidateProject } from "@/lib/revalidate";
 
 function refresh(projectId?: string) {
-  revalidatePath("/");
-  if (projectId) revalidatePath(`/projects/${projectId}`, "layout");
+  if (projectId) revalidateProject(projectId);
+  else revalidateHome();
 }
 
 function migrationHint() {
@@ -303,7 +303,7 @@ export async function toggleProjectPin(projectId: string) {
     throw error;
   }
 
-  revalidatePath("/");
+  revalidateHome();
 }
 
 export async function leaveProject(projectId: string) {
@@ -351,5 +351,5 @@ export async function deleteProject(projectId: string, confirmation: string) {
   }
 
   unwrap(await supabase.from("projects").delete().eq("id", projectId));
-  revalidatePath("/");
+  revalidateHome();
 }

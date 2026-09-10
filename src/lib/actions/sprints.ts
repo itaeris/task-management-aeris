@@ -1,12 +1,12 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { supabase, unwrap } from "@/lib/supabase";
 import { requireProjectMember } from "@/lib/auth";
 import { parseDateInput } from "@/lib/utils";
+import { revalidateProject } from "@/lib/revalidate";
 
 function refresh(projectId: string) {
-  revalidatePath(`/projects/${projectId}`, "layout");
+  revalidateProject(projectId);
 }
 
 export async function createSprint(projectId: string, formData: FormData) {

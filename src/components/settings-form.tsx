@@ -7,6 +7,7 @@ import { btnPrimary, field, surface } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
 import { FadeIn } from "@/components/motion";
+import { useToastMessage } from "@/components/toast";
 
 function Message({ state }: { state: SettingsState }) {
   if (state.error) return <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">{state.error}</p>;
@@ -17,6 +18,8 @@ function Message({ state }: { state: SettingsState }) {
 export function SettingsForm({ user }: { user: Profile }) {
   const [profileState, profileAction, profilePending] = useActionState(updateProfile, {} as SettingsState);
   const [passwordState, passwordAction, passwordPending] = useActionState(changePassword, {} as SettingsState);
+  useToastMessage(profileState);
+  useToastMessage(passwordState);
 
   return (
     <FadeIn className="grid gap-5 lg:grid-cols-2 lg:items-start">

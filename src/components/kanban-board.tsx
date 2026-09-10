@@ -23,6 +23,7 @@ import { chip } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { easeOutSoft } from "@/components/motion";
+import { notifyChange } from "@/components/toast";
 
 function SortableCard({ task, onOpen }: { task: TaskDTO; onOpen: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -145,7 +146,7 @@ export function KanbanBoard({
         task.id === activeId ? { ...task, status: nextStatus, rank } : task,
       ),
     );
-    await moveTask(activeId, nextStatus, rank);
+    await notifyChange(moveTask(activeId, nextStatus, rank), "Task moved");
   }
 
   return (

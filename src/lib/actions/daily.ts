@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateProject } from "@/lib/revalidate";
 import { supabase, unwrap } from "@/lib/supabase";
 import { requireProjectMember } from "@/lib/auth";
 import { todayKey } from "@/lib/utils";
@@ -29,5 +29,5 @@ export async function saveDailyLog(projectId: string, formData: FormData) {
       message: `mengisi daily check ${date}`,
     }),
   );
-  revalidatePath(`/projects/${projectId}`, "layout");
+  revalidateProject(projectId);
 }

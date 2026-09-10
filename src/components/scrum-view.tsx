@@ -13,6 +13,7 @@ import { CreateTaskButton } from "@/components/create-task-button";
 import { TaskDrawer } from "@/components/task-drawer";
 import { AnimatePresence, motion } from "framer-motion";
 import { easeOutSoft } from "@/components/motion";
+import { notifyChange } from "@/components/toast";
 
 export function ScrumView({
   projectId,
@@ -47,7 +48,10 @@ export function ScrumView({
 
       <form
         className={cn(surface, "grid gap-3 rounded-3xl p-5 md:grid-cols-4")}
-        action={(formData) => createSprint(projectId, formData)}
+        action={async (formData) => {
+          await notifyChange(createSprint(projectId, formData), "Sprint created");
+          router.refresh();
+        }}
       >
         <input name="name" className={cn(field, "md:col-span-2")} placeholder="Sprint name" required />
         <DatePicker name="startDate" placeholder="Start date" required />
@@ -84,12 +88,28 @@ export function ScrumView({
                     <Pencil size={16} />
                   </button>
                   {sprint.status !== "active" ? (
-                    <form action={updateSprintStatus.bind(null, projectId, sprint.id, "active")}>
+                    <form
+                      action={async () => {
+                        await notifyChange(
+                          updateSprintStatus(projectId, sprint.id, "active"),
+                          "Sprint activated",
+                        );
+                        router.refresh();
+                      }}
+                    >
                       <PendingSubmit idle="Activate" busy="Saving…" />
                     </form>
                   ) : null}
                   {sprint.status !== "completed" ? (
-                    <form action={updateSprintStatus.bind(null, projectId, sprint.id, "completed")}>
+                    <form
+                      action={async () => {
+                        await notifyChange(
+                          updateSprintStatus(projectId, sprint.id, "completed"),
+                          "Sprint completed",
+                        );
+                        router.refresh();
+                      }}
+                    >
                       <PendingSubmit idle="Complete" busy="Saving…" variant="ghost" />
                     </form>
                   ) : null}
@@ -226,7 +246,7 @@ function EditSprintForm({
           action={async (formData) => {
             setError(null);
             try {
-              await updateSprint(projectId, sprint.id, formData);
+              await notifyChange(updateSprint(projectId, sprint.id, formData), "Sprint updated");
               onSaved();
             } catch (caught) {
               setError(caught instanceof Error ? caught.message : "Could not update the sprint.");
@@ -350,7 +370,7 @@ function DeleteSprintForm({
             onClick={() => {
               startTransition(async () => {
                 try {
-                  await deleteSprint(projectId, sprint.id);
+                  await notifyChange(deleteSprint(projectId, sprint.id), "Sprint deleted");
                   onDeleted();
                 } catch (caught) {
                   setError(caught instanceof Error ? caught.message : "Could not delete the sprint.");

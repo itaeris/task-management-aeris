@@ -1,14 +1,21 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { supabase, unwrap } from "@/lib/supabase";
 import { requireProjectMember, requireUser } from "@/lib/auth";
 import { parseDateInput } from "@/lib/utils";
 import { getTaskDetail } from "@/lib/queries";
 import { notifyGoogleCalendarTaskChanged, notifyGoogleCalendarTaskDeleted } from "@/lib/google-calendar";
+import { revalidateProject } from "@/lib/revalidate";
 
 function refresh(projectId: string) {
-  revalidatePath(`/projects/${projectId}`, "layout");
+  revalidateProject(projectId);
+}
+
+function syncCalendarLater(taskId: string) {
+  after(() => {
+    void notifyGoogleCalendarTaskChanged(taskId);
+  });
 }
 
 async function nextRank(projectId: string) {
@@ -58,8 +65,8 @@ export async function createTask(projectId: string, formData: FormData) {
       message: `added "${task.title}"`,
     }),
   );
-  await notifyGoogleCalendarTaskChanged(task.id);
   refresh(projectId);
+  syncCalendarLater(task.id);
   return task.id;
 }
 
@@ -96,8 +103,8 @@ export async function updateTask(taskId: string, formData: FormData) {
       message: `updated "${existing.title}"`,
     }),
   );
-  await notifyGoogleCalendarTaskChanged(taskId);
   refresh(existing.project_id);
+  syncCalendarLater(taskId);
 }
 
 export async function moveTask(taskId: string, status: string, rank: number, sprintId?: string | null) {
@@ -117,8 +124,8 @@ export async function moveTask(taskId: string, status: string, rank: number, spr
       })
       .eq("id", taskId),
   );
-  await notifyGoogleCalendarTaskChanged(taskId);
   refresh(existing.project_id);
+  syncCalendarLater(taskId);
 }
 
 export async function reorderTasks(projectId: string, orderedIds: string[]) {
@@ -147,6 +154,9 @@ export async function deleteTask(taskId: string) {
     }),
   );
   refresh(existing.project_id);
+  after(() => {
+    void notifyGoogleCalendarTaskDeleted(taskId);
+  });
 }
 
 export async function addComment(taskId: string, formData: FormData) {

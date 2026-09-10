@@ -5,6 +5,7 @@ import { cn, todayKey } from "@/lib/utils";
 import type { MemberDTO } from "@/lib/types";
 import { Avatar, field, surface } from "@/components/ui";
 import { PendingSubmit } from "@/components/pending-submit";
+import { notifyChange } from "@/components/toast";
 
 type DailyItem = {
   id: string;
@@ -47,7 +48,12 @@ export function DailyView({
 
       <section className={cn(surface, "rounded-3xl p-5")}>
         <h2 className="font-serif text-xl">Your check-in · {today}</h2>
-        <form className="mt-4 grid gap-3" action={(formData) => saveDailyLog(projectId, formData)}>
+        <form
+          className="mt-4 grid gap-3"
+          action={async (formData) => {
+            await notifyChange(saveDailyLog(projectId, formData), "Daily check saved");
+          }}
+        >
           <input type="hidden" name="date" value={today} />
           <textarea
             name="yesterday"

@@ -8,6 +8,7 @@ import { DEFAULT_PROJECT_ICON, FEATURED_PROJECT_ICONS, parseProjectMark } from "
 import { ProjectIcon } from "@/components/project-icon";
 import { field, Skeleton } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { notifyChange } from "@/components/toast";
 
 type IconHit = { id: string; name: string; family: string };
 
@@ -267,8 +268,8 @@ export function ProjectIconEditor({
                 selected={selected}
                 onSelect={(id) => {
                   setOpen(false);
-                  startTransition(() => {
-                    void updateProjectIcon(projectId, id);
+                  startTransition(async () => {
+                    await notifyChange(updateProjectIcon(projectId, id), "Icon updated");
                   });
                 }}
               />

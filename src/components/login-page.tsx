@@ -15,6 +15,7 @@ import {
 import { login, type LoginState } from "@/lib/actions/identity";
 import { BrandLockup } from "@/components/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useToastMessage } from "@/components/toast";
 import { motion, useReducedMotion } from "framer-motion";
 import { easeOutSoft, fadeUp, stagger } from "@/components/motion";
 
@@ -72,6 +73,7 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
   const [state, action, pending] = useActionState(login, {} as LoginState);
   const greeting = greetingLabel();
   const reduce = useReducedMotion();
+  useToastMessage(state);
 
   return (
     <main className="flex min-h-dvh flex-col bg-gradient-to-b from-paper via-sand to-paper-2 text-ink lg:grid lg:grid-cols-2">

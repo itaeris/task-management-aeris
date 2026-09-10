@@ -11,6 +11,7 @@ import {
   type CalendarActionState,
 } from "@/lib/actions/google-calendar";
 import type { CalendarConnectionPublic } from "@/lib/types";
+import { toast, useToastMessage } from "@/components/toast";
 
 const ERRORS: Record<string, string> = {
   gcal_config: "Google Calendar is not configured.",
@@ -43,14 +44,20 @@ export function GoogleCalendarConnect({
 
   const flash = ERRORS[error ?? ""] ?? (notice === "connected" ? "Google Calendar connected." : "");
   const message = disconnectState.error ?? syncState.error ?? disconnectState.success ?? syncState.success ?? flash;
+  useToastMessage(syncState);
+  useToastMessage(disconnectState);
 
   useEffect(() => {
+    if (flash) {
+      if (error) toast.error(flash);
+      else toast.success(flash);
+    }
     if (!notice && !error) return;
     const url = new URL(window.location.href);
     url.searchParams.delete("calendar");
     url.searchParams.delete("error");
     router.replace(url.pathname + url.search, { scroll: false });
-  }, [notice, error, router]);
+  }, [error, flash, notice, router]);
 
   return (
     <div className="flex min-w-0 flex-col items-stretch gap-2 sm:items-end">

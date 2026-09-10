@@ -17,6 +17,7 @@ import { PendingSubmit } from "@/components/pending-submit";
 import { IconPicker } from "@/components/icon-picker";
 import { DEFAULT_PROJECT_ICON, parseProjectMark } from "@/lib/project-icon";
 import { cn } from "@/lib/utils";
+import { notifyChange } from "@/components/toast";
 
 type GroupOption = {
   id: string;
@@ -109,7 +110,11 @@ export function SharePanel({
               {copied ? <Check size={14} /> : <Link2 size={14} />} {copied ? "Copied" : "Copy link"}
             </button>
             {role === "owner" ? (
-              <form action={async () => { await rotateShareCode(projectId); }}>
+              <form
+                action={async () => {
+                  await notifyChange(rotateShareCode(projectId), "Share code rotated");
+                }}
+              >
                 <button className={cn(btnGhost, "border-white/40 text-white hover:bg-white/10")}>
                   <RefreshCw size={14} /> Rotate code
                 </button>
@@ -118,7 +123,12 @@ export function SharePanel({
           </div>
         </div>
         {role === "owner" ? (
-          <form className="mt-6 grid gap-3" action={(formData) => updateProject(projectId, formData)}>
+          <form
+            className="mt-6 grid gap-3"
+            action={async (formData) => {
+              await notifyChange(updateProject(projectId, formData), "Project saved");
+            }}
+          >
             <input name="name" className={field} defaultValue={name} />
             <textarea name="description" className={field} rows={4} defaultValue={description} />
             <IconPicker defaultValue={selectedIcon} />
@@ -186,7 +196,12 @@ export function SharePanel({
             <PendingSubmit idle="Save project" busy="Saving…" className="self-start" />
           </form>
         ) : showLeave ? (
-          <form className="mt-6" action={leaveProject.bind(null, projectId)}>
+          <form
+            className="mt-6"
+            action={async () => {
+              await notifyChange(leaveProject(projectId), "Left project");
+            }}
+          >
             <button className={cn(btnGhost, "text-red-700 dark:text-red-400")}>Leave project</button>
           </form>
         ) : (
@@ -229,7 +244,11 @@ export function SharePanel({
                     <p className="truncate text-xs text-muted">{member.email}</p>
                   </div>
                   {member.id !== currentUserId ? (
-                    <form action={removeGroupMember.bind(null, projectId, member.id)}>
+                    <form
+                      action={async () => {
+                        await notifyChange(removeGroupMember(projectId, member.id), "Member removed");
+                      }}
+                    >
                       <button className="text-xs font-semibold text-red-700 dark:text-red-400">Remove</button>
                     </form>
                   ) : null}
@@ -237,7 +256,12 @@ export function SharePanel({
               ))}
             </ul>
             {addable.length > 0 ? (
-              <form className="mt-4 flex gap-2" action={addGroupMember.bind(null, projectId)}>
+              <form
+                className="mt-4 flex gap-2"
+                action={async (formData) => {
+                  await notifyChange(addGroupMember(projectId, formData), "Member added");
+                }}
+              >
                 <select name="userId" className={cn(field, "min-w-0 flex-1")} defaultValue={addable[0]?.id}>
                   {addable.map((person) => (
                     <option key={person.id} value={person.id}>

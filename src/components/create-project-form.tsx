@@ -7,6 +7,7 @@ import { field } from "@/components/ui";
 import { IconPicker } from "@/components/icon-picker";
 import { FormBusy, PendingSubmit } from "@/components/pending-submit";
 import { cn } from "@/lib/utils";
+import { notifyChange } from "@/components/toast";
 
 type Person = {
   id: string;
@@ -37,7 +38,12 @@ export function CreateProjectForm({
   const makingNewGroup = access === "group" && (groups.length === 0 || groupId === "new");
 
   return (
-    <form action={createProject} className="min-h-0 flex-1 overflow-y-auto p-4">
+    <form
+      action={async (formData) => {
+        await notifyChange(createProject(formData), "Project created");
+      }}
+      className="min-h-0 flex-1 overflow-y-auto p-4"
+    >
       <h2 className="font-serif text-xl">New project</h2>
       <FormBusy className="mt-3 grid gap-2 disabled:opacity-70">
         <input name="name" className={field} placeholder="Project name" required />

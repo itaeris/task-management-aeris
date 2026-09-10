@@ -7,6 +7,8 @@ import { ProjectShell } from "@/components/project-shell";
 import { WorkspaceProvider } from "@/components/workspace-provider";
 import { ProjectPageSkeleton } from "@/components/skeletons";
 
+export const dynamic = "force-dynamic";
+
 async function ProjectWorkspaceLoader({
   projectId,
   userId,
@@ -22,7 +24,12 @@ async function ProjectWorkspaceLoader({
   ]);
   if (!workspace) notFound();
   return (
-    <WorkspaceProvider workspace={workspace} userId={userId} calendar={calendar}>
+    <WorkspaceProvider
+      key={`${workspace.tasks.map((task) => task.id).join(",")}|${workspace.sprints.map((sprint) => `${sprint.id}:${sprint.status}`).join(",")}`}
+      workspace={workspace}
+      userId={userId}
+      calendar={calendar}
+    >
       {children}
     </WorkspaceProvider>
   );

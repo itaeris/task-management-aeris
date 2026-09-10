@@ -6,6 +6,7 @@ import { btnGhost, btnPrimary, field, surface } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { easeOutSoft } from "@/components/motion";
+import { notifyChange } from "@/components/toast";
 
 export function DeleteProjectDialog({
   project,
@@ -107,7 +108,7 @@ function DeleteProjectForm({
             onClick={() => {
               startTransition(async () => {
                 try {
-                  await deleteProject(project.id, typed);
+                  await notifyChange(deleteProject(project.id, typed), "Project deleted");
                   onClose();
                 } catch (caught) {
                   setError(caught instanceof Error ? caught.message : "Could not delete the project.");

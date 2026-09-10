@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { createTask } from "@/lib/actions/tasks";
 import { PRIORITIES, STATUSES, TASK_TYPES } from "@/lib/constants";
@@ -11,6 +12,7 @@ import { PendingSubmit, FormBusy } from "@/components/pending-submit";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { easeOutSoft } from "@/components/motion";
+import { notifyChange } from "@/components/toast";
 
 export function CreateTaskButton({
   projectId,
@@ -25,6 +27,7 @@ export function CreateTaskButton({
   defaultStatus?: string;
   defaultSprintId?: string;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
 
   return (
@@ -48,8 +51,9 @@ export function CreateTaskButton({
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
             transition={{ duration: 0.25, ease: easeOutSoft }}
             action={async (formData) => {
-              await createTask(projectId, formData);
+              await notifyChange(createTask(projectId, formData), "Task created");
               setOpen(false);
+              router.refresh();
             }}
           >
             <FormBusy>

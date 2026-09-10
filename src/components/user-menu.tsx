@@ -7,6 +7,7 @@ import { ChevronDown, CircleHelp, LogOut, Settings } from "lucide-react";
 import { logout } from "@/lib/actions/identity";
 import { Avatar } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { notifyChange } from "@/components/toast";
 
 type UserLite = {
   name: string;
@@ -93,7 +94,11 @@ export function UserMenu({ user }: { user: UserLite }) {
                 <Settings size={16} />
                 Settings
               </Link>
-              <form action={logout}>
+              <form
+                action={async () => {
+                  await notifyChange(logout(), "Signed out");
+                }}
+              >
                 <button type="submit" role="menuitem" className={cn(itemClass, "text-red-700 dark:text-red-400")}>
                   <LogOut size={16} />
                   Log out

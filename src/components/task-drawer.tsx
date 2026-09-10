@@ -14,6 +14,7 @@ import { TaskDrawerSkeleton } from "@/components/skeletons";
 import { useSetActiveTask } from "@/components/presence";
 import { AnimatePresence, motion } from "framer-motion";
 import { easeOutSoft } from "@/components/motion";
+import { notifyChange } from "@/components/toast";
 
 function dateInput(value: string | null) {
   return value ? value.slice(0, 10) : "";
@@ -112,7 +113,7 @@ export function TaskDrawer({
             ].join("|")}
             className="flex flex-1 flex-col gap-4 px-6 py-5"
             action={async (formData) => {
-              await updateTask(detail.id, formData);
+              await notifyChange(updateTask(detail.id, formData), "Task updated");
               await refresh();
             }}
           >
@@ -200,7 +201,7 @@ export function TaskDrawer({
                   const data = new FormData();
                   data.append("file", file);
                   startTransition(async () => {
-                    await uploadAttachment(detail.id, data);
+                    await notifyChange(uploadAttachment(detail.id, data), "File uploaded");
                     await refresh();
                   });
                   event.target.value = "";
@@ -221,7 +222,7 @@ export function TaskDrawer({
                       className="ml-2 text-muted hover:text-red-700 dark:hover:text-red-400"
                       onClick={() =>
                         startTransition(async () => {
-                          await deleteAttachment(file.id);
+                          await notifyChange(deleteAttachment(file.id), "File removed");
                           await refresh();
                         })
                       }
@@ -252,7 +253,7 @@ export function TaskDrawer({
             <form
               className="mt-4 flex gap-2"
               action={async (formData) => {
-                await addComment(detail.id, formData);
+                await notifyChange(addComment(detail.id, formData), "Comment added");
                 await refresh();
               }}
             >
@@ -267,7 +268,7 @@ export function TaskDrawer({
               disabled={pending}
               onClick={() =>
                 startTransition(async () => {
-                  await deleteTask(detail.id);
+                  await notifyChange(deleteTask(detail.id), "Task deleted");
                   onChanged?.();
                   onClose();
                 })
