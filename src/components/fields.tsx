@@ -194,6 +194,90 @@ export function Select({
   );
 }
 
+export function MultiSelect({
+  name,
+  defaultValue = [],
+  options,
+  placeholder = "Select",
+  className,
+}: {
+  name?: string;
+  defaultValue?: string[];
+  options: Option[];
+  placeholder?: string;
+  className?: string;
+}) {
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<string[]>(defaultValue.filter(Boolean));
+  const { triggerRef, pos } = useMenuPosition(open);
+  const labels = selected
+    .map((value) => options.find((option) => option.value === value)?.label)
+    .filter((label): label is string => Boolean(label));
+  const summary =
+    labels.length === 0 ? placeholder : labels.length <= 2 ? labels.join(", ") : `${labels[0]} +${labels.length - 1}`;
+
+  function toggle(value: string) {
+    setSelected((current) =>
+      current.includes(value) ? current.filter((item) => item !== value) : [...current, value],
+    );
+  }
+
+  return (
+    <div className={cn("relative min-w-0", className)}>
+      {name
+        ? selected.map((value) => <input key={value} type="hidden" name={name} value={value} />)
+        : null}
+      <button
+        ref={triggerRef}
+        type="button"
+        id={id}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className={cn(field, "flex items-center justify-between gap-2 text-left")}
+      >
+        <span className={cn("truncate", selected.length ? "text-ink" : "text-muted")}>{summary}</span>
+        <ChevronDown size={16} className={cn("shrink-0 text-muted transition", open && "rotate-180")} />
+      </button>
+      <MenuPortal open={open} onClose={() => setOpen(false)} triggerRef={triggerRef} pos={pos}>
+        <button
+          type="button"
+          role="option"
+          aria-selected={selected.length === 0}
+          onClick={() => setSelected([])}
+          className={cn(
+            "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm",
+            selected.length === 0 ? "bg-sand text-brown" : "text-ink hover:bg-paper",
+          )}
+        >
+          Unassigned
+          {selected.length === 0 ? <Check size={14} /> : null}
+        </button>
+        {options.map((option) => {
+          const active = selected.includes(option.value);
+          return (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={active}
+              onClick={() => toggle(option.value)}
+              className={cn(
+                "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm",
+                active ? "bg-sand text-brown" : "text-ink hover:bg-paper",
+              )}
+            >
+              {option.label}
+              {active ? <Check size={14} /> : null}
+            </button>
+          );
+        })}
+      </MenuPortal>
+    </div>
+  );
+}
+
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 function parseKey(value: string) {

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { MessageSquare, Paperclip } from "lucide-react";
 import type { MemberDTO, SprintDTO, TaskDTO } from "@/lib/types";
 import { cn, formatDay } from "@/lib/utils";
-import { Avatar, PriorityBadge, StatusBadge, TypeBadge, field, surface } from "@/components/ui";
+import { AvatarStack, PriorityBadge, StatusBadge, TypeBadge, field, surface } from "@/components/ui";
 import { Select } from "@/components/fields";
 import { CreateTaskButton } from "@/components/create-task-button";
 import { TaskDrawer } from "@/components/task-drawer";
@@ -109,7 +109,7 @@ export function BacklogBoard({
                     <span className="inline-flex items-center gap-1 text-xs">
                       <Paperclip size={12} /> {task.attachmentCount}
                     </span>
-                    {task.assignee ? <Avatar {...task.assignee} size="sm" /> : null}
+                    {task.assignees?.length ? <AvatarStack members={task.assignees} /> : null}
                   </div>
                 </td>
               </tr>

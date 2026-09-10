@@ -45,11 +45,18 @@ export function mapTask(
   row: TaskRow,
   extras: {
     assignee?: UserRow | null;
+    assignees?: UserRow[];
     sprintName?: string | null;
     commentCount?: number;
     attachmentCount?: number;
   } = {},
 ): TaskDTO {
+  const assignees = (extras.assignees?.length
+    ? extras.assignees
+    : extras.assignee
+      ? [extras.assignee]
+      : []
+  ).map((user) => memberFromUser(mapUser(user)));
   return {
     id: row.id,
     projectId: row.project_id,
@@ -64,7 +71,8 @@ export function mapTask(
     startDate: iso(row.start_date),
     dueDate: iso(row.due_date),
     createdAt: iso(row.created_at) ?? new Date().toISOString(),
-    assignee: extras.assignee ? memberFromUser(mapUser(extras.assignee)) : null,
+    assignee: assignees[0] ?? null,
+    assignees,
     sprintName: extras.sprintName ?? null,
     commentCount: extras.commentCount ?? 0,
     attachmentCount: extras.attachmentCount ?? 0,

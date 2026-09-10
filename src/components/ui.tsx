@@ -54,14 +54,17 @@ export function Avatar({
 
 export function AvatarStack({
   members,
+  size = "sm",
 }: {
   members: Array<{ name: string; initials: string; color: string }>;
+  size?: "xs" | "sm" | "md";
 }) {
+  if (members.length === 0) return null;
   return (
     <div className="flex -space-x-2">
-      {members.slice(0, 5).map((member) => (
-        <span key={`${member.name}-${member.initials}-${member.color}`} className="rounded-full ring-2 ring-paper">
-          <Avatar {...member} size="sm" />
+      {members.slice(0, 5).map((member, index) => (
+        <span key={`${member.name}-${member.initials}-${index}`} className="rounded-full ring-2 ring-paper">
+          <Avatar {...member} size={size} />
         </span>
       ))}
     </div>

@@ -11,6 +11,7 @@ export default function ProjectOverviewPage() {
       description={project.description}
       tasks={tasks}
       sprints={sprints}
+      members={members}
       activities={activities}
       todayCheckins={todayCheckins}
       memberCount={members.length}

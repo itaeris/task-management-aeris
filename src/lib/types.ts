@@ -22,6 +22,7 @@ export type TaskDTO = {
   dueDate: string | null;
   createdAt: string;
   assignee: MemberDTO | null;
+  assignees: MemberDTO[];
   sprintName: string | null;
   commentCount: number;
   attachmentCount: number;

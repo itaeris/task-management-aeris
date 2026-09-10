@@ -248,7 +248,7 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
               <Term name="Done">Finished tasks. These move the progress bar on home.</Term>
               <Term name="Daily check today">How many members have filled in standup today, versus the member count.</Term>
               <Term name="Active sprint">The iteration currently running. If this is empty, activate a sprint in Scrum log.</Term>
-              <Term name="Upcoming deadlines">The five tasks with the nearest due dates.</Term>
+              <Term name="Upcoming deadlines">The five tasks with the nearest due dates. Click a row to open that task.</Term>
               <Term name="Activity">A trail of who added, changed, or deleted a task.</Term>
             </div>
           </section>
@@ -302,7 +302,7 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
             <h3 className="mt-5 text-sm font-semibold tracking-wide text-ink uppercase">Other</h3>
             <div className="mt-3 grid gap-3">
               <Term name="Pts (story points)">Size estimate, not hours. Relative numbers on the team (for example 1, 2, 3, 5, 8).</Term>
-              <Term name="Assignee">Who owns the task. Can be empty.</Term>
+              <Term name="Assignee">Who owns the task. You can assign more than one person, or leave it empty.</Term>
               <Term name="Start / Due">Start and deadline. Due fills Calendar. Both fill Timeline.</Term>
               <Term name="Sprint">The iteration where the task is worked. Empty = still on the product backlog.</Term>
             </div>
@@ -452,7 +452,7 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
               Click a task in Product log, Kanban, Calendar, or Timeline. This drawer is where you edit it fully.
             </p>
             <div className="mt-4 grid gap-3">
-              <Term name="Save">Writes title, description, status, priority, type, sprint, assignee, dates, and points.</Term>
+              <Term name="Save">Writes title, description, status, priority, type, sprint, assignees, dates, and points.</Term>
               <Term name="Comments">Discussion on that task only. The team sees them in time order.</Term>
               <Term name="Attachments">Files attached to the task. Limit around 10 MB. Common formats: images, PDF, Office documents, ZIP, text/CSV.</Term>
               <Term name="Delete">Removes the task, its comments, and its attachments. Cannot be undone from the app.</Term>

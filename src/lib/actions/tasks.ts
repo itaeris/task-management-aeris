@@ -3,6 +3,7 @@
 import { after } from "next/server";
 import { supabase, unwrap } from "@/lib/supabase";
 import { requireProjectMember, requireUser } from "@/lib/auth";
+import { isMissingAssigneesSchema } from "@/lib/access";
 import { parseDateInput } from "@/lib/utils";
 import { getTaskDetail } from "@/lib/queries";
 import { notifyGoogleCalendarTaskChanged, notifyGoogleCalendarTaskDeleted } from "@/lib/google-calendar";
@@ -16,6 +17,31 @@ function syncCalendarLater(taskId: string) {
   after(() => {
     void notifyGoogleCalendarTaskChanged(taskId);
   });
+}
+
+function readAssigneeIds(formData: FormData) {
+  const fromMany = formData
+    .getAll("assigneeIds")
+    .flatMap((value) => String(value).split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (fromMany.length) return [...new Set(fromMany)];
+  const one = String(formData.get("assigneeId") ?? "").trim();
+  return one ? [one] : [];
+}
+
+async function replaceTaskAssignees(taskId: string, userIds: string[]) {
+  const unique = [...new Set(userIds)];
+  try {
+    unwrap(await supabase.from("task_assignees").delete().eq("task_id", taskId));
+    if (unique.length) {
+      unwrap(
+        await supabase.from("task_assignees").insert(unique.map((userId) => ({ task_id: taskId, user_id: userId }))),
+      );
+    }
+  } catch (error) {
+    if (!isMissingAssigneesSchema(error)) throw error;
+  }
 }
 
 async function nextRank(projectId: string) {
@@ -36,6 +62,7 @@ export async function createTask(projectId: string, formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   if (!title) throw new Error("Task title is required.");
   const pointsRaw = String(formData.get("points") ?? "").trim();
+  const assigneeIds = readAssigneeIds(formData);
 
   const task = unwrap(
     await supabase
@@ -48,7 +75,7 @@ export async function createTask(projectId: string, formData: FormData) {
         priority: String(formData.get("priority") ?? "medium"),
         status: String(formData.get("status") ?? "backlog"),
         sprint_id: String(formData.get("sprintId") ?? "") || null,
-        assignee_id: String(formData.get("assigneeId") ?? "") || null,
+        assignee_id: assigneeIds[0] ?? null,
         points: pointsRaw ? Number(pointsRaw) : null,
         start_date: parseDateInput(formData.get("startDate"))?.toISOString() ?? null,
         due_date: parseDateInput(formData.get("dueDate"))?.toISOString() ?? null,
@@ -57,6 +84,7 @@ export async function createTask(projectId: string, formData: FormData) {
       .select("id, title")
       .single(),
   ) as { id: string; title: string };
+  await replaceTaskAssignees(task.id, assigneeIds);
 
   unwrap(
     await supabase.from("activities").insert({
@@ -77,6 +105,7 @@ export async function updateTask(taskId: string, formData: FormData) {
   if (!existing) throw new Error("Task not found.");
   const { user } = await requireProjectMember(existing.project_id);
   const pointsRaw = String(formData.get("points") ?? "").trim();
+  const assigneeIds = readAssigneeIds(formData);
 
   unwrap(
     await supabase
@@ -88,7 +117,7 @@ export async function updateTask(taskId: string, formData: FormData) {
         priority: String(formData.get("priority") ?? "medium"),
         status: String(formData.get("status") ?? "backlog"),
         sprint_id: String(formData.get("sprintId") ?? "") || null,
-        assignee_id: String(formData.get("assigneeId") ?? "") || null,
+        assignee_id: assigneeIds[0] ?? null,
         points: pointsRaw ? Number(pointsRaw) : null,
         start_date: parseDateInput(formData.get("startDate"))?.toISOString() ?? null,
         due_date: parseDateInput(formData.get("dueDate"))?.toISOString() ?? null,
@@ -96,6 +125,7 @@ export async function updateTask(taskId: string, formData: FormData) {
       })
       .eq("id", taskId),
   );
+  await replaceTaskAssignees(taskId, assigneeIds);
   unwrap(
     await supabase.from("activities").insert({
       project_id: existing.project_id,

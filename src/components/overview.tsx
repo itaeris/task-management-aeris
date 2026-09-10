@@ -1,7 +1,12 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn, formatDay } from "@/lib/utils";
 import { Avatar, StatusBadge, surface } from "@/components/ui";
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
+import { TaskDrawer } from "@/components/task-drawer";
 import type { MemberDTO, SprintDTO, TaskDTO } from "@/lib/types";
 
 export function Overview({
@@ -9,6 +14,7 @@ export function Overview({
   description,
   tasks,
   sprints,
+  members,
   activities,
   todayCheckins,
   memberCount,
@@ -17,10 +23,13 @@ export function Overview({
   description: string;
   tasks: TaskDTO[];
   sprints: SprintDTO[];
+  members: MemberDTO[];
   activities: Array<{ id: string; message: string; createdAt: string; user: MemberDTO }>;
   todayCheckins: number;
   memberCount: number;
 }) {
+  const router = useRouter();
+  const [openId, setOpenId] = useState<string | null>(null);
   const active = sprints.find((sprint) => sprint.status === "active");
   const done = tasks.filter((task) => task.status === "done").length;
   const upcoming = tasks
@@ -72,16 +81,26 @@ export function Overview({
       <FadeIn delay={0.16} className="grid gap-4 lg:grid-cols-2">
         <section className={cn(surface, "rounded-3xl p-5")}>
           <h2 className="font-serif text-2xl">Upcoming deadlines</h2>
-          <ul className="mt-3 divide-y divide-line">
-            {upcoming.map((task) => (
-              <li key={task.id} className="flex items-center justify-between gap-2 py-3">
-                <span className="min-w-0 truncate text-sm font-medium">{task.title}</span>
-                <div className="flex shrink-0 items-center gap-2">
-                  <StatusBadge status={task.status} />
-                  <span className="text-xs text-muted">{formatDay(task.dueDate!)}</span>
-                </div>
-              </li>
-            ))}
+          <ul className="mt-3 -mx-1">
+            {upcoming.length === 0 ? (
+              <li className="px-3 py-4 text-sm text-muted">No upcoming deadlines.</li>
+            ) : (
+              upcoming.map((task) => (
+                <li key={task.id} className="border-b border-line last:border-0">
+                  <button
+                    type="button"
+                    className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-sand focus-visible:bg-sand focus-visible:outline-none"
+                    onClick={() => setOpenId(task.id)}
+                  >
+                    <span className="min-w-0 truncate text-sm font-medium">{task.title}</span>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <StatusBadge status={task.status} />
+                      <span className="text-xs text-muted">{formatDay(task.dueDate!)}</span>
+                    </div>
+                  </button>
+                </li>
+              ))
+            )}
           </ul>
         </section>
         <section className={cn(surface, "rounded-3xl p-5")}>
@@ -99,6 +118,13 @@ export function Overview({
           </ul>
         </section>
       </FadeIn>
+      <TaskDrawer
+        taskId={openId}
+        members={members}
+        sprints={sprints}
+        onClose={() => setOpenId(null)}
+        onChanged={() => router.refresh()}
+      />
     </div>
   );
 }

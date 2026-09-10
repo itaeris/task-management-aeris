@@ -126,14 +126,15 @@ export function ScrumView({
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-paper-2">
                 <div className="h-full bg-forest" style={{ width: `${progress}%` }} />
               </div>
-              <ul className="mt-4 divide-y divide-line">
+              <ul className="mt-3 -mx-1">
                 {items.length === 0 ? (
-                  <li className="py-4 text-sm text-muted">No items in this sprint yet.</li>
+                  <li className="px-3 py-4 text-sm text-muted">No items in this sprint yet.</li>
                 ) : (
                   items.map((task) => (
-                    <li key={task.id}>
+                    <li key={task.id} className="border-b border-line last:border-0">
                       <button
-                        className="flex w-full items-center justify-between gap-3 py-3 text-left"
+                        type="button"
+                        className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-sand focus-visible:bg-sand focus-visible:outline-none"
                         onClick={() => setOpenId(task.id)}
                       >
                         <span className="font-medium">{task.title}</span>

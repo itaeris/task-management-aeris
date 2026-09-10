@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { addDays, cn, startOfDay } from "@/lib/utils";
 import type { MemberDTO, SprintDTO, TaskDTO } from "@/lib/types";
 import { TaskDrawer } from "@/components/task-drawer";
-import { Avatar, surface } from "@/components/ui";
+import { AvatarStack, surface } from "@/components/ui";
 
 export function TimelineView({
   tasks,
@@ -109,7 +109,9 @@ export function TimelineView({
                       style={{ left: offset * dayWidth, width: barWidth }}
                     >
                       <span className="flex h-full min-w-0 items-center gap-1.5 overflow-hidden px-2">
-                        {barWidth >= 64 && task.assignee ? <Avatar {...task.assignee} size="xs" /> : null}
+                        {barWidth >= 64 && task.assignees?.length ? (
+                          <AvatarStack members={task.assignees} size="xs" />
+                        ) : null}
                         <span className="min-w-0 truncate whitespace-nowrap">{task.title}</span>
                       </span>
                     </button>

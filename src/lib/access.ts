@@ -82,3 +82,15 @@ export function isMissingPinsSchema(error: unknown) {
     message,
   );
 }
+
+export function isMissingAssigneesSchema(error: unknown) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" && error && "message" in error
+        ? String((error as { message: unknown }).message)
+        : String(error);
+  return /relation ["']?(public\.)?task_assignees|could not find the (table|relationship).*task_assignees|schema cache/i.test(
+    message,
+  );
+}

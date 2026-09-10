@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { isMissingAccessSchema, isMissingPinsSchema, parseProjectAccess, type ProjectAccess } from "@/lib/access";
+import { isMissingAccessSchema, isMissingAssigneesSchema, isMissingPinsSchema, parseProjectAccess, type ProjectAccess } from "@/lib/access";
 import { ensureProjectAccess } from "@/lib/project-access";
 import { supabase, unwrap } from "@/lib/supabase";
 import { iso, memberFromUser, type ProjectSwitcherItem, type ProjectWorkspace, type TaskDetailDTO } from "@/lib/types";
@@ -130,6 +130,7 @@ async function loadSharedProjectIds(userId: string) {
 }
 
 let pinsTableReady: boolean | null = null;
+let assigneesTableReady: boolean | null = null;
 
 async function loadPinnedProjectIds(userId: string) {
   if (pinsTableReady === false) return [] as Array<{ project_id: string }>;
@@ -140,6 +141,17 @@ async function loadPinnedProjectIds(userId: string) {
   }
   pinsTableReady = true;
   return unwrap(result) as Array<{ project_id: string }>;
+}
+
+async function loadTaskAssigneeRows(taskIds: string[]) {
+  if (taskIds.length === 0 || assigneesTableReady === false) return [] as Array<{ task_id: string; user_id: string }>;
+  const result = await supabase.from("task_assignees").select("task_id, user_id").in("task_id", taskIds);
+  if (result.error && isMissingAssigneesSchema(result.error)) {
+    assigneesTableReady = false;
+    return [] as Array<{ task_id: string; user_id: string }>;
+  }
+  assigneesTableReady = true;
+  return unwrap(result) as Array<{ task_id: string; user_id: string }>;
 }
 
 export async function listProjectsForUser(userId: string) {
@@ -476,7 +488,7 @@ export const getProjectWorkspace = cache(async (projectId: string, userId: strin
   ]);
 
   const taskIds = tasks.map((task) => task.id);
-  const [commentRows, attachmentRows] = await Promise.all([
+  const [commentRows, attachmentRows, assigneeRows] = await Promise.all([
     taskIds.length
       ? supabase
           .from("comments")
@@ -491,6 +503,7 @@ export const getProjectWorkspace = cache(async (projectId: string, userId: strin
           .in("task_id", taskIds)
           .then((result) => unwrap(result) as Array<{ task_id: string }>)
       : Promise.resolve([] as Array<{ task_id: string }>),
+    loadTaskAssigneeRows(taskIds),
   ]);
 
   const commentCount = new Map<string, number>();
@@ -503,6 +516,26 @@ export const getProjectWorkspace = cache(async (projectId: string, userId: strin
     return user ? [memberFromRow(user, item.role)] : [];
   });
   const usersById = new Map(members.map((member) => [member.id, member]));
+  const assigneeIdsByTask = new Map<string, string[]>();
+  for (const row of assigneeRows) {
+    const current = assigneeIdsByTask.get(row.task_id) ?? [];
+    current.push(row.user_id);
+    assigneeIdsByTask.set(row.task_id, current);
+  }
+  const missingUserIds = [
+    ...new Set(
+      [
+        ...assigneeRows.map((row) => row.user_id),
+        ...tasks.flatMap((task) => (task.assignee_id ? [task.assignee_id] : [])),
+      ].filter((id) => !usersById.has(id)),
+    ),
+  ];
+  if (missingUserIds.length) {
+    const extraUsers = unwrap(
+      await supabase.from("users").select("id, name, email, initials, color").in("id", missingUserIds),
+    ) as Array<{ id: string; name: string; email: string; initials: string; color: string }>;
+    for (const user of extraUsers) usersById.set(user.id, memberFromUser(mapUser(user)));
+  }
   const access = parseProjectAccess(project.access);
   const groupName = groupRow?.name ?? null;
 
@@ -532,17 +565,20 @@ export const getProjectWorkspace = cache(async (projectId: string, userId: strin
       doneCount: tasks.filter((task) => task.sprint_id === sprint.id && task.status === "done").length,
     })),
     tasks: tasks.map((task) => {
-      const assignee = usersById.get(task.assignee_id ?? "");
+      const assigneeIds = assigneeIdsByTask.get(task.id);
+      const ids = assigneeIds?.length ? assigneeIds : task.assignee_id ? [task.assignee_id] : [];
+      const assignees = ids
+        .map((id) => usersById.get(id))
+        .filter((user): user is NonNullable<typeof user> => Boolean(user))
+        .map((user) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          initials: user.initials,
+          color: user.color,
+        }));
       return mapTask(task, {
-        assignee: assignee
-          ? {
-              id: assignee.id,
-              name: assignee.name,
-              email: assignee.email,
-              initials: assignee.initials,
-              color: assignee.color,
-            }
-          : null,
+        assignees,
         sprintName: sprintRows.find((sprint) => sprint.id === task.sprint_id)?.name ?? null,
         commentCount: commentCount.get(task.id) ?? 0,
         attachmentCount: attachmentCount.get(task.id) ?? 0,
@@ -585,10 +621,8 @@ export async function getTaskDetail(taskId: string, userId: string): Promise<Tas
   if (!task) return null;
   if (!(await isProjectMember(task.project_id, userId))) return null;
 
-  const [assignee, sprint, comments, attachments] = await Promise.all([
-    task.assignee_id
-      ? unwrap(await supabase.from("users").select("*").eq("id", task.assignee_id).maybeSingle())
-      : Promise.resolve(null),
+  const [assigneeRows, sprint, comments, attachments] = await Promise.all([
+    loadTaskAssigneeRows([taskId]),
     task.sprint_id
       ? unwrap(await supabase.from("sprints").select("id, name").eq("id", task.sprint_id).maybeSingle())
       : Promise.resolve(null),
@@ -608,8 +642,25 @@ export async function getTaskDetail(taskId: string, userId: string): Promise<Tas
     ),
   ]);
 
+  const assigneeIds = [
+    ...new Set(
+      (assigneeRows.length ? assigneeRows.map((row) => row.user_id) : task.assignee_id ? [task.assignee_id] : []).filter(
+        Boolean,
+      ),
+    ),
+  ];
+  const assigneeUsers = assigneeIds.length
+    ? ((unwrap(
+        await supabase.from("users").select("*").in("id", assigneeIds),
+      ) as UserRow[]) ?? [])
+    : [];
+  const assigneeById = new Map(assigneeUsers.map((user) => [user.id, user]));
+  const assignees = assigneeIds
+    .map((id) => assigneeById.get(id))
+    .filter((user): user is UserRow => Boolean(user));
+
   const mapped = mapTask(task, {
-    assignee: assignee as UserRow | null,
+    assignees,
     sprintName: (sprint as { name: string } | null)?.name ?? null,
     commentCount: (comments as unknown[]).length,
     attachmentCount: (attachments as unknown[]).length,

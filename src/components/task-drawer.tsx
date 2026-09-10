@@ -7,9 +7,9 @@ import { deleteAttachment, uploadAttachment } from "@/lib/actions/attachments";
 import { PRIORITIES, STATUSES, TASK_TYPES } from "@/lib/constants";
 import { cn, formatBytes, formatDay } from "@/lib/utils";
 import type { MemberDTO, SprintDTO, TaskDTO, TaskDetailDTO } from "@/lib/types";
-import { Avatar, PriorityBadge, TypeBadge, btnGhost, field, iconBtn, Skeleton } from "@/components/ui";
+import { Avatar, PriorityBadge, TypeBadge, AvatarStack, btnGhost, field, iconBtn, Skeleton } from "@/components/ui";
 import { PendingSubmit } from "@/components/pending-submit";
-import { DatePicker, Select } from "@/components/fields";
+import { DatePicker, MultiSelect, Select } from "@/components/fields";
 import { TaskDrawerSkeleton } from "@/components/skeletons";
 import { useSetActiveTask } from "@/components/presence";
 import { AnimatePresence, motion } from "framer-motion";
@@ -106,7 +106,7 @@ export function TaskDrawer({
               detail.priority,
               detail.status,
               detail.sprintId,
-              detail.assignee?.id,
+              (detail.assignees ?? []).map((person) => person.id).join(","),
               detail.points,
               detail.startDate,
               detail.dueDate,
@@ -153,14 +153,11 @@ export function TaskDrawer({
                   ...sprints.map((sprint) => ({ value: sprint.id, label: sprint.name })),
                 ]}
               />
-              <Select
-                name="assigneeId"
-                defaultValue={detail.assignee?.id ?? ""}
+              <MultiSelect
+                name="assigneeIds"
+                defaultValue={(detail.assignees ?? []).map((person) => person.id)}
                 placeholder="Unassigned"
-                options={[
-                  { value: "", label: "Unassigned" },
-                  ...members.map((member) => ({ value: member.id, label: member.name })),
-                ]}
+                options={members.map((member) => ({ value: member.id, label: member.name }))}
               />
               <input
                 name="points"
@@ -325,10 +322,10 @@ export function TaskChip({
       </div>
       <p className="mt-2 text-sm font-semibold leading-snug">{task.title}</p>
       <div className="mt-3 flex items-center justify-between text-xs text-muted">
-        <span>{task.points ? `${task.points} pt` : "No points"}</span>
+        <span>        {task.points ? `${task.points} pt` : "No points"}</span>
         {task.dueDate ? <span>{formatDay(task.dueDate)}</span> : <span />}
-        {task.assignee ? (
-          <Avatar {...task.assignee} size="sm" />
+        {task.assignees?.length ? (
+          <AvatarStack members={task.assignees} />
         ) : (
           <span className="h-7 w-7 rounded-full border border-dashed border-line" />
         )}

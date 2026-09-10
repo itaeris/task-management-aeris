@@ -102,6 +102,14 @@ create table public.tasks (
   updated_at timestamptz not null default now()
 );
 
+create table public.task_assignees (
+  id text primary key default gen_random_uuid()::text,
+  task_id text not null references public.tasks (id) on delete cascade,
+  user_id text not null references public.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (task_id, user_id)
+);
+
 create table public.comments (
   id text primary key default gen_random_uuid()::text,
   task_id text not null references public.tasks (id) on delete cascade,
@@ -143,6 +151,8 @@ create table public.activities (
 );
 
 create index tasks_project_rank_idx on public.tasks (project_id, rank, created_at);
+create index task_assignees_task_idx on public.task_assignees (task_id);
+create index task_assignees_user_idx on public.task_assignees (user_id);
 create index comments_task_idx on public.comments (task_id, created_at);
 create index activities_project_idx on public.activities (project_id, created_at desc);
 create index projects_access_idx on public.projects (access);

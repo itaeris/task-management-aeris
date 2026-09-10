@@ -242,8 +242,17 @@ async function main() {
         due_date: daysFromToday(18),
       },
     ])
-    .select("id");
+    .select("id, assignee_id");
   if (taskError || !tasks) throw taskError;
+
+  const assigneeRows = [
+    ...tasks
+      .filter((task): task is typeof task & { assignee_id: string } => Boolean(task.assignee_id))
+      .map((task) => ({ task_id: task.id, user_id: task.assignee_id })),
+    { task_id: tasks[0].id, user_id: aeris.id },
+  ];
+  const { error: assigneeError } = await supabase.from("task_assignees").insert(assigneeRows);
+  if (assigneeError && !/task_assignees/i.test(assigneeError.message)) throw assigneeError;
 
   const { error: commentError } = await supabase.from("comments").insert([
     {
