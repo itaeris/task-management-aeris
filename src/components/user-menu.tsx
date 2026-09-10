@@ -67,7 +67,7 @@ export function UserMenu({ user }: { user: UserLite }) {
       <button
         ref={buttonRef}
         type="button"
-        className="flex max-w-full items-center gap-2 rounded-full border border-line bg-paper py-1 pr-2 pl-2.5 text-ink transition hover:bg-paper-2 sm:pl-3"
+        className="flex max-w-full min-w-0 items-center gap-1.5 rounded-full border border-line bg-paper py-1 pr-1.5 pl-1.5 text-ink transition hover:bg-paper-2 sm:gap-2 sm:pr-2 sm:pl-3"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -76,7 +76,7 @@ export function UserMenu({ user }: { user: UserLite }) {
           Hi, {user.name}
         </span>
         <Avatar {...user} size="sm" />
-        <ChevronDown size={14} className={cn("shrink-0 text-muted transition", open && "rotate-180")} />
+        <ChevronDown size={14} className={cn("hidden shrink-0 text-muted transition sm:inline", open && "rotate-180")} />
       </button>
       {open && pos && typeof document !== "undefined"
         ? createPortal(

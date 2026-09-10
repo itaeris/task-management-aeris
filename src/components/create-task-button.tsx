@@ -45,7 +45,7 @@ export function CreateTaskButton({
           transition={{ duration: 0.18 }}
         >
           <motion.form
-            className={cn(surface, "w-full max-w-lg rounded-3xl p-6")}
+            className={cn(surface, "max-h-[min(90dvh,42rem)] w-full max-w-lg overflow-y-auto rounded-3xl p-4 sm:p-6")}
             initial={{ opacity: 0, y: 16, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -62,7 +62,7 @@ export function CreateTaskButton({
             <div className="grid gap-3">
               <input name="title" className={field} placeholder="Title" required />
               <textarea name="description" className={field} rows={3} placeholder="Description" />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Select
                   name="type"
                   defaultValue="story"

@@ -110,8 +110,8 @@ export function HomeFrame({
   return (
     <PresenceProvider>
       <main className="relative mx-auto flex min-h-dvh w-full max-w-[1600px] flex-col gap-3 p-3 sm:p-4 lg:h-dvh lg:overflow-hidden">
-        <header className="flex shrink-0 items-center gap-2 rounded-3xl border border-line bg-paper/80 px-3 py-2.5 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4">
-          <div className="flex min-w-0 items-center gap-2">
+        <header className="flex min-w-0 shrink-0 items-center gap-2 rounded-3xl border border-line bg-paper/80 px-3 py-2.5 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4">
+          <div className="min-w-0 flex-1 md:flex-none">
             <BrandLockup />
           </div>
           <div className="hidden min-w-0 flex-1 md:flex">

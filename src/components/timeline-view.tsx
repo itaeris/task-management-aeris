@@ -42,7 +42,7 @@ export function TimelineView({
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="font-serif text-3xl">Timeline</h1>
+        <h1 className="font-serif text-2xl sm:text-3xl">Timeline</h1>
         <p className="text-sm text-muted">Simple Gantt from start date to due date.</p>
       </div>
       <div className={cn(surface, "overflow-x-auto rounded-3xl")}>

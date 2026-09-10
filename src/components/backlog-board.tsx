@@ -39,22 +39,22 @@ export function BacklogBoard({
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl">Product log</h1>
+          <h1 className="font-serif text-2xl sm:text-3xl">Product log</h1>
           <p className="text-sm text-muted">
             Backlog ordered by priority. Move items into a sprint from the task detail.
           </p>
         </div>
         <CreateTaskButton projectId={projectId} members={members} sprints={sprints} />
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
         <input
-          className={cn(field, "max-w-xs")}
+          className={cn(field, "w-full sm:max-w-xs")}
           placeholder="Search items..."
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
         <Select
-          className="w-44"
+          className="w-full sm:w-44"
           value={priority}
           onChange={setPriority}
           options={[
@@ -66,7 +66,7 @@ export function BacklogBoard({
           ]}
         />
       </div>
-      <div className={cn(surface, "overflow-hidden rounded-3xl")}>
+      <div className={cn(surface, "overflow-x-auto rounded-3xl")}>
         <table className="w-full text-sm">
           <thead className="bg-paper-2/80 text-left text-xs tracking-wide text-muted uppercase">
             <tr>

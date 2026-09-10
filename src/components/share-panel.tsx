@@ -88,8 +88,8 @@ export function SharePanel({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-      <section className={cn(surface, "rounded-3xl p-6")}>
-        <h1 className="font-serif text-3xl">Share & collaboration</h1>
+      <section className={cn(surface, "rounded-3xl p-4 sm:p-6")}>
+        <h1 className="font-serif text-2xl sm:text-3xl">Share & collaboration</h1>
         <p className="mt-1 text-sm text-muted">
           <span className="font-semibold text-ink">{ACCESS_LABEL[access]}</span>
           {access === "group" && groupName ? ` · ${groupName}` : ""}.{" "}

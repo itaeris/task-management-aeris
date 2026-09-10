@@ -69,19 +69,19 @@ function SidebarBody({
   const reduce = useReducedMotion();
   return (
     <>
-      <div className="flex items-start justify-between px-5 pt-6">
-        <div>
+      <div className="flex min-w-0 items-start justify-between px-5 pt-6">
+        <div className="min-w-0">
           <Link href="/" className="flex items-center gap-2" onClick={onClose}>
             <BrandLockup />
           </Link>
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 flex min-w-0 items-center gap-3">
             <ProjectIconEditor
               projectId={projectId}
               value={projectColor}
               canEdit={canEditIcon}
               size="sm"
             />
-            <p className="font-serif min-w-0 text-[17px] leading-tight">{projectName}</p>
+            <p className="font-serif min-w-0 truncate text-[17px] leading-tight">{projectName}</p>
           </div>
         </div>
         {onClose ? (
@@ -189,15 +189,15 @@ export function ProjectShell({
           <SidebarBody {...sidebar} />
         </aside>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
-          <header className="flex shrink-0 items-center gap-2 rounded-3xl border border-line bg-paper/80 px-3 py-2 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4 sm:py-2.5">
+          <header className="flex min-w-0 shrink-0 items-center gap-1.5 rounded-3xl border border-line bg-paper/80 px-2 py-2 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4 sm:py-2.5">
             <button type="button" className={cn(iconBtn, "lg:hidden")} onClick={() => setNavOpen(true)} aria-label="Open menu">
               <Menu size={18} />
             </button>
-            <Link href="/" className={cn(btnGhost, "shrink-0 px-3 sm:px-4")}>
+            <Link href="/" className={cn(btnGhost, "shrink-0 px-2.5 sm:px-4")}>
               <ArrowLeft size={16} />
               <span className="hidden sm:inline">Home</span>
             </Link>
-            <div className="min-w-0 max-w-[11rem] sm:max-w-xs">
+            <div className="min-w-0 flex-1 sm:max-w-xs">
               <ProjectSwitcher
                 currentId={projectId}
                 currentName={projectName}
@@ -208,7 +208,7 @@ export function ProjectShell({
             <div className="hidden min-w-0 flex-1 md:flex">
               <PresenceBoard variant="header" />
             </div>
-            <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
               <UserMenu user={user} />
               <ThemeToggle />
             </div>

@@ -42,7 +42,7 @@ export function DailyView({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-serif text-3xl">Daily check</h1>
+        <h1 className="font-serif text-2xl sm:text-3xl">Daily check</h1>
         <p className="text-sm text-muted">Daily standup: yesterday, today, and blockers.</p>
       </div>
 

@@ -248,8 +248,8 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
               <Term name="Done">Finished tasks. These move the progress bar on home.</Term>
               <Term name="Daily check today">How many members have filled in standup today, versus the member count.</Term>
               <Term name="Active sprint">The iteration currently running. If this is empty, activate a sprint in Scrum log.</Term>
-              <Term name="Upcoming deadlines">The five tasks with the nearest due dates. Click a row to open that task.</Term>
-              <Term name="Activity">A trail of who added, changed, or deleted a task.</Term>
+              <Term name="Upcoming deadlines">Tasks with due dates, five per page. Click a row to open that task.</Term>
+              <Term name="Activity">A trail of who added, changed, or deleted a task, five per page.</Term>
             </div>
           </section>
 
@@ -388,13 +388,15 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
             </p>
             <div className="mt-4 grid gap-3">
               <Term name="Connect Google Calendar">
-                OAuth to your Google calendar. Tasks with a due date are copied to your primary calendar as
-                all-day events. This is not a team invite — each member connects their own account.
+                OAuth to your Google calendar. Eligible tasks with a due date become all-day events on your
+                primary calendar. Personal projects copy every due date. Group and organization projects only
+                copy tasks assigned to you — even if the whole workspace can open the board. This is not a team
+                invite; each person connects their own account.
               </Term>
               <Term name="Sync">
-                Push every due date in this project to Google again. Creating, updating, or deleting a task also
-                pushes while the connection is active. Deleting the whole project also removes those events from
-                Google Calendar / CalDAV.
+                Push this project&apos;s eligible due dates to Google again. Creating, updating, assigning, or
+                deleting a task also updates Google while the connection is active. Deleting the whole project
+                removes those events from Google Calendar / CalDAV.
               </Term>
               <Term name="Disconnect">
                 Revoke the app&apos;s access to Google. Due-date events already on Google Calendar are not deleted
@@ -488,8 +490,9 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
                 comments.
               </Step>
               <Step n="6" title="Watch the dates">
-                Use Calendar for deadlines, Timeline for duration. Connect Google Calendar if you want due dates
-                on your personal calendar.
+                Use Calendar for deadlines, Timeline for duration. Connect Google Calendar if you want your own
+                due dates on Google — every dated task in a personal project, or only assigned tasks in a shared
+                one.
               </Step>
               <Step n="7" title="Close the sprint">
                 In Scrum log, mark it Complete. Leave unfinished work: send it back to the backlog or the next

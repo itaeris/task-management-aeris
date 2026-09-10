@@ -458,7 +458,7 @@ export const getProjectWorkspace = cache(async (projectId: string, userId: strin
       .select("id, message, created_at, users (id, name, email, initials, color)")
       .eq("project_id", projectId)
       .order("created_at", { ascending: false })
-      .limit(20)
+      .limit(100)
       .then(
         (result) =>
           unwrap(result) as Array<{

@@ -10,6 +10,7 @@ import {
   syncGoogleCalendar,
   type CalendarActionState,
 } from "@/lib/actions/google-calendar";
+import type { ProjectAccess } from "@/lib/access";
 import type { CalendarConnectionPublic } from "@/lib/types";
 import { toast, useToastMessage } from "@/components/toast";
 
@@ -26,11 +27,13 @@ const ERRORS: Record<string, string> = {
 
 export function GoogleCalendarConnect({
   projectId,
+  access,
   connection,
   notice,
   error,
 }: {
   projectId: string;
+  access: ProjectAccess;
   connection: CalendarConnectionPublic;
   notice?: string;
   error?: string;
@@ -94,7 +97,13 @@ export function GoogleCalendarConnect({
         <p className={cn("text-right text-[12px]", disconnectState.error || syncState.error || ERRORS[error ?? ""] ? "text-red-700 dark:text-red-400" : "text-muted")}>
           {message}
         </p>
-      ) : null}
+      ) : (
+        <p className="text-right text-[12px] text-muted">
+          {access === "personal"
+            ? "Due dates in this personal project sync to your calendar."
+            : "Only tasks assigned to you sync from this project."}
+        </p>
+      )}
     </div>
   );
 }

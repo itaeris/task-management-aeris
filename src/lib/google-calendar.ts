@@ -1,3 +1,4 @@
+import { isMissingAssigneesSchema, parseProjectAccess, type ProjectAccess } from "@/lib/access";
 import { supabase, unwrap } from "@/lib/supabase";
 import { siteUrl } from "@/lib/site";
 import type { TaskRow } from "@/lib/mappers";
@@ -202,25 +203,90 @@ async function mappedEvent(userId: string, taskId: string) {
   ) as { event_id: string; calendar_id: string } | null;
 }
 
+type CalendarProject = {
+  id: string;
+  name: string;
+  access?: string | null;
+  owner_id: string;
+};
+
+async function loadTaskAssigneeIds(taskId: string, fallbackAssigneeId: string | null) {
+  try {
+    const rows = unwrap(
+      await supabase.from("task_assignees").select("user_id").eq("task_id", taskId),
+    ) as Array<{ user_id: string }>;
+    if (rows.length) return [...new Set(rows.map((row) => row.user_id))];
+  } catch (error) {
+    if (!isMissingAssigneesSchema(error)) throw error;
+  }
+  return fallbackAssigneeId ? [fallbackAssigneeId] : [];
+}
+
+async function isProjectMember(projectId: string, userId: string) {
+  const row = unwrap(
+    await supabase
+      .from("project_members")
+      .select("id")
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+  );
+  return Boolean(row);
+}
+
+/** Personal boards sync every dated task. Shared boards only sync tasks assigned to you. */
+async function userShouldHaveCalendarEvent(userId: string, project: CalendarProject, assigneeIds: string[]) {
+  const access = parseProjectAccess(project.access);
+  if (access === "personal") {
+    if (project.owner_id === userId) return true;
+    return isProjectMember(project.id, userId);
+  }
+  return assigneeIds.includes(userId);
+}
+
+function calendarTargetsForTask(input: {
+  access: ProjectAccess;
+  ownerId: string;
+  memberIds: string[];
+  assigneeIds: string[];
+  connectedIds: Set<string>;
+  mappedIds: string[];
+}) {
+  const targets = new Set<string>(input.mappedIds);
+  if (input.access === "personal") {
+    if (input.connectedIds.has(input.ownerId)) targets.add(input.ownerId);
+    for (const id of input.memberIds) {
+      if (input.connectedIds.has(id)) targets.add(id);
+    }
+    return targets;
+  }
+  for (const id of input.assigneeIds) {
+    if (input.connectedIds.has(id)) targets.add(id);
+  }
+  return targets;
+}
+
 export async function upsertTaskOnGoogleCalendar(userId: string, taskId: string) {
   const connection = await getValidAccessToken(userId);
-  if (!connection) return;
+  if (!connection) return false;
 
   const task = unwrap(await supabase.from("tasks").select("*").eq("id", taskId).maybeSingle()) as TaskRow | null;
   if (!task) {
     await deleteTaskOnGoogleCalendar(userId, taskId);
-    return;
+    return false;
   }
 
   const project = unwrap(
-    await supabase.from("projects").select("name").eq("id", task.project_id).maybeSingle(),
-  ) as { name: string } | null;
-  const body = eventBody(task, project?.name ?? "Task Management");
+    await supabase.from("projects").select("id, name, access, owner_id").eq("id", task.project_id).maybeSingle(),
+  ) as CalendarProject | null;
+  const assigneeIds = await loadTaskAssigneeIds(task.id, task.assignee_id);
+  const allowed = project ? await userShouldHaveCalendarEvent(userId, project, assigneeIds) : false;
+  const body = allowed ? eventBody(task, project?.name ?? "Task Management") : null;
   const existing = await mappedEvent(userId, taskId);
 
   if (!body) {
     if (existing) await deleteTaskOnGoogleCalendar(userId, taskId);
-    return;
+    return false;
   }
 
   if (existing) {
@@ -230,7 +296,7 @@ export async function upsertTaskOnGoogleCalendar(userId: string, taskId: string)
         `/calendars/${encodeURIComponent(existing.calendar_id)}/events/${encodeURIComponent(existing.event_id)}`,
         { method: "PUT", body: JSON.stringify(body) },
       );
-      return;
+      return true;
     } catch {
       unwrap(
         await supabase.from("google_calendar_events").delete().eq("user_id", userId).eq("task_id", taskId),
@@ -243,7 +309,7 @@ export async function upsertTaskOnGoogleCalendar(userId: string, taskId: string)
     `/calendars/${encodeURIComponent(connection.calendar_id)}/events`,
     { method: "POST", body: JSON.stringify(body) },
   );
-  if (!created?.id) return;
+  if (!created?.id) return false;
   unwrap(
     await supabase.from("google_calendar_events").upsert(
       {
@@ -255,6 +321,7 @@ export async function upsertTaskOnGoogleCalendar(userId: string, taskId: string)
       { onConflict: "user_id,task_id" },
     ),
   );
+  return true;
 }
 
 export async function deleteTaskOnGoogleCalendar(userId: string, taskId: string) {
@@ -322,13 +389,12 @@ export async function syncProjectToGoogleCalendar(userId: string, projectId: str
   if (!connection) throw new Error("Google Calendar is not connected.");
 
   const tasks = unwrap(
-    await supabase.from("tasks").select("id, due_date").eq("project_id", projectId),
-  ) as Array<{ id: string; due_date: string | null }>;
+    await supabase.from("tasks").select("id").eq("project_id", projectId),
+  ) as Array<{ id: string }>;
 
   let synced = 0;
   for (const task of tasks) {
-    await upsertTaskOnGoogleCalendar(userId, task.id);
-    if (task.due_date) synced += 1;
+    if (await upsertTaskOnGoogleCalendar(userId, task.id)) synced += 1;
   }
 
   unwrap(
@@ -343,19 +409,42 @@ export async function syncProjectToGoogleCalendar(userId: string, projectId: str
 export async function notifyGoogleCalendarTaskChanged(taskId: string) {
   try {
     const task = unwrap(
-      await supabase.from("tasks").select("project_id").eq("id", taskId).maybeSingle(),
-    ) as { project_id: string } | null;
+      await supabase.from("tasks").select("id, project_id, assignee_id").eq("id", taskId).maybeSingle(),
+    ) as { id: string; project_id: string; assignee_id: string | null } | null;
     if (!task) return;
 
-    const members = unwrap(
-      await supabase.from("project_members").select("user_id").eq("project_id", task.project_id),
-    ) as Array<{ user_id: string }>;
-    const memberIds = new Set(members.map((row) => row.user_id));
-    const connections = unwrap(
-      await supabase.from("google_calendar_connections").select("user_id"),
-    ) as Array<{ user_id: string }>;
-    const userIds = connections.map((row) => row.user_id).filter((id) => memberIds.has(id));
-    await Promise.all(userIds.map((userId) => upsertTaskOnGoogleCalendar(userId, taskId).catch(() => undefined)));
+    const project = unwrap(
+      await supabase.from("projects").select("id, access, owner_id").eq("id", task.project_id).maybeSingle(),
+    ) as { id: string; access?: string | null; owner_id: string } | null;
+    if (!project) return;
+
+    const [members, connections, maps, assigneeIds] = await Promise.all([
+      supabase
+        .from("project_members")
+        .select("user_id")
+        .eq("project_id", task.project_id)
+        .then((result) => unwrap(result) as Array<{ user_id: string }>),
+      supabase
+        .from("google_calendar_connections")
+        .select("user_id")
+        .then((result) => unwrap(result) as Array<{ user_id: string }>),
+      supabase
+        .from("google_calendar_events")
+        .select("user_id")
+        .eq("task_id", taskId)
+        .then((result) => unwrap(result) as Array<{ user_id: string }>),
+      loadTaskAssigneeIds(task.id, task.assignee_id),
+    ]);
+
+    const userIds = calendarTargetsForTask({
+      access: parseProjectAccess(project.access),
+      ownerId: project.owner_id,
+      memberIds: members.map((row) => row.user_id),
+      assigneeIds,
+      connectedIds: new Set(connections.map((row) => row.user_id)),
+      mappedIds: maps.map((row) => row.user_id),
+    });
+    await Promise.all([...userIds].map((userId) => upsertTaskOnGoogleCalendar(userId, taskId).catch(() => undefined)));
   } catch (error) {
     if (isMissingCalendarTable(error)) return;
   }

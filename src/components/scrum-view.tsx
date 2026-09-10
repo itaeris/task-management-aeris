@@ -35,7 +35,7 @@ export function ScrumView({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl">Scrum log</h1>
+          <h1 className="font-serif text-2xl sm:text-3xl">Scrum log</h1>
           <p className="text-sm text-muted">Sprint planning, goals, and items in this iteration.</p>
         </div>
         <CreateTaskButton
@@ -47,7 +47,7 @@ export function ScrumView({
       </div>
 
       <form
-        className={cn(surface, "grid gap-3 rounded-3xl p-5 md:grid-cols-4")}
+        className={cn(surface, "grid gap-3 rounded-3xl p-4 sm:p-5 md:grid-cols-4")}
         action={async (formData) => {
           await notifyChange(createSprint(projectId, formData), "Sprint created");
           router.refresh();
@@ -65,7 +65,7 @@ export function ScrumView({
           const items = tasks.filter((task) => task.sprintId === sprint.id);
           const progress = sprint.taskCount === 0 ? 0 : Math.round((sprint.doneCount / sprint.taskCount) * 100);
           return (
-            <section key={sprint.id} className={cn(surface, "rounded-3xl p-5")}>
+            <section key={sprint.id} className={cn(surface, "rounded-3xl p-4 sm:p-5")}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">

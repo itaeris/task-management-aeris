@@ -121,14 +121,14 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
             })}
           </motion.div>
 
-          <motion.div variants={fadeUp} className="mt-8 flex gap-3 lg:hidden">
+          <motion.div variants={fadeUp} className="mt-8 flex flex-wrap gap-2 lg:hidden">
             {FEATURES.map((item) => {
               const Icon = item.icon;
               return (
                 <span
                   key={item.label}
                   title={item.label}
-                  className="grid h-11 w-11 place-items-center rounded-full border border-line bg-paper/50 text-ink"
+                  className="grid h-10 w-10 place-items-center rounded-full border border-line bg-paper/50 text-ink"
                 >
                   <Icon size={16} />
                 </span>

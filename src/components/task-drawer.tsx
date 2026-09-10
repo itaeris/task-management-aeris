@@ -83,12 +83,12 @@ export function TaskDrawer({
         >
         {detail ? (
         <>
-        <div className="flex items-start justify-between border-b border-line px-6 py-5">
-          <div>
+        <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-4 sm:px-6 sm:py-5">
+          <div className="min-w-0">
             <p className="text-xs font-semibold tracking-[0.18em] text-muted uppercase">
               Task detail
             </p>
-            <h2 className="font-serif mt-1 text-2xl leading-tight">
+            <h2 className="font-serif mt-1 text-xl leading-tight sm:text-2xl">
               {detail.title}
             </h2>
           </div>
@@ -111,7 +111,7 @@ export function TaskDrawer({
               detail.startDate,
               detail.dueDate,
             ].join("|")}
-            className="flex flex-1 flex-col gap-4 px-6 py-5"
+            className="flex flex-1 flex-col gap-4 px-4 py-5 sm:px-6"
             action={async (formData) => {
               await notifyChange(updateTask(detail.id, formData), "Task updated");
               await refresh();
@@ -128,7 +128,7 @@ export function TaskDrawer({
               defaultValue={detail.description}
             />
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Select
                 name="type"
                 defaultValue={detail.type}
@@ -182,8 +182,8 @@ export function TaskDrawer({
             <PendingSubmit idle="Save changes" busy="Saving…" className="self-start" />
           </form>
 
-          <div className="border-t border-line px-6 py-5">
-            <div className="mb-3 flex items-center justify-between">
+          <div className="border-t border-line px-4 py-5 sm:px-6">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold">Attachment</h3>
               <button className={btnGhost} onClick={() => fileRef.current?.click()}>
                 <Paperclip size={14} /> Upload
@@ -232,7 +232,7 @@ export function TaskDrawer({
             </ul>
           </div>
 
-          <div className="border-t border-line px-6 py-5">
+          <div className="border-t border-line px-4 py-5 sm:px-6">
             <h3 className="mb-3 text-sm font-semibold">Collaboration — comments</h3>
             <ul className="space-y-3">
               {detail.comments.map((comment) => (
@@ -247,19 +247,13 @@ export function TaskDrawer({
                 </li>
               ))}
             </ul>
-            <form
-              className="mt-4 flex gap-2"
-              action={async (formData) => {
-                await notifyChange(addComment(detail.id, formData), "Comment added");
-                await refresh();
-              }}
-            >
-              <input name="body" className={field} placeholder="Write a comment..." />
-              <PendingSubmit idle="Send" busy="Sending…" />
-            </form>
+            <CommentForm
+              taskId={detail.id}
+              onAdded={refresh}
+            />
           </div>
 
-          <div className="mt-auto border-t border-line px-6 py-4">
+          <div className="mt-auto border-t border-line px-4 py-4 sm:px-6">
             <button
               className={cn(btnGhost, "text-red-700 dark:text-red-400")}
               disabled={pending}
@@ -278,7 +272,7 @@ export function TaskDrawer({
         </>
         ) : (
           <>
-            <div className="flex items-start justify-between border-b border-line px-6 py-5">
+            <div className="flex items-start justify-between border-b border-line px-4 py-4 sm:px-6 sm:py-5">
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold tracking-[0.18em] text-muted uppercase">
                   Task detail
@@ -296,6 +290,36 @@ export function TaskDrawer({
       </motion.div>
       ) : null}
     </AnimatePresence>
+  );
+}
+
+function CommentForm({ taskId, onAdded }: { taskId: string; onAdded: () => Promise<void> }) {
+  const [body, setBody] = useState("");
+  const canSend = body.trim().length > 0;
+
+  return (
+    <form
+      className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row"
+      action={async (formData) => {
+        const next = String(formData.get("body") ?? "").trim();
+        if (!next) return;
+        formData.set("body", next);
+        await notifyChange(addComment(taskId, formData), "Comment added");
+        setBody("");
+        await onAdded();
+      }}
+    >
+      <input
+        name="body"
+        value={body}
+        onChange={(event) => setBody(event.target.value)}
+        className={cn(field, "min-w-0 flex-1")}
+        placeholder="Write a comment..."
+        required
+        aria-required
+      />
+      <PendingSubmit idle="Send" busy="Sending…" disabled={!canSend} className="shrink-0" />
+    </form>
   );
 }
 

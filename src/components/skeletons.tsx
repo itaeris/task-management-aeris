@@ -158,38 +158,38 @@ export function HomeSkeleton() {
 
 export function ProjectShellSkeleton() {
   return (
-    <div className="relative flex h-dvh gap-4 overflow-hidden p-4" aria-busy="true" aria-label="Loading project">
-      <aside className="hidden w-64 shrink-0 flex-col overflow-hidden rounded-3xl border border-line bg-paper/80 shadow-sm backdrop-blur-md lg:flex">
-        <Reveal className="px-5 pt-6">
-          <Skeleton className="h-3 w-32" />
+    <div
+      className="relative flex h-dvh flex-col gap-3 overflow-hidden p-3 sm:p-4 lg:flex-row lg:gap-4"
+      aria-busy="true"
+      aria-label="Loading project"
+    >
+      <aside className="hidden h-auto w-64 shrink-0 flex-col overflow-hidden rounded-3xl border border-line bg-paper/80 shadow-sm backdrop-blur-md lg:flex">
+        <div className="px-5 pt-6">
+          <Skeleton className="h-5 w-36" />
           <div className="mt-4 flex items-center gap-3">
             <Skeleton className="h-9 w-9 rounded-2xl" />
             <Skeleton className="h-6 w-28" />
           </div>
-        </Reveal>
+        </div>
         <nav className="mt-8 flex flex-col gap-2 px-3 pb-4">
           {Array.from({ length: 9 }).map((_, index) => (
-            <Reveal key={index} delay={70 + index * 45}>
-              <Skeleton className="h-10 w-full rounded-2xl" />
-            </Reveal>
+            <Skeleton key={index} className="h-10 w-full rounded-2xl" />
           ))}
         </nav>
       </aside>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
-        <Reveal delay={30}>
-          <header className="flex items-center gap-3 rounded-3xl border border-line bg-paper/80 px-4 py-2.5 shadow-sm backdrop-blur-md">
-            <Skeleton className="h-10 w-10 shrink-0 !rounded-full lg:hidden" />
-            <Skeleton className="h-10 w-24 shrink-0 !rounded-full" />
-            <Skeleton className="h-9 w-40 shrink-0 !rounded-full" />
-            <div className="hidden min-w-0 flex-1 items-center gap-2 md:flex">
-              <Skeleton className="h-8 w-28 !rounded-full" />
-              <Skeleton className="h-8 w-36 !rounded-full" />
-            </div>
-            <Skeleton className="h-10 w-24 !rounded-full" />
-            <Skeleton className="h-8 w-8 !rounded-full" />
-          </header>
-        </Reveal>
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-2 py-4 lg:px-6">
+        <header className="flex min-w-0 shrink-0 items-center gap-1.5 rounded-3xl border border-line bg-paper/80 px-2 py-2 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4 sm:py-2.5">
+          <Skeleton className="h-10 w-10 shrink-0 !rounded-full lg:hidden" />
+          <Skeleton className="h-10 w-10 shrink-0 !rounded-full sm:w-24" />
+          <Skeleton className="h-9 min-w-0 flex-1 !rounded-full sm:max-w-xs" />
+          <div className="hidden min-w-0 flex-1 items-center gap-2 md:flex">
+            <Skeleton className="h-8 w-28 !rounded-full" />
+            <Skeleton className="h-8 w-36 !rounded-full" />
+          </div>
+          <Skeleton className="ml-auto h-9 w-9 shrink-0 !rounded-full sm:w-28" />
+          <Skeleton className="h-10 w-10 shrink-0 !rounded-full" />
+        </header>
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-1 py-3 sm:px-2 sm:py-4 lg:px-6">
           <ProjectPageSkeleton />
         </div>
       </div>
@@ -200,36 +200,32 @@ export function ProjectShellSkeleton() {
 export function ProjectPageSkeleton() {
   return (
     <div className="space-y-6" aria-busy="true" aria-label="Loading page">
-      <Reveal delay={160}>
-        <Skeleton className="h-10 w-48" />
+      <div>
+        <Skeleton className="h-9 w-40 max-w-full sm:h-10 sm:w-48" />
         <Skeleton className="mt-3 h-4 w-full max-w-xl" />
-        <Skeleton className="mt-2 h-4 w-80" />
-      </Reveal>
-      <div className="grid gap-4 md:grid-cols-4">
+        <Skeleton className="mt-2 h-4 w-2/3 max-w-sm" />
+      </div>
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Reveal key={index} delay={220 + index * 50}>
-            <Card>
-              <Skeleton className="h-3 w-20" />
-              <Skeleton className="mt-3 h-8 w-16" />
-            </Card>
-          </Reveal>
+          <div key={index} className={cn(surface, "rounded-3xl p-4")}>
+            <Skeleton className="h-3 w-16 max-w-full sm:w-20" />
+            <Skeleton className="mt-3 h-7 w-12 sm:h-8 sm:w-16" />
+          </div>
         ))}
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         {Array.from({ length: 2 }).map((_, index) => (
-          <Reveal key={index} delay={320 + index * 70}>
-            <Card>
-              <Skeleton className="h-7 w-40" />
-              <div className="mt-4 space-y-3">
-                {Array.from({ length: 4 }).map((__, row) => (
-                  <div key={row} className="flex items-center justify-between gap-3">
-                    <Skeleton className="h-4 flex-1" />
-                    <Skeleton className="h-4 w-16" />
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </Reveal>
+          <div key={index} className={cn(surface, "rounded-3xl p-4 sm:p-5")}>
+            <Skeleton className="h-7 w-36 max-w-full sm:w-40" />
+            <div className="mt-4 space-y-3">
+              {Array.from({ length: 5 }).map((__, row) => (
+                <div key={row} className="flex items-center justify-between gap-3">
+                  <Skeleton className="h-4 min-w-0 flex-1" />
+                  <Skeleton className="h-4 w-12 shrink-0 sm:w-16" />
+                </div>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>
@@ -238,14 +234,23 @@ export function ProjectPageSkeleton() {
 
 export function LoginSkeleton() {
   return (
-    <main className="flex min-h-dvh flex-col lg:grid lg:grid-cols-2" aria-busy="true" aria-label="Loading sign in">
+    <main
+      className="flex min-h-dvh flex-col bg-gradient-to-b from-paper via-sand to-paper-2 lg:grid lg:grid-cols-2"
+      aria-busy="true"
+      aria-label="Loading sign in"
+    >
       <section className="flex min-h-[38vh] flex-col px-6 pb-10 pt-6 sm:px-10 lg:min-h-dvh lg:px-12 lg:py-10">
-        <Skeleton className="h-9 w-48" />
+        <Skeleton className="h-9 w-40 max-w-full sm:w-48" />
         <div className="mt-10 max-w-xl lg:mt-auto lg:mb-auto">
-          <Skeleton className="h-3 w-32" />
-          <Skeleton className="mt-4 h-12 w-72 sm:w-96" />
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="mt-4 h-10 w-56 max-w-full sm:h-12 sm:w-96" />
           <Skeleton className="mt-4 h-4 w-full max-w-md" />
-          <Skeleton className="mt-2 h-4 w-64" />
+          <Skeleton className="mt-2 h-4 w-3/4 max-w-xs" />
+          <div className="mt-8 flex flex-wrap gap-2 lg:hidden">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <Skeleton key={index} className="h-10 w-10 !rounded-full" />
+            ))}
+          </div>
           <div className="mt-8 hidden gap-2 lg:flex">
             {Array.from({ length: 5 }).map((_, index) => (
               <Skeleton key={index} className="h-9 w-24 !rounded-full" />
@@ -253,15 +258,17 @@ export function LoginSkeleton() {
           </div>
         </div>
       </section>
-      <section className="flex flex-1 items-center justify-center px-6 py-8 lg:px-10">
-        <Card className="w-full max-w-[440px] p-6 sm:p-10">
-          <Skeleton className="h-9 w-48" />
-          <Skeleton className="mt-3 h-4 w-56" />
+      <section className="relative -mt-6 flex-1 rounded-t-[2.4rem] bg-paper px-6 pt-4 pb-8 sm:px-8 lg:mt-0 lg:flex lg:items-center lg:justify-center lg:rounded-none lg:bg-transparent lg:px-10 lg:py-12">
+        <Skeleton className="absolute top-4 right-4 h-10 w-10 !rounded-full lg:top-6 lg:right-6" />
+        <div className={cn(surface, "w-full max-w-[440px] rounded-3xl p-0 lg:p-10")}>
+          <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-paper-2 lg:hidden" />
+          <Skeleton className="h-8 w-40 max-w-full sm:h-9 sm:w-48" />
+          <Skeleton className="mt-3 h-4 w-48 max-w-full sm:w-56" />
           <Skeleton className="mt-8 h-12 w-full rounded-xl" />
           <Skeleton className="mt-4 h-12 w-full rounded-xl" />
           <Skeleton className="mt-5 h-12 w-full !rounded-2xl" />
           <Skeleton className="mt-6 h-12 w-full !rounded-2xl" />
-        </Card>
+        </div>
       </section>
     </main>
   );
@@ -271,10 +278,10 @@ export function GuideSkeleton() {
   return (
     <main className="relative mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8" aria-busy="true" aria-label="Loading guide">
       <div className="flex items-center justify-between gap-2">
-        <Skeleton className="h-6 w-40" />
-        <div className="flex gap-2">
+        <Skeleton className="h-6 w-32 max-w-[50%]" />
+        <div className="flex shrink-0 gap-2">
           <Skeleton className="h-10 w-10 !rounded-full" />
-          <Skeleton className="h-10 w-20 !rounded-full" />
+          <Skeleton className="h-10 w-16 !rounded-full sm:w-20" />
         </div>
       </div>
       <div className="mt-6">
@@ -305,12 +312,12 @@ export function GuideSkeleton() {
 
 export function JoinSkeleton() {
   return (
-    <main className="relative mx-auto flex min-h-screen max-w-lg flex-col justify-center px-6" aria-busy="true" aria-label="Loading join">
-      <Card className="rounded-3xl p-8">
+    <main className="relative mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-4 sm:px-6" aria-busy="true" aria-label="Loading join">
+      <Card className="rounded-3xl p-6 sm:p-8">
         <Skeleton className="mx-auto h-14 w-14 rounded-2xl" />
-        <Skeleton className="mx-auto mt-4 h-10 w-48" />
-        <Skeleton className="mx-auto mt-3 h-4 w-64" />
-        <Skeleton className="mx-auto mt-3 h-3 w-36" />
+        <Skeleton className="mx-auto mt-4 h-10 w-40 max-w-full sm:w-48" />
+        <Skeleton className="mx-auto mt-3 h-4 w-full max-w-64" />
+        <Skeleton className="mx-auto mt-3 h-3 w-36 max-w-full" />
         <Skeleton className="mx-auto mt-6 h-11 w-36 !rounded-full" />
       </Card>
     </main>
@@ -320,22 +327,25 @@ export function JoinSkeleton() {
 export function TaskDrawerSkeleton() {
   return (
     <div className="flex flex-1 flex-col" aria-busy="true" aria-label="Loading task">
-      <div className="flex flex-1 flex-col gap-4 px-6 py-5">
+      <div className="flex flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
         <Skeleton className="h-3 w-12" />
         <Skeleton className="h-11 w-full rounded-xl" />
         <Skeleton className="h-3 w-20" />
         <Skeleton className="h-24 w-full rounded-xl" />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {Array.from({ length: 8 }).map((_, index) => (
             <Skeleton key={index} className="h-11 w-full rounded-xl" />
           ))}
         </div>
         <Skeleton className="h-10 w-32 !rounded-full" />
       </div>
-      <div className="border-t border-line px-6 py-5">
-        <Skeleton className="h-4 w-28" />
+      <div className="border-t border-line px-4 py-5 sm:px-6">
+        <Skeleton className="h-4 w-40 max-w-full" />
         <Skeleton className="mt-3 h-12 w-full rounded-2xl" />
-        <Skeleton className="mt-2 h-12 w-full rounded-2xl" />
+        <div className="mt-4 flex gap-2">
+          <Skeleton className="h-11 min-w-0 flex-1 rounded-xl" />
+          <Skeleton className="h-11 w-16 shrink-0 !rounded-full sm:w-20" />
+        </div>
       </div>
     </div>
   );
@@ -343,14 +353,14 @@ export function TaskDrawerSkeleton() {
 
 export function SettingsSkeleton() {
   return (
-    <main className="relative mx-auto w-full max-w-5xl px-6 py-8" aria-busy="true" aria-label="Loading settings">
-      <Skeleton className="h-3 w-36" />
-      <div className="mt-2 flex items-end justify-between gap-3">
-        <div>
-          <Skeleton className="h-10 w-40" />
-          <Skeleton className="mt-2 h-4 w-72" />
+    <main className="relative mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8" aria-busy="true" aria-label="Loading settings">
+      <Skeleton className="h-5 w-36 max-w-full" />
+      <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <Skeleton className="h-9 w-32 sm:h-10 sm:w-40" />
+          <Skeleton className="mt-2 h-4 w-full max-w-sm" />
         </div>
-        <Skeleton className="h-10 w-24 !rounded-full" />
+        <Skeleton className="h-10 w-24 shrink-0 !rounded-full" />
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         {Array.from({ length: 2 }).map((_, index) => (

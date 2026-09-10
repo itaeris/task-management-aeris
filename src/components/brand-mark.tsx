@@ -26,7 +26,7 @@ export function BrandLockup({
   return (
     <div className="flex min-w-0 items-center gap-2">
       <BrandMark className={cn("shrink-0", markClassName)} />
-      <p className={cn("text-[11px] font-semibold tracking-[0.22em] text-terracotta uppercase", textClassName)}>
+      <p className={cn("min-w-0 truncate text-[11px] font-semibold tracking-[0.22em] text-terracotta uppercase", textClassName)}>
         Task Management
       </p>
     </div>

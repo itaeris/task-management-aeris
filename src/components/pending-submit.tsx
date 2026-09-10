@@ -11,12 +11,14 @@ export function PendingSubmit({
   className,
   variant = "primary",
   progress = false,
+  disabled = false,
 }: {
   idle: string;
   busy: string;
   className?: string;
   variant?: "primary" | "ghost";
   progress?: boolean;
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
   return (
@@ -27,7 +29,7 @@ export function PendingSubmit({
         progress && "relative overflow-hidden",
         className,
       )}
-      disabled={pending}
+      disabled={pending || disabled}
       aria-busy={pending}
     >
       {pending ? <LoaderCircle size={16} className="animate-spin" /> : null}

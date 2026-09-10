@@ -113,7 +113,7 @@ In Google Cloud Console:
 2. OAuth consent screen: add scope `https://www.googleapis.com/auth/calendar`.
 3. Run `supabase/migration_google_calendar.sql` in the SQL Editor.
 
-Tasks with a due date sync to the **primary** calendar of the connected Google account. **Sync** forces a refresh; create/update/delete also push while the connection is active.
+Tasks with a due date sync to the **primary** calendar of the connected Google account. Personal projects copy every due date; group and organization projects copy only tasks assigned to you. **Sync** forces a refresh; create/update/assign/delete also push while the connection is active.
 
 ## Production (`pipeline.aerisbeaute.com`)
 

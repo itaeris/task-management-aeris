@@ -11,6 +11,7 @@ function CalendarFromWorkspace() {
   return (
     <CalendarView
       projectId={project.id}
+      access={project.access}
       tasks={tasks}
       members={members}
       sprints={sprints}
