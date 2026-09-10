@@ -179,13 +179,14 @@ export function ProjectShellSkeleton() {
         <Reveal delay={30}>
           <header className="flex items-center gap-3 rounded-3xl border border-line bg-paper/80 px-4 py-2.5 shadow-sm backdrop-blur-md">
             <Skeleton className="h-10 w-10 shrink-0 !rounded-full lg:hidden" />
-            <Skeleton className="h-10 w-32 shrink-0 !rounded-full" />
-            <div className="flex min-w-0 flex-1 items-center gap-2">
+            <Skeleton className="h-10 w-24 shrink-0 !rounded-full" />
+            <Skeleton className="h-9 w-40 shrink-0 !rounded-full" />
+            <div className="hidden min-w-0 flex-1 items-center gap-2 md:flex">
               <Skeleton className="h-8 w-28 !rounded-full" />
               <Skeleton className="h-8 w-36 !rounded-full" />
             </div>
-            <Skeleton className="h-8 w-8 !rounded-full" />
             <Skeleton className="h-10 w-24 !rounded-full" />
+            <Skeleton className="h-8 w-8 !rounded-full" />
           </header>
         </Reveal>
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-2 py-4 lg:px-6">

@@ -71,6 +71,13 @@ export type CalendarConnectionPublic = {
   lastSyncedAt: string | null;
 };
 
+export type ProjectSwitcherItem = {
+  id: string;
+  name: string;
+  color: string;
+  pinned: boolean;
+};
+
 export type ProjectWorkspace = {
   project: {
     id: string;

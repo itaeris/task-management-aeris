@@ -2,7 +2,7 @@ import { cache } from "react";
 import { isMissingAccessSchema, isMissingPinsSchema, parseProjectAccess, type ProjectAccess } from "@/lib/access";
 import { ensureProjectAccess } from "@/lib/project-access";
 import { supabase, unwrap } from "@/lib/supabase";
-import { iso, memberFromUser, type ProjectWorkspace, type TaskDetailDTO } from "@/lib/types";
+import { iso, memberFromUser, type ProjectSwitcherItem, type ProjectWorkspace, type TaskDetailDTO } from "@/lib/types";
 import { mapTask, mapUser, memberFromRow, type TaskRow, type UserRow } from "@/lib/mappers";
 import { todayKey } from "@/lib/utils";
 
@@ -286,6 +286,55 @@ export async function listProjectsForUser(userId: string) {
         members,
       };
     });
+}
+
+export async function listProjectSwitcherForUser(userId: string): Promise<ProjectSwitcherItem[]> {
+  const [memberships, extraIds] = await Promise.all([
+    supabase
+      .from("project_members")
+      .select("project_id, joined_at")
+      .eq("user_id", userId)
+      .order("joined_at", { ascending: false })
+      .then((result) => unwrap(result) as Array<{ project_id: string }>),
+    loadSharedProjectIds(userId),
+  ]);
+
+  const seen = new Set<string>();
+  const projectIds: string[] = [];
+  for (const id of [...memberships.map((item) => item.project_id), ...extraIds]) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    projectIds.push(id);
+  }
+  if (projectIds.length === 0) return [];
+
+  const [projects, pinRows] = await Promise.all([
+    supabase
+      .from("projects")
+      .select("id, name, color, access")
+      .in("id", projectIds)
+      .then(
+        (result) =>
+          unwrap(result) as Array<{ id: string; name: string; color: string; access?: string | null }>,
+      ),
+    loadPinnedProjectIds(userId),
+  ]);
+
+  const pinnedIds = new Set(pinRows.map((row) => row.project_id));
+  const order = new Map(projectIds.map((id, index) => [id, index]));
+  return [...projects]
+    .sort((a, b) => {
+      const pinnedA = pinnedIds.has(a.id) && parseProjectAccess(a.access) === "organization";
+      const pinnedB = pinnedIds.has(b.id) && parseProjectAccess(b.access) === "organization";
+      if (pinnedA !== pinnedB) return pinnedA ? -1 : 1;
+      return (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0);
+    })
+    .map((project) => ({
+      id: project.id,
+      name: project.name,
+      color: project.color,
+      pinned: parseProjectAccess(project.access) === "organization" && pinnedIds.has(project.id),
+    }));
 }
 
 export const getProjectShell = cache(async (projectId: string, userId: string) => {

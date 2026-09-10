@@ -221,8 +221,9 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
           <section id="inside-project" className={cn(surface, "scroll-mt-8 rounded-3xl p-5 sm:p-6")}>
             <h2 className="font-serif text-2xl">Inside a project</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              The left sidebar is the work menu. <strong className="font-semibold text-ink">Home</strong> in the
-              header takes you back to the project list; it does not close the app.
+              The left sidebar is the work menu. Use the project name in the header to switch projects without
+              going back to Home. <strong className="font-semibold text-ink">Home</strong> still opens the full
+              project list; it does not close the app.
             </p>
             <p className="mt-3 text-sm leading-relaxed text-muted">
               On a phone, open the sidebar with the menu icon. Only the owner can change the project icon in the

@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { getCurrentUser } from "@/lib/auth";
-import { getProjectShell, getProjectWorkspace } from "@/lib/queries";
+import { getProjectShell, getProjectWorkspace, listProjectSwitcherForUser } from "@/lib/queries";
 import { getCalendarConnection } from "@/lib/google-calendar";
 import { ProjectShell } from "@/components/project-shell";
 import { WorkspaceProvider } from "@/components/workspace-provider";
@@ -45,7 +45,10 @@ export default async function ProjectLayout({
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) redirect(`/login?next=/projects/${id}`);
-  const shell = await getProjectShell(id, user.id);
+  const [shell, projects] = await Promise.all([
+    getProjectShell(id, user.id),
+    listProjectSwitcherForUser(user.id),
+  ]);
   if (!shell) notFound();
 
   return (
@@ -54,6 +57,7 @@ export default async function ProjectLayout({
       projectName={shell.project.name}
       projectColor={shell.project.color}
       canEditIcon={shell.role === "owner"}
+      projects={projects}
       user={user}
     >
       <Suspense fallback={<ProjectPageSkeleton />}>

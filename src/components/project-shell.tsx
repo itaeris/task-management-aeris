@@ -26,7 +26,9 @@ import { easeOutSoft } from "@/components/motion";
 import { BrandLockup } from "@/components/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
+import { ProjectSwitcher } from "@/components/project-switcher";
 import { usePersistSessionUser } from "@/lib/session-user";
+import type { ProjectSwitcherItem } from "@/lib/types";
 
 const NAV = [
   { href: "", label: "Overview", icon: LayoutDashboard },
@@ -125,6 +127,7 @@ export function ProjectShell({
   projectName,
   projectColor,
   canEditIcon,
+  projects,
   user,
   children,
 }: {
@@ -132,6 +135,7 @@ export function ProjectShell({
   projectName: string;
   projectColor: string;
   canEditIcon: boolean;
+  projects: ProjectSwitcherItem[];
   user: UserLite;
   children: React.ReactNode;
 }) {
@@ -193,6 +197,14 @@ export function ProjectShell({
               <ArrowLeft size={16} />
               <span className="hidden sm:inline">Home</span>
             </Link>
+            <div className="min-w-0 max-w-[11rem] sm:max-w-xs">
+              <ProjectSwitcher
+                currentId={projectId}
+                currentName={projectName}
+                currentColor={projectColor}
+                projects={projects}
+              />
+            </div>
             <div className="hidden min-w-0 flex-1 md:flex">
               <PresenceBoard variant="header" />
             </div>
