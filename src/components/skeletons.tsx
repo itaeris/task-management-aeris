@@ -29,12 +29,13 @@ export function HomeStatsSkeleton() {
   return (
     <section className="grid shrink-0 grid-cols-2 gap-2 sm:gap-3">
       {Array.from({ length: 2 }).map((_, index) => (
-        <Reveal key={index} delay={40 + index * 50}>
-          <article className={cn(surface, "rounded-2xl px-3 py-2.5 sm:rounded-3xl sm:px-4 sm:py-3")}>
-            <Skeleton className="mb-2 h-3 w-28" />
-            <Skeleton className="h-2.5 w-full !rounded-full" />
-          </article>
-        </Reveal>
+        <article
+          key={index}
+          className={cn(surface, "rounded-2xl px-3 py-2.5 sm:rounded-3xl sm:px-4 sm:py-3")}
+        >
+          <Skeleton className="mb-2 h-3 w-28" />
+          <Skeleton className="h-2.5 w-full !rounded-full" />
+        </article>
       ))}
     </section>
   );
@@ -43,7 +44,7 @@ export function HomeStatsSkeleton() {
 export function HomeListSkeleton() {
   return (
     <section className={cn(surface, "flex min-h-[24rem] flex-1 flex-col overflow-hidden rounded-3xl lg:min-h-0")}>
-      <Reveal delay={80} className="flex shrink-0 flex-col gap-2 border-b border-line px-3 py-3 sm:px-4">
+      <div className="flex shrink-0 flex-col gap-2 border-b border-line px-3 py-3 sm:px-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Skeleton className="h-7 w-20" />
           <Skeleton className="h-10 min-w-0 flex-1 rounded-xl" />
@@ -54,32 +55,30 @@ export function HomeListSkeleton() {
             <Skeleton key={index} className="h-7 w-[4.5rem] !rounded-full" />
           ))}
         </div>
-      </Reveal>
+      </div>
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
         {Array.from({ length: 6 }).map((_, index) => (
-          <Reveal key={index} delay={140 + index * 45}>
-            <div className="rounded-2xl px-2 py-3 sm:px-3">
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-9 w-9 rounded-2xl" />
-                <div className="min-w-0 flex-1">
-                  <Skeleton className="h-5 w-52 max-w-full" />
-                  <Skeleton className="mt-1 h-4 w-64 max-w-full" />
-                </div>
-                <Skeleton className="hidden h-7 w-16 !rounded-full sm:block" />
+          <div key={index} className="rounded-2xl px-2 py-3 sm:px-3">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-9 w-9 rounded-2xl" />
+              <div className="min-w-0 flex-1">
+                <Skeleton className="h-5 w-52 max-w-full" />
+                <Skeleton className="mt-1 h-4 w-64 max-w-full" />
               </div>
-              <Skeleton className="mt-3 h-2.5 w-full !rounded-full sm:ml-11 sm:w-[calc(100%-2.75rem)]" />
+              <Skeleton className="hidden h-7 w-16 !rounded-full sm:block" />
             </div>
-          </Reveal>
+            <Skeleton className="mt-3 h-2.5 w-full !rounded-full sm:ml-11 sm:w-[calc(100%-2.75rem)]" />
+          </div>
         ))}
       </div>
-      <Reveal delay={380} className="flex shrink-0 items-center justify-between border-t border-line px-3 py-2 sm:px-4 sm:py-2.5">
+      <div className="flex shrink-0 items-center justify-between border-t border-line px-3 py-2 sm:px-4 sm:py-2.5">
         <Skeleton className="h-3 w-24" />
         <div className="flex gap-1">
           <Skeleton className="h-9 w-9 !rounded-full" />
           <Skeleton className="h-9 w-9 !rounded-full" />
           <Skeleton className="h-9 w-9 !rounded-full" />
         </div>
-      </Reveal>
+      </div>
     </section>
   );
 }

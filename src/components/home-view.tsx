@@ -1,10 +1,10 @@
 "use client";
 
-import { Suspense, use, useMemo, useState, useTransition, type ReactNode } from "react";
+import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Pin, Search, Trash2 } from "lucide-react";
 import { joinProject, toggleProjectPin } from "@/lib/actions/projects";
 import { ACCESS_LABEL, ACCESS_OPTIONS, type ProjectAccess } from "@/lib/access";
-import { AvatarStack, field, iconBtn, Skeleton, surface } from "@/components/ui";
+import { AvatarStack, field, iconBtn, surface } from "@/components/ui";
 import { CreateProjectForm } from "@/components/create-project-form";
 import { DeleteProjectDialog } from "@/components/delete-project-dialog";
 import { PendingSubmit } from "@/components/pending-submit";
@@ -12,13 +12,12 @@ import { ProjectIconEditor } from "@/components/icon-picker";
 import { PresenceBoard, PresenceProvider } from "@/components/presence";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
-import { easeOutSoft, FadeIn } from "@/components/motion";
-import { HomeCreateSkeleton, HomeListSkeleton, HomeStatsSkeleton } from "@/components/skeletons";
+import { motion } from "framer-motion";
+import { easeOutSoft } from "@/components/motion";
 import { BrandLockup } from "@/components/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
-import { usePersistSessionUser, useSessionUser } from "@/lib/session-user";
+import { usePersistSessionUser } from "@/lib/session-user";
 
 type ProjectCard = {
   id: string;
@@ -65,9 +64,9 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
       <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-paper-2">
         <motion.div
           className="h-full rounded-full bg-terracotta"
-          initial={{ width: 0 }}
+          initial={false}
           animate={{ width }}
-          transition={{ duration: 0.55, ease: easeOutSoft }}
+          transition={{ duration: 0.35, ease: easeOutSoft }}
         />
       </div>
       <p className="w-16 shrink-0 text-right text-[11px] font-semibold tabular-nums text-ink sm:w-[4.75rem] sm:text-xs">
@@ -95,130 +94,53 @@ type AccessFilter = "all" | ProjectAccess;
 
 const VIEW_FILTERS = [{ id: "all" as const, label: "All" }, ...ACCESS_OPTIONS];
 
-function HomeShell({
+export function HomeFrame({
   user,
-  aside,
+  people,
+  groups,
   children,
 }: {
-  user: { id: string; name: string; initials: string; color: string } | null;
-  aside: ReactNode;
+  user: UserCard;
+  people: UserCard[];
+  groups: GroupOption[];
   children: ReactNode;
 }) {
+  usePersistSessionUser(user);
   return (
     <PresenceProvider>
       <main className="relative mx-auto flex min-h-dvh w-full max-w-[1600px] flex-col gap-3 p-3 sm:p-4 lg:h-dvh lg:overflow-hidden">
-        <FadeIn className="shrink-0">
-          <header className="flex shrink-0 items-center gap-2 rounded-3xl border border-line bg-paper/80 px-3 py-2.5 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4">
-            <div className="flex min-w-0 items-center gap-2">
-              <BrandLockup />
-            </div>
-            <div className="hidden min-w-0 flex-1 md:flex">
-              <PresenceBoard variant="header" />
-            </div>
-            <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2">
-              {user ? <UserMenu user={user} /> : <Skeleton className="h-9 w-28 !rounded-full" />}
-              <ThemeToggle />
-            </div>
-          </header>
-        </FadeIn>
+        <header className="flex shrink-0 items-center gap-2 rounded-3xl border border-line bg-paper/80 px-3 py-2.5 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <BrandLockup />
+          </div>
+          <div className="hidden min-w-0 flex-1 md:flex">
+            <PresenceBoard variant="header" />
+          </div>
+          <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2">
+            <UserMenu user={user} />
+            <ThemeToggle />
+          </div>
+        </header>
 
         <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="flex min-h-0 min-w-0 flex-col gap-3">{children}</div>
-          {aside}
+          <aside className={cn(surface, "flex min-h-0 flex-col overflow-hidden rounded-3xl")}>
+            <CreateProjectForm userId={user.id} people={people} groups={groups} />
+            <form action={joinProject} className="shrink-0 border-t border-line p-4">
+              <h2 className="text-sm font-semibold">Join with a code</h2>
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <input name="code" className={cn(field, "uppercase")} placeholder="XXXX-XXXX" required />
+                <PendingSubmit idle="Join" busy="Joining…" variant="ghost" className="shrink-0" />
+              </div>
+            </form>
+          </aside>
         </div>
       </main>
     </PresenceProvider>
   );
 }
 
-export function HomeProjects({
-  user,
-  projectsPromise,
-  extrasPromise,
-}: {
-  user: UserCard;
-  projectsPromise: Promise<ProjectCard[]>;
-  extrasPromise: Promise<[UserCard[], GroupOption[]]>;
-}) {
-  usePersistSessionUser(user);
-  return (
-    <HomeShell
-      user={user}
-      aside={
-        <Suspense fallback={<HomeCreateSkeleton />}>
-          <HomeCreateAside userId={user.id} extrasPromise={extrasPromise} />
-        </Suspense>
-      }
-    >
-      <Suspense
-        fallback={
-          <>
-            <HomeStatsSkeleton />
-            <HomeListSkeleton />
-          </>
-        }
-      >
-        <HomeProjectsColumn projectsPromise={projectsPromise} />
-      </Suspense>
-    </HomeShell>
-  );
-}
-
-function HomeCreatePanel({
-  userId,
-  people,
-  groups,
-}: {
-  userId: string;
-  people: UserCard[];
-  groups: GroupOption[];
-}) {
-  return (
-    <FadeIn delay={0.06} className={cn(surface, "flex min-h-0 flex-col overflow-hidden rounded-3xl")}>
-      <CreateProjectForm userId={userId} people={people} groups={groups} />
-      <form action={joinProject} className="shrink-0 border-t border-line p-4">
-        <h2 className="text-sm font-semibold">Join with a code</h2>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-          <input name="code" className={cn(field, "uppercase")} placeholder="XXXX-XXXX" required />
-          <PendingSubmit idle="Join" busy="Joining…" variant="ghost" className="shrink-0" />
-        </div>
-      </form>
-    </FadeIn>
-  );
-}
-
-function HomeCreateAside({
-  userId,
-  extrasPromise,
-}: {
-  userId: string;
-  extrasPromise: Promise<[UserCard[], GroupOption[]]>;
-}) {
-  const [people, groups] = use(extrasPromise);
-  return <HomeCreatePanel userId={userId} people={people} groups={groups} />;
-}
-
-export function HomePending() {
-  const user = useSessionUser();
-  return (
-    <HomeShell
-      user={user}
-      aside={
-        user ? (
-          <HomeCreatePanel userId={user.id} people={[]} groups={[]} />
-        ) : (
-          <HomeCreateSkeleton />
-        )
-      }
-    >
-      <HomeStatsSkeleton />
-      <HomeListSkeleton />
-    </HomeShell>
-  );
-}
-
-function HomeProjectsColumn({ projectsPromise }: { projectsPromise: Promise<ProjectCard[]> }) {
-  const projects = use(projectsPromise);
+export function HomeProjectList({ projects }: { projects: ProjectCard[] }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [accessFilter, setAccessFilter] = useState<AccessFilter>("all");
@@ -274,8 +196,8 @@ function HomeProjectsColumn({ projectsPromise }: { projectsPromise: Promise<Proj
   const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
-    <>
-        <FadeIn delay={0.02} className="grid shrink-0 grid-cols-2 gap-2 sm:gap-3">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
+        <section className="grid shrink-0 grid-cols-2 gap-2 sm:gap-3">
           <article className={cn(surface, "rounded-2xl px-3 py-2.5 sm:rounded-3xl sm:px-4 sm:py-3")}>
             <div className="mb-2 flex flex-wrap items-baseline gap-x-2">
               <p className="text-[10px] font-semibold tracking-wide text-muted uppercase sm:text-[11px]">Your projects</p>
@@ -290,10 +212,10 @@ function HomeProjectsColumn({ projectsPromise }: { projectsPromise: Promise<Proj
             </div>
             <ProgressBar done={othersProgress.done} total={othersProgress.total} />
           </article>
-        </FadeIn>
+        </section>
 
-        <FadeIn delay={0.04} className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <section className={cn(surface, "flex min-h-[24rem] flex-col overflow-hidden rounded-3xl lg:min-h-0")}>
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <section className={cn(surface, "flex min-h-[24rem] flex-1 flex-col overflow-hidden rounded-3xl lg:min-h-0")}>
             <div className="flex shrink-0 flex-col gap-2 border-b border-line px-3 py-3 sm:px-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="flex items-center justify-between gap-2">
@@ -370,18 +292,10 @@ function HomeProjectsColumn({ projectsPromise }: { projectsPromise: Promise<Proj
                 </div>
               ) : (
                 <ul className="space-y-2">
-                  <AnimatePresence mode="popLayout" initial={false}>
                   {paged.map((project) => {
                     const pinned = pinDraft[project.id] ?? project.pinned;
                     return (
-                    <motion.li
-                      key={project.id}
-                      layout
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.22, ease: easeOutSoft }}
-                    >
+                    <li key={project.id}>
                       <article className="group rounded-2xl px-2 py-3 transition hover:bg-sand sm:px-3">
                         <div className="flex items-center gap-3">
                           <ProjectIconEditor
@@ -463,10 +377,9 @@ function HomeProjectsColumn({ projectsPromise }: { projectsPromise: Promise<Proj
                           </p>
                         </div>
                       </article>
-                    </motion.li>
+                    </li>
                     );
                   })}
-                  </AnimatePresence>
                 </ul>
               )}
             </div>
@@ -525,8 +438,8 @@ function HomeProjectsColumn({ projectsPromise }: { projectsPromise: Promise<Proj
               </div>
             </div>
           </section>
-        </FadeIn>
+        </section>
         <DeleteProjectDialog project={pendingDelete} onClose={() => setPendingDelete(null)} />
-    </>
+    </div>
   );
 }

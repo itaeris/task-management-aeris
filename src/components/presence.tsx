@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 
 const PresenceTask = createContext<(id: string | null) => void>(() => {});
 
+let cachedPresence: PresencePerson[] | null = null;
+
 export function useSetActiveTask() {
   return useContext(PresenceTask);
 }
@@ -160,8 +162,8 @@ export function PresenceBoard({
   compact?: boolean;
   variant?: "card" | "sidebar" | "header";
 }) {
-  const [people, setPeople] = useState<PresencePerson[]>([]);
-  const [ready, setReady] = useState(false);
+  const [people, setPeople] = useState<PresencePerson[]>(() => cachedPresence ?? []);
+  const [ready, setReady] = useState(() => cachedPresence !== null);
 
   useEffect(() => {
     let cancelled = false;
@@ -171,9 +173,12 @@ export function PresenceBoard({
       inFlight = true;
       try {
         const rows = await listPresence();
-        if (!cancelled) setPeople(rows);
+        if (!cancelled) {
+          cachedPresence = rows;
+          setPeople(rows);
+        }
       } catch {
-        if (!cancelled) setPeople([]);
+        if (!cancelled) setPeople(cachedPresence ?? []);
       } finally {
         inFlight = false;
         if (!cancelled) setReady(true);

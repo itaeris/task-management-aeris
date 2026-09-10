@@ -325,6 +325,8 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
               <Term name="Active">The sprint currently being worked. Overview uses the active sprint. Only one active sprint makes sense.</Term>
               <Term name="Completed">The sprint is closed. Its tasks remain; task status is separate from sprint status.</Term>
               <Term name="Activate / Complete">Buttons that change sprint status, not the status of tasks inside it.</Term>
+              <Term name="Edit">Change the sprint name, dates, or goal. Status stays the same.</Term>
+              <Term name="Delete">Removes the sprint only. Tasks return to the product log.</Term>
             </div>
           </section>
 
