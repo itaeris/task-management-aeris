@@ -21,11 +21,12 @@ import { btnGhost, iconBtn } from "@/components/ui";
 import { ProjectIconEditor } from "@/components/icon-picker";
 import { PresenceBoard, PresenceProvider } from "@/components/presence";
 import { cn } from "@/lib/utils";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { easeOutSoft } from "@/components/motion";
 import { BrandLockup } from "@/components/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
+import { usePersistSessionUser } from "@/lib/session-user";
 
 const NAV = [
   { href: "", label: "Overview", icon: LayoutDashboard },
@@ -63,6 +64,7 @@ function SidebarBody({
   base: string;
   onClose?: () => void;
 }) {
+  const reduce = useReducedMotion();
   return (
     <>
       <div className="flex items-start justify-between px-5 pt-6">
@@ -87,24 +89,30 @@ function SidebarBody({
         ) : null}
       </div>
       <nav className="mt-8 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3 pb-4">
-        {NAV.map((item) => {
+        {NAV.map((item, index) => {
           const href = `${base}${item.href}`;
           const active = item.href === "" ? pathname === base : pathname.startsWith(href);
           const Icon = item.icon;
           return (
-            <Link
+            <motion.div
               key={href}
-              href={href}
-              prefetch
-              onClick={onClose}
-              className={cn(
-                "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm",
-                active ? "bg-paper-2 text-terracotta" : "text-muted hover:bg-sand hover:text-ink",
-              )}
+              initial={reduce ? false : { opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.24, delay: reduce ? 0 : 0.05 + index * 0.045, ease: easeOutSoft }}
             >
-              <Icon size={16} />
-              {item.label}
-            </Link>
+              <Link
+                href={href}
+                prefetch
+                onClick={onClose}
+                className={cn(
+                  "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm",
+                  active ? "bg-paper-2 text-terracotta" : "text-muted hover:bg-sand hover:text-ink",
+                )}
+              >
+                <Icon size={16} />
+                {item.label}
+              </Link>
+            </motion.div>
           );
         })}
       </nav>
@@ -127,6 +135,7 @@ export function ProjectShell({
   user: UserLite;
   children: React.ReactNode;
 }) {
+  usePersistSessionUser(user);
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
   const base = `/projects/${projectId}`;

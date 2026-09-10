@@ -12,7 +12,11 @@ export const getCurrentUser = cache(async () => {
   const userId = store.get(USER_COOKIE)?.value;
   if (!userId) return null;
   const row = unwrap(
-    await supabase.from("users").select("*").eq("id", userId).maybeSingle(),
+    await supabase
+      .from("users")
+      .select("id, name, email, initials, color, username, role")
+      .eq("id", userId)
+      .maybeSingle(),
   ) as UserRow | null;
   return row ? mapUser(row) : null;
 });

@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
-import { joinProject } from "@/lib/actions/projects";
+import { Suspense, use, useMemo, useState, useTransition, type ReactNode } from "react";
+import { ChevronLeft, ChevronRight, Pin, Search, Trash2 } from "lucide-react";
+import { joinProject, toggleProjectPin } from "@/lib/actions/projects";
 import { ACCESS_LABEL, ACCESS_OPTIONS, type ProjectAccess } from "@/lib/access";
-import { AvatarStack, field, iconBtn, surface } from "@/components/ui";
+import { AvatarStack, field, iconBtn, Skeleton, surface } from "@/components/ui";
 import { CreateProjectForm } from "@/components/create-project-form";
 import { DeleteProjectDialog } from "@/components/delete-project-dialog";
 import { PendingSubmit } from "@/components/pending-submit";
@@ -14,9 +14,11 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { easeOutSoft, FadeIn } from "@/components/motion";
+import { HomeCreateSkeleton, HomeListSkeleton, HomeStatsSkeleton } from "@/components/skeletons";
 import { BrandLockup } from "@/components/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
+import { usePersistSessionUser, useSessionUser } from "@/lib/session-user";
 
 type ProjectCard = {
   id: string;
@@ -26,6 +28,7 @@ type ProjectCard = {
   shareCode: string;
   role: string;
   access: ProjectAccess;
+  pinned: boolean;
   groupName: string | null;
   taskCount: number;
   doneCount: number;
@@ -92,21 +95,137 @@ type AccessFilter = "all" | ProjectAccess;
 
 const VIEW_FILTERS = [{ id: "all" as const, label: "All" }, ...ACCESS_OPTIONS];
 
+function HomeShell({
+  user,
+  aside,
+  children,
+}: {
+  user: { id: string; name: string; initials: string; color: string } | null;
+  aside: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <PresenceProvider>
+      <main className="relative mx-auto flex min-h-dvh w-full max-w-[1600px] flex-col gap-3 p-3 sm:p-4 lg:h-dvh lg:overflow-hidden">
+        <FadeIn className="shrink-0">
+          <header className="flex shrink-0 items-center gap-2 rounded-3xl border border-line bg-paper/80 px-3 py-2.5 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4">
+            <div className="flex min-w-0 items-center gap-2">
+              <BrandLockup />
+            </div>
+            <div className="hidden min-w-0 flex-1 md:flex">
+              <PresenceBoard variant="header" />
+            </div>
+            <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2">
+              {user ? <UserMenu user={user} /> : <Skeleton className="h-9 w-28 !rounded-full" />}
+              <ThemeToggle />
+            </div>
+          </header>
+        </FadeIn>
+
+        <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="flex min-h-0 min-w-0 flex-col gap-3">{children}</div>
+          {aside}
+        </div>
+      </main>
+    </PresenceProvider>
+  );
+}
+
 export function HomeProjects({
   user,
-  projects,
+  projectsPromise,
+  extrasPromise,
+}: {
+  user: UserCard;
+  projectsPromise: Promise<ProjectCard[]>;
+  extrasPromise: Promise<[UserCard[], GroupOption[]]>;
+}) {
+  usePersistSessionUser(user);
+  return (
+    <HomeShell
+      user={user}
+      aside={
+        <Suspense fallback={<HomeCreateSkeleton />}>
+          <HomeCreateAside userId={user.id} extrasPromise={extrasPromise} />
+        </Suspense>
+      }
+    >
+      <Suspense
+        fallback={
+          <>
+            <HomeStatsSkeleton />
+            <HomeListSkeleton />
+          </>
+        }
+      >
+        <HomeProjectsColumn projectsPromise={projectsPromise} />
+      </Suspense>
+    </HomeShell>
+  );
+}
+
+function HomeCreatePanel({
+  userId,
   people,
   groups,
 }: {
-  user: UserCard;
-  projects: ProjectCard[];
+  userId: string;
   people: UserCard[];
   groups: GroupOption[];
 }) {
+  return (
+    <FadeIn delay={0.06} className={cn(surface, "flex min-h-0 flex-col overflow-hidden rounded-3xl")}>
+      <CreateProjectForm userId={userId} people={people} groups={groups} />
+      <form action={joinProject} className="shrink-0 border-t border-line p-4">
+        <h2 className="text-sm font-semibold">Join with a code</h2>
+        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+          <input name="code" className={cn(field, "uppercase")} placeholder="XXXX-XXXX" required />
+          <PendingSubmit idle="Join" busy="Joining…" variant="ghost" className="shrink-0" />
+        </div>
+      </form>
+    </FadeIn>
+  );
+}
+
+function HomeCreateAside({
+  userId,
+  extrasPromise,
+}: {
+  userId: string;
+  extrasPromise: Promise<[UserCard[], GroupOption[]]>;
+}) {
+  const [people, groups] = use(extrasPromise);
+  return <HomeCreatePanel userId={userId} people={people} groups={groups} />;
+}
+
+export function HomePending() {
+  const user = useSessionUser();
+  return (
+    <HomeShell
+      user={user}
+      aside={
+        user ? (
+          <HomeCreatePanel userId={user.id} people={[]} groups={[]} />
+        ) : (
+          <HomeCreateSkeleton />
+        )
+      }
+    >
+      <HomeStatsSkeleton />
+      <HomeListSkeleton />
+    </HomeShell>
+  );
+}
+
+function HomeProjectsColumn({ projectsPromise }: { projectsPromise: Promise<ProjectCard[]> }) {
+  const projects = use(projectsPromise);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [accessFilter, setAccessFilter] = useState<AccessFilter>("all");
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const [pinDraft, setPinDraft] = useState<Record<string, boolean>>({});
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [pinPending, startPin] = useTransition();
   const mine = projects.filter((project) => project.role === "owner");
   const others = projects.filter((project) => project.role !== "owner");
   const mineProgress = rollup(mine);
@@ -127,44 +246,35 @@ export function HomeProjects({
     const scoped =
       accessFilter === "all" ? projects : projects.filter((project) => project.access === accessFilter);
     const q = query.trim().toLowerCase();
-    if (!q) return scoped;
-    return scoped.filter((project) => {
-      const haystack = [
-        project.name,
-        project.description,
-        project.ownerName ?? "",
-        project.role === "owner" ? "yours" : "joined",
-        ACCESS_LABEL[project.access],
-        project.groupName ?? "",
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(q);
+    const searched = !q
+      ? scoped
+      : scoped.filter((project) => {
+          const haystack = [
+            project.name,
+            project.description,
+            project.ownerName ?? "",
+            project.role === "owner" ? "yours" : "joined",
+            ACCESS_LABEL[project.access],
+            project.groupName ?? "",
+          ]
+            .join(" ")
+            .toLowerCase();
+          return haystack.includes(q);
+        });
+    return [...searched].sort((a, b) => {
+      const pinnedA = pinDraft[a.id] ?? a.pinned;
+      const pinnedB = pinDraft[b.id] ?? b.pinned;
+      if (pinnedA !== pinnedB) return pinnedA ? -1 : 1;
+      return 0;
     });
-  }, [projects, query, accessFilter]);
+  }, [projects, query, accessFilter, pinDraft]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
   const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
-    <PresenceProvider>
-      <main className="relative mx-auto flex min-h-dvh w-full max-w-[1600px] flex-col gap-3 p-3 sm:p-4 lg:h-dvh lg:overflow-hidden">
-        <FadeIn className="shrink-0">
-        <header className="flex shrink-0 items-center gap-2 rounded-3xl border border-line bg-paper/80 px-3 py-2.5 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4">
-          <div className="flex min-w-0 items-center gap-2">
-            <BrandLockup />
-          </div>
-          <div className="hidden min-w-0 flex-1 md:flex">
-            <PresenceBoard variant="header" />
-          </div>
-          <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2">
-            <UserMenu user={user} />
-            <ThemeToggle />
-          </div>
-        </header>
-        </FadeIn>
-
+    <>
         <FadeIn delay={0.02} className="grid shrink-0 grid-cols-2 gap-2 sm:gap-3">
           <article className={cn(surface, "rounded-2xl px-3 py-2.5 sm:rounded-3xl sm:px-4 sm:py-3")}>
             <div className="mb-2 flex flex-wrap items-baseline gap-x-2">
@@ -182,7 +292,7 @@ export function HomeProjects({
           </article>
         </FadeIn>
 
-        <FadeIn delay={0.04} className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <FadeIn delay={0.04} className="flex min-h-0 min-w-0 flex-1 flex-col">
           <section className={cn(surface, "flex min-h-[24rem] flex-col overflow-hidden rounded-3xl lg:min-h-0")}>
             <div className="flex shrink-0 flex-col gap-2 border-b border-line px-3 py-3 sm:px-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -237,6 +347,9 @@ export function HomeProjects({
               </div>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-2">
+              {pinError ? (
+                <p className="px-2 pb-2 text-sm text-red-700 dark:text-red-400">{pinError}</p>
+              ) : null}
               {projects.length === 0 ? (
                 <div className="flex h-full items-center justify-center p-8 text-center">
                   <div>
@@ -258,7 +371,9 @@ export function HomeProjects({
               ) : (
                 <ul className="space-y-2">
                   <AnimatePresence mode="popLayout" initial={false}>
-                  {paged.map((project) => (
+                  {paged.map((project) => {
+                    const pinned = pinDraft[project.id] ?? project.pinned;
+                    return (
                     <motion.li
                       key={project.id}
                       layout
@@ -278,6 +393,9 @@ export function HomeProjects({
                           <Link href={`/projects/${project.id}`} className="min-w-0 flex-1">
                             <div className="flex min-w-0 items-center gap-2">
                               <h3 className="truncate font-semibold">{project.name}</h3>
+                              {pinned ? (
+                                <Pin size={12} className="shrink-0 fill-current text-terracotta" aria-hidden />
+                              ) : null}
                               <span className="hidden shrink-0 rounded-full bg-paper-2 px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted uppercase sm:inline">
                                 {ACCESS_LABEL[project.access]}
                               </span>
@@ -287,6 +405,38 @@ export function HomeProjects({
                             </div>
                             <p className="mt-0.5 truncate text-sm text-muted">{project.description}</p>
                           </Link>
+                          {project.access === "organization" ? (
+                            <button
+                              type="button"
+                              disabled={pinPending}
+                              className={cn(
+                                "inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition",
+                                pinned
+                                  ? "text-terracotta opacity-100 hover:bg-terracotta/10"
+                                  : "text-muted opacity-100 hover:bg-paper-2 hover:text-ink sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100",
+                              )}
+                              aria-label={pinned ? `Unpin ${project.name}` : `Pin ${project.name}`}
+                              aria-pressed={pinned}
+                              onClick={() => {
+                                const next = !pinned;
+                                setPinError(null);
+                                setPinDraft((current) => ({ ...current, [project.id]: next }));
+                                if (next) setPage(1);
+                                startPin(async () => {
+                                  try {
+                                    await toggleProjectPin(project.id);
+                                  } catch (caught) {
+                                    setPinDraft((current) => ({ ...current, [project.id]: pinned }));
+                                    setPinError(
+                                      caught instanceof Error ? caught.message : "Could not update the pin.",
+                                    );
+                                  }
+                                });
+                              }}
+                            >
+                              <Pin size={16} className={pinned ? "fill-current" : undefined} />
+                            </button>
+                          ) : null}
                           {project.role === "owner" ? (
                             <button
                               type="button"
@@ -314,7 +464,8 @@ export function HomeProjects({
                         </div>
                       </article>
                     </motion.li>
-                  ))}
+                    );
+                  })}
                   </AnimatePresence>
                 </ul>
               )}
@@ -374,20 +525,8 @@ export function HomeProjects({
               </div>
             </div>
           </section>
-
-          <aside className={cn(surface, "flex min-h-0 flex-col overflow-hidden rounded-3xl")}>
-            <CreateProjectForm userId={user.id} people={people} groups={groups} />
-            <form action={joinProject} className="shrink-0 border-t border-line p-4">
-              <h2 className="text-sm font-semibold">Join with a code</h2>
-              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                <input name="code" className={cn(field, "uppercase")} placeholder="XXXX-XXXX" required />
-                <PendingSubmit idle="Join" busy="Joining…" variant="ghost" className="shrink-0" />
-              </div>
-            </form>
-          </aside>
         </FadeIn>
         <DeleteProjectDialog project={pendingDelete} onClose={() => setPendingDelete(null)} />
-      </main>
-    </PresenceProvider>
+    </>
   );
 }

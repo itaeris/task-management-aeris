@@ -1,7 +1,8 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
-import { getCurrentUser } from "@/lib/auth";
+import { USER_COOKIE } from "@/lib/auth";
 
 export type PresencePerson = {
   userId: string;
@@ -44,12 +45,12 @@ function projectIdFromPath(path: string) {
 }
 
 export async function pingPresence(path: string, taskId?: string | null) {
-  const user = await getCurrentUser();
-  if (!user) return;
+  const userId = (await cookies()).get(USER_COOKIE)?.value;
+  if (!userId) return;
   const cleanPath = path.startsWith("/") ? path : "/";
   const projectId = projectIdFromPath(cleanPath);
   const payload = {
-    user_id: user.id,
+    user_id: userId,
     project_id: projectId,
     task_id: taskId || null,
     path: cleanPath,
@@ -65,8 +66,8 @@ export async function pingPresence(path: string, taskId?: string | null) {
 }
 
 export async function listPresence(): Promise<PresencePerson[]> {
-  const me = await getCurrentUser();
-  if (!me) return [];
+  const meId = (await cookies()).get(USER_COOKIE)?.value;
+  if (!meId) return [];
 
   const cutoff = new Date(Date.now() - 90_000).toISOString();
   const { data, error } = await supabase
@@ -124,14 +125,14 @@ export async function listPresence(): Promise<PresencePerson[]> {
         taskTitle: task?.title ?? null,
         pageLabel: pageLabel(row.path),
         path: row.path,
-        isMe: person.id === me.id,
+        isMe: person.id === meId,
       } satisfies PresencePerson,
     ];
   });
 }
 
 export async function clearPresence() {
-  const user = await getCurrentUser();
-  if (!user) return;
-  await supabase.from("presences").delete().eq("user_id", user.id);
+  const userId = (await cookies()).get(USER_COOKIE)?.value;
+  if (!userId) return;
+  await supabase.from("presences").delete().eq("user_id", userId);
 }

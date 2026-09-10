@@ -211,6 +211,10 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
                 Owner only. Hover a project card and click delete. Type DELETE in the dialog to confirm. This is
                 permanent.
               </Term>
+              <Term name="Pin project">
+                Organization projects only. Pin keeps that project at the top of your list. Pins are yours alone;
+                other people do not see them.
+              </Term>
             </div>
           </section>
 

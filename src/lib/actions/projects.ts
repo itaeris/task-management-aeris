@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import {
   canLeaveProject,
   isMissingAccessSchema,
+  isMissingPinsSchema,
   parseProjectAccess,
   type ProjectAccess,
 } from "@/lib/access";
@@ -167,10 +168,13 @@ export async function createProject(formData: FormData) {
   }
 
   if (access === "group" && groupId) {
-    await addGroupMembersToProject(project.id, groupId, user.id);
+    await Promise.all([
+      addGroupMembersToProject(project.id, groupId, user.id),
+      logActivity(project.id, user.id, `created project ${name}`),
+    ]);
+  } else {
+    await logActivity(project.id, user.id, `created project ${name}`);
   }
-
-  await logActivity(project.id, user.id, `created project ${name}`);
   refresh(project.id);
   redirect(`/projects/${project.id}`);
 }
@@ -206,6 +210,10 @@ export async function updateProject(projectId: string, formData: FormData) {
     }
     if (resolved.access === "group" && resolved.groupId) {
       await addGroupMembersToProject(projectId, resolved.groupId, user.id);
+    }
+    if (resolved.access !== "organization") {
+      const cleared = await supabase.from("project_pins").delete().eq("project_id", projectId);
+      if (cleared.error && !isMissingPinsSchema(cleared.error)) throw new Error(cleared.error.message);
     }
   }
 
@@ -265,6 +273,37 @@ export async function rotateShareCode(projectId: string) {
   await logActivity(projectId, user.id, `rotated the share code`);
   refresh(projectId);
   return next;
+}
+
+export async function toggleProjectPin(projectId: string) {
+  const { user, project } = await requireProjectMember(projectId);
+  if (parseProjectAccess(project.access) !== "organization") {
+    throw new Error("Only organization projects can be pinned.");
+  }
+
+  try {
+    const existing = unwrap(
+      await supabase
+        .from("project_pins")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("project_id", projectId)
+        .maybeSingle(),
+    ) as { id: string } | null;
+
+    if (existing) {
+      unwrap(await supabase.from("project_pins").delete().eq("id", existing.id));
+    } else {
+      unwrap(await supabase.from("project_pins").insert({ user_id: user.id, project_id: projectId }));
+    }
+  } catch (error) {
+    if (isMissingPinsSchema(error)) {
+      throw new Error("Project pins are missing. Run supabase/migration_project_pins.sql in the SQL Editor.");
+    }
+    throw error;
+  }
+
+  revalidatePath("/");
 }
 
 export async function leaveProject(projectId: string) {

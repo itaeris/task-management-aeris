@@ -20,11 +20,16 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    let inFlight = false;
     const ping = () => {
-      if (!cancelled) void pingPresence(pathname, taskId);
+      if (cancelled || inFlight) return;
+      inFlight = true;
+      void pingPresence(pathname, taskId).finally(() => {
+        inFlight = false;
+      });
     };
     ping();
-    const timer = window.setInterval(ping, 15000);
+    const timer = window.setInterval(ping, 30000);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
@@ -160,18 +165,22 @@ export function PresenceBoard({
 
   useEffect(() => {
     let cancelled = false;
+    let inFlight = false;
     const load = async () => {
+      if (inFlight) return;
+      inFlight = true;
       try {
         const rows = await listPresence();
         if (!cancelled) setPeople(rows);
       } catch {
         if (!cancelled) setPeople([]);
       } finally {
+        inFlight = false;
         if (!cancelled) setReady(true);
       }
     };
     void load();
-    const timer = window.setInterval(() => void load(), 8000);
+    const timer = window.setInterval(() => void load(), 20000);
     return () => {
       cancelled = true;
       window.clearInterval(timer);

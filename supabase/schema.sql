@@ -7,6 +7,7 @@ drop table if exists public.comments cascade;
 drop table if exists public.tasks cascade;
 drop table if exists public.sprints cascade;
 drop table if exists public.project_members cascade;
+drop table if exists public.project_pins cascade;
 drop table if exists public.projects cascade;
 drop table if exists public.group_members cascade;
 drop table if exists public.groups cascade;
@@ -63,6 +64,14 @@ create table public.project_members (
   source text not null default 'invite' check (source in ('owner', 'invite', 'access')),
   joined_at timestamptz not null default now(),
   unique (project_id, user_id)
+);
+
+create table public.project_pins (
+  id text primary key default gen_random_uuid()::text,
+  user_id text not null references public.users (id) on delete cascade,
+  project_id text not null references public.projects (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (user_id, project_id)
 );
 
 create table public.sprints (
@@ -140,6 +149,8 @@ create index projects_access_idx on public.projects (access);
 create index projects_group_id_idx on public.projects (group_id);
 create index group_members_user_idx on public.group_members (user_id);
 create index group_members_group_idx on public.group_members (group_id);
+create index project_pins_user_idx on public.project_pins (user_id);
+create index project_pins_project_idx on public.project_pins (project_id);
 
 create table public.presences (
   user_id text primary key references public.users (id) on delete cascade,
@@ -178,6 +189,7 @@ alter table public.groups enable row level security;
 alter table public.group_members enable row level security;
 alter table public.projects enable row level security;
 alter table public.project_members enable row level security;
+alter table public.project_pins enable row level security;
 alter table public.sprints enable row level security;
 alter table public.tasks enable row level security;
 alter table public.comments enable row level security;

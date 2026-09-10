@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { isMissingAccessSchema, parseProjectAccess, type ProjectAccess } from "@/lib/access";
+import { isMissingAccessSchema, isMissingPinsSchema, parseProjectAccess, type ProjectAccess } from "@/lib/access";
 import { ensureProjectAccess } from "@/lib/project-access";
 import { supabase, unwrap } from "@/lib/supabase";
 import { iso, memberFromUser, type ProjectWorkspace, type TaskDetailDTO } from "@/lib/types";
@@ -22,7 +22,10 @@ async function countByProject(table: "project_members" | "tasks", projectId: str
 
 export async function listUsers() {
   const rows = unwrap(
-    await supabase.from("users").select("*").order("created_at", { ascending: true }),
+    await supabase
+      .from("users")
+      .select("id, name, email, initials, color, username, role")
+      .order("created_at", { ascending: true }),
   ) as UserRow[];
   return rows.map(mapUser);
 }
@@ -38,12 +41,18 @@ export async function listGroupsForUser(userId: string) {
     ) as Array<{ group_id: string }>;
     const ids = [...new Set(rows.map((row) => row.group_id))];
     if (ids.length === 0) return [];
-    const groups = unwrap(
-      await supabase.from("groups").select("id, name").in("id", ids),
-    ) as Array<{ id: string; name: string }>;
-    const countRows = unwrap(
-      await supabase.from("group_members").select("group_id").in("group_id", ids),
-    ) as Array<{ group_id: string }>;
+    const [groups, countRows] = await Promise.all([
+      supabase
+        .from("groups")
+        .select("id, name")
+        .in("id", ids)
+        .then((result) => unwrap(result) as Array<{ id: string; name: string }>),
+      supabase
+        .from("group_members")
+        .select("group_id")
+        .in("group_id", ids)
+        .then((result) => unwrap(result) as Array<{ group_id: string }>),
+    ]);
     const counts = new Map<string, number>();
     for (const row of countRows) counts.set(row.group_id, (counts.get(row.group_id) ?? 0) + 1);
     return groups.map((group) => ({
@@ -98,34 +107,51 @@ export async function getProjectByShareCode(code: string) {
   };
 }
 
+async function loadSharedProjectIds(userId: string) {
+  try {
+    const [groupRows, orgResult] = await Promise.all([
+      supabase.from("group_members").select("group_id").eq("user_id", userId),
+      supabase.from("projects").select("id").eq("access", "organization"),
+    ]);
+    const groupIds = [
+      ...new Set((unwrap(groupRows) as Array<{ group_id: string }>).map((row) => row.group_id)),
+    ];
+    const groupResult = groupIds.length
+      ? await supabase.from("projects").select("id").eq("access", "group").in("group_id", groupIds)
+      : { data: [] as Array<{ id: string }>, error: null };
+    return [
+      ...((unwrap(orgResult) as Array<{ id: string }>).map((row) => row.id)),
+      ...((unwrap(groupResult) as Array<{ id: string }>).map((row) => row.id)),
+    ];
+  } catch (error) {
+    if (!isMissingAccessSchema(error)) throw error;
+    return [] as string[];
+  }
+}
+
+let pinsTableReady: boolean | null = null;
+
+async function loadPinnedProjectIds(userId: string) {
+  if (pinsTableReady === false) return [] as Array<{ project_id: string }>;
+  const result = await supabase.from("project_pins").select("project_id").eq("user_id", userId);
+  if (result.error && isMissingPinsSchema(result.error)) {
+    pinsTableReady = false;
+    return [] as Array<{ project_id: string }>;
+  }
+  pinsTableReady = true;
+  return unwrap(result) as Array<{ project_id: string }>;
+}
+
 export async function listProjectsForUser(userId: string) {
-  const memberships = unwrap(
-    await supabase
+  const [memberships, extraIds] = await Promise.all([
+    supabase
       .from("project_members")
       .select("role, joined_at, project_id")
       .eq("user_id", userId)
-      .order("joined_at", { ascending: false }),
-  ) as Array<{ role: string; project_id: string }>;
-
-  const extraIds: string[] = [];
-  try {
-    const groupRows = unwrap(
-      await supabase.from("group_members").select("group_id").eq("user_id", userId),
-    ) as Array<{ group_id: string }>;
-    const groupIds = [...new Set(groupRows.map((row) => row.group_id))];
-    const [orgResult, groupResult] = await Promise.all([
-      supabase.from("projects").select("id").eq("access", "organization"),
-      groupIds.length
-        ? supabase.from("projects").select("id").eq("access", "group").in("group_id", groupIds)
-        : Promise.resolve({ data: [] as Array<{ id: string }>, error: null }),
-    ]);
-    extraIds.push(
-      ...((unwrap(orgResult) as Array<{ id: string }>).map((row) => row.id)),
-      ...((unwrap(groupResult) as Array<{ id: string }>).map((row) => row.id)),
-    );
-  } catch (error) {
-    if (!isMissingAccessSchema(error)) throw error;
-  }
+      .order("joined_at", { ascending: false })
+      .then((result) => unwrap(result) as Array<{ role: string; project_id: string }>),
+    loadSharedProjectIds(userId),
+  ]);
 
   const seen = new Set<string>();
   const projectIds: string[] = [];
@@ -147,61 +173,101 @@ export async function listProjectsForUser(userId: string) {
     group_id?: string | null;
   };
 
-  const [projects, allMembers, taskRows, activeSprints] = await Promise.all([
+  const [projects, memberRows, taskRows, pinRows] = await Promise.all([
     supabase
       .from("projects")
-      .select("*")
+      .select("id, name, description, color, share_code, owner_id, access, group_id")
       .in("id", projectIds)
       .then((result) => unwrap(result) as ProjectListRow[]),
     supabase
       .from("project_members")
-      .select("project_id, role, users (id, name, email, initials, color)")
+      .select("project_id, role, user_id")
       .in("project_id", projectIds)
-      .then((result) => unwrap(result) as Array<{ project_id: string; role: string; users: UserRow | UserRow[] | null }>),
+      .then((result) => unwrap(result) as Array<{ project_id: string; role: string; user_id: string }>),
     supabase
       .from("tasks")
       .select("project_id, status")
       .in("project_id", projectIds)
       .then((result) => unwrap(result) as Array<{ project_id: string; status: string }>),
-    supabase
-      .from("sprints")
-      .select("project_id, name")
-      .in("project_id", projectIds)
-      .eq("status", "active")
-      .then((result) => unwrap(result) as Array<{ project_id: string; name: string }>),
+    loadPinnedProjectIds(userId),
   ]);
+
+  const pinnedIds = new Set(pinRows.map((row) => row.project_id));
+  const memberCountByProject = new Map<string, number>();
+  const ownerIdByProject = new Map<string, string>();
+  const avatarIdsByProject = new Map<string, string[]>();
+  const avatarUserIds = new Set<string>();
+  for (const row of memberRows) {
+    memberCountByProject.set(row.project_id, (memberCountByProject.get(row.project_id) ?? 0) + 1);
+    if (row.role === "owner") ownerIdByProject.set(row.project_id, row.user_id);
+    const avatars = avatarIdsByProject.get(row.project_id) ?? [];
+    if (avatars.length < 5) {
+      avatars.push(row.user_id);
+      avatarUserIds.add(row.user_id);
+      avatarIdsByProject.set(row.project_id, avatars);
+    }
+  }
+  for (const project of projects) {
+    if (project.owner_id) avatarUserIds.add(project.owner_id);
+  }
 
   const groupIdsForNames = [
     ...new Set(projects.map((project) => project.group_id).filter((id): id is string => Boolean(id))),
   ];
-  const groupNameById = new Map<string, string>();
-  if (groupIdsForNames.length) {
-    try {
-      const groupRows = unwrap(
-        await supabase.from("groups").select("id, name").in("id", groupIdsForNames),
-      ) as Array<{ id: string; name: string }>;
-      for (const row of groupRows) groupNameById.set(row.id, row.name);
-    } catch (error) {
-      if (!isMissingAccessSchema(error)) throw error;
-    }
-  }
 
+  const [userRows, groupRows] = await Promise.all([
+    avatarUserIds.size
+      ? supabase
+          .from("users")
+          .select("id, name, initials, color")
+          .in("id", [...avatarUserIds])
+          .then(
+            (result) =>
+              unwrap(result) as Array<{ id: string; name: string; initials: string; color: string }>,
+          )
+      : Promise.resolve([] as Array<{ id: string; name: string; initials: string; color: string }>),
+    groupIdsForNames.length
+      ? supabase
+          .from("groups")
+          .select("id, name")
+          .in("id", groupIdsForNames)
+          .then((result) => {
+            if (result.error && isMissingAccessSchema(result.error)) {
+              return [] as Array<{ id: string; name: string }>;
+            }
+            return unwrap(result) as Array<{ id: string; name: string }>;
+          })
+      : Promise.resolve([] as Array<{ id: string; name: string }>),
+  ]);
+
+  const userById = new Map(userRows.map((user) => [user.id, user]));
+  const groupNameById = new Map(groupRows.map((group) => [group.id, group.name]));
   const membershipByProject = new Map(memberships.map((item) => [item.project_id, item.role]));
   const order = new Map(projectIds.map((id, index) => [id, index]));
+  const taskCountByProject = new Map<string, { total: number; done: number }>();
+  for (const task of taskRows) {
+    const current = taskCountByProject.get(task.project_id) ?? { total: 0, done: 0 };
+    current.total += 1;
+    if (task.status === "done") current.done += 1;
+    taskCountByProject.set(task.project_id, current);
+  }
 
   return [...projects]
-    .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+    .sort((a, b) => {
+      const pinnedA = pinnedIds.has(a.id) && parseProjectAccess(a.access) === "organization";
+      const pinnedB = pinnedIds.has(b.id) && parseProjectAccess(b.access) === "organization";
+      if (pinnedA !== pinnedB) return pinnedA ? -1 : 1;
+      return (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0);
+    })
     .map((project) => {
-      const members = allMembers
-        .filter((item) => item.project_id === project.id)
-        .flatMap((item) => {
-          const user = asUser(item.users);
-          return user ? [memberFromRow(user, item.role)] : [];
-        });
-      const projectTasks = taskRows.filter((task) => task.project_id === project.id);
       const access: ProjectAccess = parseProjectAccess(project.access);
       const role =
         membershipByProject.get(project.id) ?? (project.owner_id === userId ? "owner" : "member");
+      const counts = taskCountByProject.get(project.id) ?? { total: 0, done: 0 };
+      const ownerId = ownerIdByProject.get(project.id) ?? project.owner_id;
+      const members = (avatarIdsByProject.get(project.id) ?? [])
+        .map((id) => userById.get(id))
+        .filter((user): user is { id: string; name: string; initials: string; color: string } => Boolean(user));
       return {
         id: project.id,
         name: project.name,
@@ -210,12 +276,13 @@ export async function listProjectsForUser(userId: string) {
         shareCode: project.share_code,
         role,
         access,
+        pinned: access === "organization" && pinnedIds.has(project.id),
         groupName: project.group_id ? (groupNameById.get(project.group_id) ?? null) : null,
-        taskCount: projectTasks.length,
-        doneCount: projectTasks.filter((task) => task.status === "done").length,
-        memberCount: members.length,
-        ownerName: members.find((member) => member.role === "owner")?.name ?? null,
-        activeSprint: activeSprints.find((sprint) => sprint.project_id === project.id)?.name ?? null,
+        taskCount: counts.total,
+        doneCount: counts.done,
+        memberCount: memberCountByProject.get(project.id) ?? members.length,
+        ownerName: userById.get(ownerId)?.name ?? null,
+        activeSprint: null,
         members,
       };
     });
@@ -285,7 +352,7 @@ export const getProjectWorkspace = cache(async (projectId: string, userId: strin
   if (!project) return null;
   const membership = memberRows.find((item) => item.user_id === userId) ?? ensured;
 
-  const [sprintRows, tasks, dailyRows, activityRows, todayRows, groupRow, groupMembers] = await Promise.all([
+  const [sprintRows, tasks, dailyRows, activityRows, groupRow, groupMembers] = await Promise.all([
     supabase
       .from("sprints")
       .select("*")
@@ -327,7 +394,7 @@ export const getProjectWorkspace = cache(async (projectId: string, userId: strin
       ),
     supabase
       .from("activities")
-      .select("*, users (id, name, email, initials, color)")
+      .select("id, message, created_at, users (id, name, email, initials, color)")
       .eq("project_id", projectId)
       .order("created_at", { ascending: false })
       .limit(20)
@@ -340,12 +407,6 @@ export const getProjectWorkspace = cache(async (projectId: string, userId: strin
             users: UserRow | UserRow[] | null;
           }>,
       ),
-    supabase
-      .from("daily_logs")
-      .select("id")
-      .eq("project_id", projectId)
-      .eq("date", todayKey())
-      .then((result) => unwrap(result) as Array<{ id: string }>),
     project.group_id
       ? supabase
           .from("groups")
@@ -463,7 +524,7 @@ export const getProjectWorkspace = cache(async (projectId: string, userId: strin
           : memberFromUser({ id: "", name: "Unknown", email: "", initials: "?", color: "#888" }),
       };
     }),
-    todayCheckins: todayRows.length,
+    todayCheckins: dailyRows.filter((log) => log.date === todayKey()).length,
     groupMembers,
   };
 });

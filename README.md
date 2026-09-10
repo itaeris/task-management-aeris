@@ -7,7 +7,7 @@ Stack: **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4**, **Framer 
 ## Features
 
 - Sign in with email/username + password, or Google OAuth
-- Create a project as **Personal**, **Group**, or **Organization**; join with a share code; change the Flaticon icon (UIcons)
+- Create a project as **Personal**, **Group**, or **Organization**; pin organization projects to the top of your own list; join with a share code; change the Flaticon icon (UIcons)
 - Product log, Scrum log, Daily check, Kanban, Calendar, Timeline
 - Comments, attachments, and project activity
 - Presence in the header: who has a page or task open
@@ -46,6 +46,7 @@ In the Supabase SQL Editor:
 2. If the `users` table already exists: run `supabase/migration_auth.sql`
 3. Presence (“active now”): run `supabase/migration_presence.sql`
 4. Project access (personal / group / organization): run `supabase/migration_project_access.sql`
+5. Per-user organization pins: run `supabase/migration_project_pins.sql`
 
 The schema also creates a private storage bucket named `attachments`.
 

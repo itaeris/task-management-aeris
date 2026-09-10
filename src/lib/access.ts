@@ -70,3 +70,15 @@ export function isMissingAccessSchema(error: unknown) {
     message,
   );
 }
+
+export function isMissingPinsSchema(error: unknown) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" && error && "message" in error
+        ? String((error as { message: unknown }).message)
+        : String(error);
+  return /relation ["']?(public\.)?project_pins|could not find the (table|relationship).*project_pins|schema cache/i.test(
+    message,
+  );
+}

@@ -1,9 +1,32 @@
 import { notFound, redirect } from "next/navigation";
+import { Suspense, type ReactNode } from "react";
 import { getCurrentUser } from "@/lib/auth";
-import { getProjectWorkspace } from "@/lib/queries";
+import { getProjectShell, getProjectWorkspace } from "@/lib/queries";
 import { getCalendarConnection } from "@/lib/google-calendar";
 import { ProjectShell } from "@/components/project-shell";
 import { WorkspaceProvider } from "@/components/workspace-provider";
+import { ProjectPageSkeleton } from "@/components/skeletons";
+
+async function ProjectWorkspaceLoader({
+  projectId,
+  userId,
+  children,
+}: {
+  projectId: string;
+  userId: string;
+  children: ReactNode;
+}) {
+  const [workspace, calendar] = await Promise.all([
+    getProjectWorkspace(projectId, userId),
+    getCalendarConnection(userId),
+  ]);
+  if (!workspace) notFound();
+  return (
+    <WorkspaceProvider workspace={workspace} userId={userId} calendar={calendar}>
+      {children}
+    </WorkspaceProvider>
+  );
+}
 
 export default async function ProjectLayout({
   children,
@@ -15,23 +38,22 @@ export default async function ProjectLayout({
   const { id } = await params;
   const user = await getCurrentUser();
   if (!user) redirect(`/login?next=/projects/${id}`);
-  const [workspace, calendar] = await Promise.all([
-    getProjectWorkspace(id, user.id),
-    getCalendarConnection(user.id),
-  ]);
-  if (!workspace) notFound();
+  const shell = await getProjectShell(id, user.id);
+  if (!shell) notFound();
 
   return (
     <ProjectShell
-      projectId={workspace.project.id}
-      projectName={workspace.project.name}
-      projectColor={workspace.project.color}
-      canEditIcon={workspace.role === "owner"}
+      projectId={shell.project.id}
+      projectName={shell.project.name}
+      projectColor={shell.project.color}
+      canEditIcon={shell.role === "owner"}
       user={user}
     >
-      <WorkspaceProvider workspace={workspace} userId={user.id} calendar={calendar}>
-        {children}
-      </WorkspaceProvider>
+      <Suspense fallback={<ProjectPageSkeleton />}>
+        <ProjectWorkspaceLoader projectId={id} userId={user.id}>
+          {children}
+        </ProjectWorkspaceLoader>
+      </Suspense>
     </ProjectShell>
   );
 }

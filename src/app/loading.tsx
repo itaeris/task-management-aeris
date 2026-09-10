@@ -1,5 +1,5 @@
-import { HomeSkeleton } from "@/components/skeletons";
+import { HomePending } from "@/components/home-view";
 
 export default function Loading() {
-  return <HomeSkeleton />;
+  return <HomePending />;
 }
