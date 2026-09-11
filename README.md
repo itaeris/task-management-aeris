@@ -6,7 +6,7 @@ Stack: **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4**, **Framer 
 
 ## Features
 
-- Sign in with email/username + password, or Google OAuth
+- Sign in with email/username + password (Cloudflare Turnstile) or Google OAuth
 - Create a project as **Personal**, **Group**, or **Organization**; pin organization projects to the top of your own list; join with a share code; change the Flaticon icon (UIcons)
 - Product log, Scrum log, Daily check, Kanban, Calendar, Timeline
 - Comments, attachments, and project activity
@@ -35,6 +35,10 @@ Fill in:
 | `APP_URL` | Public URL, production: `https://pipeline.aerisbeaute.com` |
 | `GOOGLE_CLIENT_ID` | OAuth client ID (optional) |
 | `GOOGLE_CLIENT_SECRET` | OAuth client secret (optional) |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key (production login) |
+| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret (server only, do not commit) |
+
+On `localhost` / `127.0.0.1`, login uses Cloudflare’s dummy Turnstile keys (`1x00000000000000000000AA`) so the widget always passes without adding the hostname in the dashboard. Production still uses the keys above.
 
 Do not commit `.env`.
 
@@ -128,6 +132,8 @@ Tasks with a due date sync to the **primary** calendar of the connected Google a
    | `APP_URL` | `https://pipeline.aerisbeaute.com` |
    | `GOOGLE_CLIENT_ID` | yes, if you use Google login |
    | `GOOGLE_CLIENT_SECRET` | yes, if you use Google login |
+   | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | yes, password login |
+   | `TURNSTILE_SECRET_KEY` | yes, password login |
 
    Then **Redeploy**.
 3. Google Console: add the production origin and redirect URI above.

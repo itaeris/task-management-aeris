@@ -15,6 +15,7 @@ import {
 import { login, type LoginState } from "@/lib/actions/identity";
 import { BrandLockup } from "@/components/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { TurnstileField } from "@/components/turnstile-field";
 import { useToastMessage } from "@/components/toast";
 import { motion, useReducedMotion } from "framer-motion";
 import { easeOutSoft, fadeUp, stagger } from "@/components/motion";
@@ -67,7 +68,15 @@ const GOOGLE_ERRORS: Record<string, string> = {
   google_user: "Could not create or sign in to the account.",
 };
 
-export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?: string }) {
+export function LoginPage({
+  nextPath = "/",
+  error,
+  turnstileSiteKey = "",
+}: {
+  nextPath?: string;
+  error?: string;
+  turnstileSiteKey?: string;
+}) {
   const [showPassword, setShowPassword] = useState(false);
   const [notice, setNotice] = useState(GOOGLE_ERRORS[error ?? ""] ?? "");
   const [state, action, pending] = useActionState(login, {} as LoginState);
@@ -194,6 +203,10 @@ export function LoginPage({ nextPath = "/", error }: { nextPath?: string; error?
                 </button>
               </span>
             </label>
+
+            {turnstileSiteKey ? (
+              <TurnstileField key={state.challenge ?? "turnstile"} siteKey={turnstileSiteKey} />
+            ) : null}
 
             {state.error ? (
               <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">{state.error}</p>

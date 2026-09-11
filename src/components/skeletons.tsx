@@ -266,6 +266,7 @@ export function LoginSkeleton() {
           <Skeleton className="mt-3 h-4 w-48 max-w-full sm:w-56" />
           <Skeleton className="mt-8 h-12 w-full rounded-xl" />
           <Skeleton className="mt-4 h-12 w-full rounded-xl" />
+          <Skeleton className="mt-4 h-[65px] w-full rounded-xl" />
           <Skeleton className="mt-5 h-12 w-full !rounded-2xl" />
           <Skeleton className="mt-6 h-12 w-full !rounded-2xl" />
         </div>

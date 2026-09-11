@@ -161,8 +161,8 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
             <h2 className="font-serif text-2xl">Account & login</h2>
             <ul className="mt-4 space-y-3">
               <Step n="1" title="Sign in">
-                Use email or username plus password, or the Google button. After you sign in, you land on home
-                (the project list).
+                Use email or username plus password, or the Google button. Password sign-in asks for a Cloudflare
+                check first. After you sign in, you land on home (the project list).
               </Step>
               <Step n="2" title="Settings">
                 Change the display name other members see. Email and username cannot be changed here. Resetting

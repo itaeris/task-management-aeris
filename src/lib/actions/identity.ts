@@ -9,10 +9,16 @@ import { hashPassword, verifyPassword } from "@/lib/password";
 import { initialsFromName } from "@/lib/utils";
 import { clearPresence } from "@/lib/actions/presence";
 import { revalidateHome } from "@/lib/revalidate";
+import { isTurnstileEnabled, verifyTurnstileToken } from "@/lib/turnstile";
 
 export type LoginState = {
   error?: string;
+  challenge?: number;
 };
+
+function fail(error: string): LoginState {
+  return { error, challenge: Date.now() };
+}
 
 function revalidateApp() {
   revalidateHome();
@@ -31,7 +37,13 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   const next = safeNextPath(String(formData.get("next") ?? "/"));
 
   if (!identifier || !password) {
-    return { error: "Email and password are required." };
+    return fail("Email and password are required.");
+  }
+
+  if (await isTurnstileEnabled()) {
+    const token = String(formData.get("cf-turnstile-response") ?? "").trim();
+    const check = await verifyTurnstileToken(token);
+    if (!check.ok) return fail(check.error ?? "Verification failed. Try again.");
   }
 
   try {
@@ -47,20 +59,20 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
         null);
 
     if (!user?.password_hash) {
-      return { error: "Wrong email or password." };
+      return fail("Wrong email or password.");
     }
 
     const ok = await verifyPassword(password, user.password_hash);
-    if (!ok) return { error: "Wrong email or password." };
+    if (!ok) return fail("Wrong email or password.");
 
     await setUserCookie(user.id);
     revalidateApp();
   } catch (error) {
     if (isMissingAuthColumn(error)) {
-      return { error: "Login columns are missing. Run supabase/migration_auth.sql in the SQL Editor." };
+      return fail("Login columns are missing. Run supabase/migration_auth.sql in the SQL Editor.");
     }
     const message = error instanceof Error ? error.message : "Could not sign in.";
-    return { error: message };
+    return fail(message);
   }
 
   redirect(next);
