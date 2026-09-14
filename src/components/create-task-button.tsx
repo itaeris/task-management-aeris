@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 import { createTask } from "@/lib/actions/tasks";
 import { PRIORITIES, STATUSES, TASK_TYPES } from "@/lib/constants";
 import type { MemberDTO, SprintDTO } from "@/lib/types";
-import { DatePicker, MultiSelect, Select } from "@/components/fields";
+import { MultiSelect, Select, TaskScheduleFields } from "@/components/fields";
 import { btnGhost, btnPrimary, field, surface } from "@/components/ui";
 import { PendingSubmit, FormBusy } from "@/components/pending-submit";
 import { cn } from "@/lib/utils";
@@ -94,8 +94,7 @@ export function CreateTaskButton({
                   options={members.map((member) => ({ value: member.id, label: member.name }))}
                 />
                 <input name="points" type="number" min={0} className={field} placeholder="Points" />
-                <DatePicker name="startDate" placeholder="Start date" />
-                <DatePicker name="dueDate" placeholder="Due date" />
+                <TaskScheduleFields />
               </div>
             </div>
             <div className="mt-5 flex justify-end gap-2">

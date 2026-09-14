@@ -3,6 +3,7 @@ import { supabase, unwrap } from "@/lib/supabase";
 import { siteUrl } from "@/lib/site";
 import type { TaskRow } from "@/lib/mappers";
 import type { CalendarConnectionPublic } from "@/lib/types";
+import { APP_TIMEZONE, dateKeyJakarta, toJakartaDateTime } from "@/lib/utils";
 
 const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -124,15 +125,6 @@ async function getValidAccessToken(userId: string) {
   return { ...row, access_token: tokens.access_token, token_expiry: expiry };
 }
 
-function dateKeyJakarta(iso: string) {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Jakarta",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(iso));
-}
-
 function addOneDay(key: string) {
   const [year, month, day] = key.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day + 1));
@@ -140,10 +132,9 @@ function addOneDay(key: string) {
 }
 
 function eventBody(task: TaskRow, projectName: string) {
-  const dueKey = task.due_date ? dateKeyJakarta(task.due_date) : null;
-  const startKey = task.start_date ? dateKeyJakarta(task.start_date) : dueKey;
-  if (!dueKey || !startKey) return null;
-  const endKey = addOneDay(dueKey < startKey ? startKey : dueKey);
+  const startSrc = task.start_date ?? task.due_date;
+  const endSrc = task.due_date ?? task.start_date;
+  if (!startSrc || !endSrc) return null;
   const app = siteUrl() || "https://pipeline.aerisbeaute.com";
   const lines = [
     task.description?.trim() || "",
@@ -151,12 +142,32 @@ function eventBody(task: TaskRow, projectName: string) {
     `Project: ${projectName}`,
     `${app}/projects/${task.project_id}/calendar`,
   ].filter(Boolean);
+  const allDay = task.all_day !== false;
+
+  if (allDay) {
+    const startKey = dateKeyJakarta(startSrc);
+    const dueKey = dateKeyJakarta(endSrc);
+    const endKey = addOneDay(dueKey < startKey ? startKey : dueKey);
+    return {
+      summary: task.title,
+      description: lines.join("\n"),
+      start: { date: startKey },
+      end: { date: endKey },
+      extendedProperties: {
+        private: { naraTaskId: task.id },
+      },
+    };
+  }
+
+  const startMs = new Date(startSrc).getTime();
+  let endMs = new Date(endSrc).getTime();
+  if (endMs <= startMs) endMs = startMs + 60 * 60 * 1000;
 
   return {
     summary: task.title,
     description: lines.join("\n"),
-    start: { date: startKey },
-    end: { date: endKey },
+    start: { dateTime: toJakartaDateTime(startSrc), timeZone: APP_TIMEZONE },
+    end: { dateTime: toJakartaDateTime(new Date(endMs).toISOString()), timeZone: APP_TIMEZONE },
     extendedProperties: {
       private: { naraTaskId: task.id },
     },

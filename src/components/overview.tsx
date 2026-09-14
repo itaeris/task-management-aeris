@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { cn, formatDay } from "@/lib/utils";
+import { cn, formatDay, formatTaskWhen } from "@/lib/utils";
 import { Avatar, StatusBadge, surface } from "@/components/ui";
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { TaskDrawer } from "@/components/task-drawer";
@@ -154,7 +154,7 @@ export function Overview({
                     <span className="min-w-0 truncate text-sm font-medium">{task.title}</span>
                     <div className="flex shrink-0 items-center gap-2">
                       <StatusBadge status={task.status} />
-                      <span className="text-xs text-muted">{formatDay(task.dueDate!)}</span>
+                      <span className="text-xs text-muted">{formatTaskWhen(task.dueDate!, task.allDay)}</span>
                     </div>
                   </button>
                 </li>

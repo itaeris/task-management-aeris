@@ -20,6 +20,7 @@ export type TaskDTO = {
   rank: number;
   startDate: string | null;
   dueDate: string | null;
+  allDay: boolean;
   createdAt: string;
   assignee: MemberDTO | null;
   assignees: MemberDTO[];

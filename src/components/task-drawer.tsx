@@ -5,20 +5,16 @@ import { Paperclip, Trash2, LoaderCircle } from "lucide-react";
 import { addComment, deleteTask, loadTaskDetail, updateTask } from "@/lib/actions/tasks";
 import { deleteAttachment, uploadAttachment } from "@/lib/actions/attachments";
 import { PRIORITIES, STATUSES, TASK_TYPES } from "@/lib/constants";
-import { cn, formatBytes, formatDay } from "@/lib/utils";
+import { cn, formatBytes, formatDay, formatTaskWhen } from "@/lib/utils";
 import type { MemberDTO, SprintDTO, TaskDTO, TaskDetailDTO } from "@/lib/types";
 import { Avatar, PriorityBadge, TypeBadge, AvatarStack, btnGhost, field, iconBtn, Skeleton } from "@/components/ui";
 import { PendingSubmit } from "@/components/pending-submit";
-import { DatePicker, MultiSelect, Select } from "@/components/fields";
+import { MultiSelect, Select, TaskScheduleFields } from "@/components/fields";
 import { TaskDrawerSkeleton } from "@/components/skeletons";
 import { useSetActiveTask } from "@/components/presence";
 import { AnimatePresence, motion } from "framer-motion";
 import { easeOutSoft } from "@/components/motion";
 import { notifyChange } from "@/components/toast";
-
-function dateInput(value: string | null) {
-  return value ? value.slice(0, 10) : "";
-}
 
 export function TaskDrawer({
   taskId,
@@ -110,6 +106,7 @@ export function TaskDrawer({
               detail.points,
               detail.startDate,
               detail.dueDate,
+              detail.allDay,
             ].join("|")}
             className="flex flex-1 flex-col gap-4 px-4 py-5 sm:px-6"
             action={async (formData) => {
@@ -167,15 +164,10 @@ export function TaskDrawer({
                 placeholder="Story points"
                 defaultValue={detail.points ?? ""}
               />
-              <DatePicker
-                name="startDate"
-                defaultValue={dateInput(detail.startDate)}
-                placeholder="Start date"
-              />
-              <DatePicker
-                name="dueDate"
-                defaultValue={dateInput(detail.dueDate)}
-                placeholder="Due date"
+              <TaskScheduleFields
+                startIso={detail.startDate}
+                dueIso={detail.dueDate}
+                allDay={detail.allDay}
               />
             </div>
 
@@ -347,7 +339,7 @@ export function TaskChip({
       <p className="mt-2 text-sm font-semibold leading-snug">{task.title}</p>
       <div className="mt-3 flex items-center justify-between text-xs text-muted">
         <span>        {task.points ? `${task.points} pt` : "No points"}</span>
-        {task.dueDate ? <span>{formatDay(task.dueDate)}</span> : <span />}
+        {task.dueDate ? <span>{formatTaskWhen(task.dueDate, task.allDay)}</span> : <span />}
         {task.assignees?.length ? (
           <AvatarStack members={task.assignees} />
         ) : (

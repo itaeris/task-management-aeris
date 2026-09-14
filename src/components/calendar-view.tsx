@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { addMonths, formatMonthYear, startOfMonth } from "@/lib/utils";
+import { addMonths, dateKeyJakarta, formatMonthYear, formatTime, startOfMonth } from "@/lib/utils";
 import type { ProjectAccess } from "@/lib/access";
 import type { MemberDTO, SprintDTO, TaskDTO } from "@/lib/types";
 import { TaskDrawer } from "@/components/task-drawer";
+import { useTaskHoverTip } from "@/components/task-hover-tip";
 import { iconBtn } from "@/components/ui";
 import { GoogleCalendarConnect } from "@/components/google-calendar-connect";
 import type { CalendarConnectionPublic } from "@/lib/types";
@@ -32,6 +33,7 @@ export function CalendarView({
   const router = useRouter();
   const [cursor, setCursor] = useState(() => startOfMonth(new Date()));
   const [openId, setOpenId] = useState<string | null>(null);
+  const { showTip, hideTip, tooltip } = useTaskHoverTip();
 
   const cells = useMemo(() => {
     const start = startOfMonth(cursor);
@@ -42,7 +44,12 @@ export function CalendarView({
       const date = new Date(first);
       date.setDate(first.getDate() + index);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      const dayTasks = tasks.filter((task) => task.dueDate?.slice(0, 10) === key);
+      const dayTasks = tasks
+        .filter((task) => task.dueDate && dateKeyJakarta(task.dueDate) === key)
+        .sort((a, b) => {
+          if (a.allDay !== b.allDay) return a.allDay ? -1 : 1;
+          return (a.dueDate ?? "").localeCompare(b.dueDate ?? "");
+        });
       return { date, key, inMonth: date.getMonth() === cursor.getMonth(), tasks: dayTasks };
     });
   }, [cursor, tasks]);
@@ -94,9 +101,18 @@ export function CalendarView({
               {cell.tasks.map((task) => (
                 <button
                   key={task.id}
-                  onClick={() => setOpenId(task.id)}
+                  type="button"
+                  onClick={() => {
+                    hideTip();
+                    setOpenId(task.id);
+                  }}
+                  onMouseEnter={(event) => showTip(event.currentTarget, task)}
+                  onMouseLeave={hideTip}
+                  onFocus={(event) => showTip(event.currentTarget, task)}
+                  onBlur={hideTip}
                   className="block w-full truncate rounded-lg bg-paper px-1.5 py-1 text-left text-[11px] font-medium hover:bg-terracotta hover:text-white"
                 >
+                  {task.allDay || !task.dueDate ? null : <span className="mr-1 font-semibold">{formatTime(task.dueDate)}</span>}
                   {task.title}
                 </button>
               ))}
@@ -106,6 +122,7 @@ export function CalendarView({
       </div>
       </div>
       </div>
+      {tooltip}
       <TaskDrawer
         taskId={openId}
         members={members}

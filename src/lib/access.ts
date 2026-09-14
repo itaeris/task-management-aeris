@@ -94,3 +94,13 @@ export function isMissingAssigneesSchema(error: unknown) {
     message,
   );
 }
+
+export function isMissingAllDaySchema(error: unknown) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" && error && "message" in error
+        ? String((error as { message: unknown }).message)
+        : String(error);
+  return /column .*all_day|could not find .*all_day/i.test(message);
+}

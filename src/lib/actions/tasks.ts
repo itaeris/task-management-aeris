@@ -3,8 +3,8 @@
 import { after } from "next/server";
 import { supabase, unwrap } from "@/lib/supabase";
 import { requireProjectMember, requireUser } from "@/lib/auth";
-import { isMissingAssigneesSchema } from "@/lib/access";
-import { parseDateInput } from "@/lib/utils";
+import { isMissingAssigneesSchema, isMissingAllDaySchema } from "@/lib/access";
+import { parseTaskDateTimeInput, readAllDay } from "@/lib/utils";
 import { getTaskDetail } from "@/lib/queries";
 import { notifyGoogleCalendarTaskChanged, notifyGoogleCalendarTaskDeleted } from "@/lib/google-calendar";
 import { revalidateProject } from "@/lib/revalidate";
@@ -28,6 +28,36 @@ function readAssigneeIds(formData: FormData) {
   if (fromMany.length) return [...new Set(fromMany)];
   const one = String(formData.get("assigneeId") ?? "").trim();
   return one ? [one] : [];
+}
+
+function taskDates(formData: FormData) {
+  const allDay = readAllDay(formData);
+  return {
+    start_date: parseTaskDateTimeInput(formData.get("startDate"), allDay)?.toISOString() ?? null,
+    due_date: parseTaskDateTimeInput(formData.get("dueDate"), allDay)?.toISOString() ?? null,
+    all_day: allDay,
+  };
+}
+
+async function writeTask(kind: "insert" | "update", row: Record<string, unknown>, taskId?: string) {
+  const run = async (payload: Record<string, unknown>) => {
+    if (kind === "insert") {
+      return unwrap(await supabase.from("tasks").insert(payload).select("id, title").single()) as {
+        id: string;
+        title: string;
+      };
+    }
+    unwrap(await supabase.from("tasks").update(payload).eq("id", taskId));
+    return null;
+  };
+
+  try {
+    return await run(row);
+  } catch (error) {
+    if (!isMissingAllDaySchema(error) || !("all_day" in row)) throw error;
+    const { all_day: _allDay, ...without } = row;
+    return await run(without);
+  }
 }
 
 async function replaceTaskAssignees(taskId: string, userIds: string[]) {
@@ -64,10 +94,7 @@ export async function createTask(projectId: string, formData: FormData) {
   const pointsRaw = String(formData.get("points") ?? "").trim();
   const assigneeIds = readAssigneeIds(formData);
 
-  const task = unwrap(
-    await supabase
-      .from("tasks")
-      .insert({
+  const task = await writeTask("insert", {
         project_id: projectId,
         title,
         description: String(formData.get("description") ?? "").trim(),
@@ -77,13 +104,10 @@ export async function createTask(projectId: string, formData: FormData) {
         sprint_id: String(formData.get("sprintId") ?? "") || null,
         assignee_id: assigneeIds[0] ?? null,
         points: pointsRaw ? Number(pointsRaw) : null,
-        start_date: parseDateInput(formData.get("startDate"))?.toISOString() ?? null,
-        due_date: parseDateInput(formData.get("dueDate"))?.toISOString() ?? null,
+        ...taskDates(formData),
         rank: await nextRank(projectId),
-      })
-      .select("id, title")
-      .single(),
-  ) as { id: string; title: string };
+      });
+  if (!task) throw new Error("Could not create task.");
   await replaceTaskAssignees(task.id, assigneeIds);
 
   unwrap(
@@ -107,23 +131,21 @@ export async function updateTask(taskId: string, formData: FormData) {
   const pointsRaw = String(formData.get("points") ?? "").trim();
   const assigneeIds = readAssigneeIds(formData);
 
-  unwrap(
-    await supabase
-      .from("tasks")
-      .update({
-        title: String(formData.get("title") ?? existing.title).trim(),
-        description: String(formData.get("description") ?? ""),
-        type: String(formData.get("type") ?? "story"),
-        priority: String(formData.get("priority") ?? "medium"),
-        status: String(formData.get("status") ?? "backlog"),
-        sprint_id: String(formData.get("sprintId") ?? "") || null,
-        assignee_id: assigneeIds[0] ?? null,
-        points: pointsRaw ? Number(pointsRaw) : null,
-        start_date: parseDateInput(formData.get("startDate"))?.toISOString() ?? null,
-        due_date: parseDateInput(formData.get("dueDate"))?.toISOString() ?? null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", taskId),
+  await writeTask(
+    "update",
+    {
+      title: String(formData.get("title") ?? existing.title).trim(),
+      description: String(formData.get("description") ?? ""),
+      type: String(formData.get("type") ?? "story"),
+      priority: String(formData.get("priority") ?? "medium"),
+      status: String(formData.get("status") ?? "backlog"),
+      sprint_id: String(formData.get("sprintId") ?? "") || null,
+      assignee_id: assigneeIds[0] ?? null,
+      points: pointsRaw ? Number(pointsRaw) : null,
+      ...taskDates(formData),
+      updated_at: new Date().toISOString(),
+    },
+    taskId,
   );
   await replaceTaskAssignees(taskId, assigneeIds);
   unwrap(

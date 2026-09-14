@@ -25,6 +25,7 @@ export type TaskRow = {
   rank: number;
   start_date: string | null;
   due_date: string | null;
+  all_day?: boolean | null;
   created_at: string;
   assignee_id: string | null;
 };
@@ -70,6 +71,7 @@ export function mapTask(
     rank: row.rank,
     startDate: iso(row.start_date),
     dueDate: iso(row.due_date),
+    allDay: row.all_day !== false,
     createdAt: iso(row.created_at) ?? new Date().toISOString(),
     assignee: assignees[0] ?? null,
     assignees,

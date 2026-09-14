@@ -97,6 +97,7 @@ create table public.tasks (
   rank double precision not null default 0,
   start_date timestamptz,
   due_date timestamptz,
+  all_day boolean not null default true,
   assignee_id text references public.users (id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

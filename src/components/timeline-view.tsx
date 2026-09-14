@@ -1,32 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { addDays, cn, formatDay, startOfDay } from "@/lib/utils";
+import { addDays, cn, startOfDay } from "@/lib/utils";
 import type { MemberDTO, SprintDTO, TaskDTO } from "@/lib/types";
 import { TaskDrawer } from "@/components/task-drawer";
+import { useTaskHoverTip } from "@/components/task-hover-tip";
 import { AvatarStack, surface } from "@/components/ui";
-
-type HoverTip = {
-  title: string;
-  detail: string;
-  top: number;
-  left: number;
-};
-
-function taskRangeLabel(task: TaskDTO) {
-  const from = task.startDate ? formatDay(task.startDate) : null;
-  const to = task.dueDate ? formatDay(task.dueDate) : null;
-  if (from && to && from !== to) return `${from} – ${to}`;
-  return from ?? to ?? "";
-}
-
-function taskHoverDetail(task: TaskDTO) {
-  const range = taskRangeLabel(task);
-  const names = task.assignees?.map((member) => member.name).filter(Boolean) ?? [];
-  return [range, names.length ? names.join(", ") : null].filter(Boolean).join(" · ");
-}
 
 export function TimelineView({
   tasks,
@@ -39,8 +19,7 @@ export function TimelineView({
 }) {
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
-  const [tip, setTip] = useState<HoverTip | null>(null);
-  const hideTimer = useRef<number>(0);
+  const { showTip, hideTip, tooltip } = useTaskHoverTip();
   const ranged = tasks.filter((task) => task.startDate || task.dueDate);
 
   const { start, days } = useMemo(() => {
@@ -61,34 +40,6 @@ export function TimelineView({
   const width = days * dayWidth;
   const today = startOfDay(new Date());
   const weekdayLetters = ["S", "M", "T", "W", "T", "F", "S"];
-
-  function showTip(node: HTMLElement, task: TaskDTO) {
-    window.clearTimeout(hideTimer.current);
-    const rect = node.getBoundingClientRect();
-    const left = Math.min(window.innerWidth - 16, Math.max(16, rect.left + rect.width / 2));
-    const top = Math.max(12, rect.top - 8);
-    setTip({ title: task.title, detail: taskHoverDetail(task), top, left });
-  }
-
-  function hideTip() {
-    window.clearTimeout(hideTimer.current);
-    hideTimer.current = window.setTimeout(() => setTip(null), 80);
-  }
-
-  useEffect(() => {
-    return () => window.clearTimeout(hideTimer.current);
-  }, []);
-
-  useEffect(() => {
-    if (!tip) return;
-    const hide = () => setTip(null);
-    window.addEventListener("scroll", hide, true);
-    window.addEventListener("resize", hide);
-    return () => {
-      window.removeEventListener("scroll", hide, true);
-      window.removeEventListener("resize", hide);
-    };
-  }, [tip]);
 
   return (
     <div className="space-y-5">
@@ -186,19 +137,7 @@ export function TimelineView({
           )}
         </div>
       </div>
-      {tip && typeof document !== "undefined"
-        ? createPortal(
-            <div
-              role="tooltip"
-              className="pointer-events-none fixed z-[200] max-w-[min(18rem,calc(100vw-1.5rem))] -translate-x-1/2 -translate-y-full rounded-2xl border border-line bg-paper px-3 py-2 shadow-[0_14px_36px_rgba(15,23,42,0.18)]"
-              style={{ top: tip.top, left: tip.left }}
-            >
-              <p className="text-sm font-semibold leading-snug text-ink">{tip.title}</p>
-              {tip.detail ? <p className="mt-0.5 text-[11px] leading-snug text-muted">{tip.detail}</p> : null}
-            </div>,
-            document.body,
-          )
-        : null}
+      {tooltip}
       <TaskDrawer
         taskId={openId}
         members={members}

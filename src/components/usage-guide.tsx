@@ -388,10 +388,11 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
             </p>
             <div className="mt-4 grid gap-3">
               <Term name="Connect Google Calendar">
-                OAuth to your Google calendar. Eligible tasks with a due date become all-day events on your
-                primary calendar. Personal projects copy every due date. Group and organization projects only
-                copy tasks assigned to you — even if the whole workspace can open the board. This is not a team
-                invite; each person connects their own account.
+                OAuth to your Google calendar. Eligible tasks with a due date (or start date) become events on
+                your primary calendar — timed if you set a clock, all-day if you leave All day on. CalDAV clients
+                that sync Google see the same times. Personal projects copy every dated task. Group and
+                organization projects only copy tasks assigned to you — even if the whole workspace can open the
+                board. This is not a team invite; each person connects their own account.
               </Term>
               <Term name="Sync">
                 Push this project&apos;s eligible due dates to Google again. Creating, updating, assigning, or

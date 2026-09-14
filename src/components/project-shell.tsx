@@ -197,7 +197,7 @@ export function ProjectShell({
               <ArrowLeft size={16} />
               <span className="hidden sm:inline">Home</span>
             </Link>
-            <div className="min-w-0 flex-1 sm:max-w-xs">
+            <div className="min-w-0 max-w-xs">
               <ProjectSwitcher
                 currentId={projectId}
                 currentName={projectName}
@@ -205,7 +205,7 @@ export function ProjectShell({
                 projects={projects}
               />
             </div>
-            <div className="hidden min-w-0 flex-1 md:flex">
+            <div className="hidden min-w-0 md:flex">
               <PresenceBoard variant="header" />
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">

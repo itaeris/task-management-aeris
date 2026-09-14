@@ -2,9 +2,9 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { CalendarDays, Check, ChevronDown } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, Clock } from "lucide-react";
 import { field, iconBtn } from "@/components/ui";
-import { addDays, addMonths, cn, formatDay, formatMonthYear, startOfMonth, todayKey } from "@/lib/utils";
+import { addDays, addMonths, cn, convertDateInput, formatDay, formatMonthYear, startOfMonth, todayKey, toDateInputValue } from "@/lib/utils";
 
 type Option = { value: string; label: string };
 
@@ -280,15 +280,28 @@ export function MultiSelect({
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+function datePart(value: string) {
+  return value.slice(0, 10);
+}
+
+function timePart(value: string) {
+  const match = value.match(/T(\d{2}:\d{2})/);
+  return match?.[1] ?? "";
+}
+
 function parseKey(value: string) {
-  const [year, month, day] = value.split("-").map(Number);
+  const [year, month, day] = datePart(value).split("-").map(Number);
   if (!year || !month || !day) return null;
   return new Date(year, month - 1, day);
 }
 
-function formatKeyLabel(value: string) {
+function formatKeyLabel(value: string, withTime = false) {
   const date = parseKey(value);
-  return date ? formatDay(date) : value;
+  if (!date) return value;
+  const day = formatDay(date);
+  if (!withTime) return day;
+  const time = timePart(value);
+  return time ? `${day}, ${time}` : day;
 }
 
 function monthCells(cursor: Date) {
@@ -306,6 +319,7 @@ export function DatePicker({
   placeholder = "Pick a date",
   className,
   required,
+  withTime = false,
 }: {
   name?: string;
   value?: string;
@@ -314,22 +328,33 @@ export function DatePicker({
   placeholder?: string;
   className?: string;
   required?: boolean;
+  withTime?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [uncontrolled, setUncontrolled] = useState(defaultValue);
   const selected = value ?? uncontrolled;
   const selectedDate = selected ? parseKey(selected) : null;
+  const selectedTime = timePart(selected) || "09:00";
   const [cursor, setCursor] = useState(() => selectedDate ?? new Date());
   const { triggerRef, pos } = useMenuPosition(open, 292);
 
-  function choose(next: string) {
+  function commit(next: string, close = !withTime) {
     if (value === undefined) setUncontrolled(next);
     onChange?.(next);
-    setOpen(false);
+    if (close) setOpen(false);
+  }
+
+  function chooseDate(key: string) {
+    commit(withTime ? `${key}T${selectedTime}` : key, !withTime);
+  }
+
+  function chooseTime(time: string) {
+    const key = selected ? datePart(selected) : todayKey();
+    commit(`${key}T${time}`, false);
   }
 
   function clear() {
-    choose("");
+    commit("", true);
   }
 
   return (
@@ -357,9 +382,13 @@ export function DatePicker({
         className={cn(field, "flex items-center justify-between gap-2 text-left")}
       >
         <span className={cn("truncate", selected ? "text-ink" : "text-muted")}>
-          {selected ? formatKeyLabel(selected) : placeholder}
+          {selected ? formatKeyLabel(selected, withTime) : placeholder}
         </span>
-        <CalendarDays size={16} className="shrink-0 text-muted" />
+        {withTime ? (
+          <Clock size={16} className="shrink-0 text-muted" />
+        ) : (
+          <CalendarDays size={16} className="shrink-0 text-muted" />
+        )}
       </button>
       <MenuPortal
         open={open}
@@ -399,12 +428,12 @@ export function DatePicker({
             const key = todayKey(day);
             const inMonth = day.getMonth() === cursor.getMonth();
             const isToday = key === todayKey();
-            const isSelected = key === selected;
+            const isSelected = selected ? datePart(selected) === key : false;
             return (
               <button
                 key={key}
                 type="button"
-                onClick={() => choose(key)}
+                onClick={() => chooseDate(key)}
                 className={cn(
                   "grid h-9 place-items-center rounded-xl text-sm",
                   !inMonth && "text-muted/40",
@@ -418,6 +447,21 @@ export function DatePicker({
             );
           })}
         </div>
+        {withTime ? (
+          <label className="mt-3 flex items-center gap-2 rounded-xl border border-line bg-paper px-3 py-2 text-sm text-ink">
+            <Clock size={14} className="shrink-0 text-muted" />
+            <span className="sr-only">Time</span>
+            <input
+              type="time"
+              value={selected ? selectedTime : ""}
+              onChange={(event) => {
+                const time = event.target.value;
+                if (time) chooseTime(time);
+              }}
+              className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none"
+            />
+          </label>
+        ) : null}
         {!required ? (
           <button
             type="button"
@@ -429,5 +473,54 @@ export function DatePicker({
         ) : null}
       </MenuPortal>
     </div>
+  );
+}
+
+export function TaskScheduleFields({
+  startIso = null,
+  dueIso = null,
+  allDay = false,
+}: {
+  startIso?: string | null;
+  dueIso?: string | null;
+  allDay?: boolean;
+}) {
+  const [isAllDay, setIsAllDay] = useState(allDay);
+  const [start, setStart] = useState(() => toDateInputValue(startIso, allDay));
+  const [due, setDue] = useState(() => toDateInputValue(dueIso, allDay));
+
+  function toggleAllDay(next: boolean) {
+    setIsAllDay(next);
+    setStart((current) => convertDateInput(current, next));
+    setDue((current) => convertDateInput(current, next));
+  }
+
+  return (
+    <>
+      <input type="hidden" name="allDay" value={isAllDay ? "1" : "0"} />
+      <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-ink sm:col-span-2">
+        <input
+          type="checkbox"
+          checked={isAllDay}
+          onChange={(event) => toggleAllDay(event.target.checked)}
+          className="h-4 w-4 accent-terracotta"
+        />
+        All day
+      </label>
+      <DatePicker
+        name="startDate"
+        value={start}
+        onChange={setStart}
+        withTime={!isAllDay}
+        placeholder={isAllDay ? "Start date" : "Start date & time"}
+      />
+      <DatePicker
+        name="dueDate"
+        value={due}
+        onChange={setDue}
+        withTime={!isAllDay}
+        placeholder={isAllDay ? "Due date" : "Due date & time"}
+      />
+    </>
   );
 }

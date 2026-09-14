@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MessageSquare, Paperclip } from "lucide-react";
 import type { MemberDTO, SprintDTO, TaskDTO } from "@/lib/types";
-import { cn, formatDay } from "@/lib/utils";
+import { cn, formatTaskWhen } from "@/lib/utils";
 import { AvatarStack, PriorityBadge, StatusBadge, TypeBadge, field, surface } from "@/components/ui";
 import { Select } from "@/components/fields";
 import { CreateTaskButton } from "@/components/create-task-button";
@@ -99,7 +99,7 @@ export function BacklogBoard({
                   <StatusBadge status={task.status} />
                 </td>
                 <td className="px-4 py-3 text-muted">{task.sprintName ?? "—"}</td>
-                <td className="px-4 py-3 text-muted">{task.dueDate ? formatDay(task.dueDate) : "—"}</td>
+                <td className="px-4 py-3 text-muted">{task.dueDate ? formatTaskWhen(task.dueDate, task.allDay) : "—"}</td>
                 <td className="px-4 py-3">{task.points ?? "—"}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-3 text-muted">

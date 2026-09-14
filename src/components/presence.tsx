@@ -197,7 +197,7 @@ export function PresenceBoard({
 
   if (variant === "header") {
     return (
-      <div className="flex min-w-0 flex-1 items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <span className="hidden shrink-0 select-none text-[13px] font-light text-muted/70 sm:inline" aria-hidden>
           |
         </span>

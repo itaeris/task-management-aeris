@@ -49,10 +49,93 @@ export function todayKey(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+export const APP_TIMEZONE = "Asia/Jakarta";
+const JAKARTA_OFFSET_MS = 7 * 60 * 60 * 1000;
+
 export function parseDateInput(value: FormDataEntryValue | null) {
   if (typeof value !== "string" || value.trim() === "") return null;
   const date = new Date(`${value}T00:00:00`);
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function readAllDay(formData: FormData) {
+  const raw = String(formData.get("allDay") ?? "0").toLowerCase();
+  return raw !== "0" && raw !== "false";
+}
+
+export function parseTaskDateTimeInput(value: FormDataEntryValue | null, allDay = false) {
+  if (typeof value !== "string" || value.trim() === "") return null;
+  const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/);
+  if (!match) return null;
+  const hour = allDay ? 0 : Number(match[4] ?? "0");
+  const minute = allDay ? 0 : Number(match[5] ?? "0");
+  return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), hour, minute) - JAKARTA_OFFSET_MS);
+}
+
+type JakartaParts = { date: string; time: string };
+
+export function jakartaParts(value: Date | string): JakartaParts {
+  const date = typeof value === "string" ? new Date(value) : value;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  return {
+    date: `${get("year")}-${get("month")}-${get("day")}`,
+    time: `${get("hour")}:${get("minute")}:${get("second")}`,
+  };
+}
+
+export function dateKeyJakarta(value: Date | string) {
+  return jakartaParts(value).date;
+}
+
+export function toJakartaDateTime(value: Date | string) {
+  const { date, time } = jakartaParts(value);
+  return `${date}T${time}+07:00`;
+}
+
+export function toDateInputValue(iso: string | null | undefined, allDay: boolean) {
+  if (!iso) return "";
+  const { date, time } = jakartaParts(iso);
+  return allDay ? date : `${date}T${time.slice(0, 5)}`;
+}
+
+export function convertDateInput(value: string, allDay: boolean) {
+  if (!value) return "";
+  const date = value.slice(0, 10);
+  if (allDay) return date;
+  const time = /T\d{2}:\d{2}/.test(value) ? value.slice(11, 16) : "09:00";
+  return `${date}T${time}`;
+}
+
+export function formatTime(value: Date | string) {
+  const time = jakartaParts(value).time.slice(0, 5);
+  return time;
+}
+
+export function formatDayTime(value: Date | string) {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return date.toLocaleString("en-US", {
+    timeZone: APP_TIMEZONE,
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+}
+
+export function formatTaskWhen(value: Date | string, allDay = true) {
+  return allDay ? formatDay(value) : formatDayTime(value);
 }
 
 export function formatBytes(bytes: number) {

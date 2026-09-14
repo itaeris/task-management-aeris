@@ -9,6 +9,7 @@ Stack: **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4**, **Framer 
 - Sign in with email/username + password (Cloudflare Turnstile) or Google OAuth
 - Create a project as **Personal**, **Group**, or **Organization**; pin organization projects to the top of your own list; join with a share code; change the Flaticon icon (UIcons)
 - Product log, Scrum log, Daily check, Kanban, Calendar, Timeline
+- Task start/due with time of day, or **All day**; Google Calendar / CalDAV sync uses the same
 - Comments, attachments, and project activity
 - Presence in the header: who has a page or task open
 - Settings: change display name and reset password
@@ -51,6 +52,7 @@ In the Supabase SQL Editor:
 3. Presence (“active now”): run `supabase/migration_presence.sql`
 4. Project access (personal / group / organization): run `supabase/migration_project_access.sql`
 5. Per-user organization pins: run `supabase/migration_project_pins.sql`
+6. Task start/due times + all-day: run `supabase/migration_task_all_day.sql`
 
 The schema also creates a private storage bucket named `attachments`.
 
@@ -116,8 +118,11 @@ In Google Cloud Console:
 1. Enable **Google Calendar API** (CalDAV is covered by the Calendar scope).
 2. OAuth consent screen: add scope `https://www.googleapis.com/auth/calendar`.
 3. Run `supabase/migration_google_calendar.sql` in the SQL Editor.
+4. For timed vs all-day events: run `supabase/migration_task_all_day.sql` if the project is not a fresh `schema.sql` install.
 
-Tasks with a due date sync to the **primary** calendar of the connected Google account. Personal projects copy every due date; group and organization projects copy only tasks assigned to you. **Sync** forces a refresh; create/update/assign/delete also push while the connection is active.
+Tasks with a start or due date sync to the **primary** calendar of the connected Google account (Asia/Jakarta). Leave **All day** on for a date-only event; uncheck it to send a clock time. CalDAV clients that sync that Google calendar (Apple Calendar, Thunderbird, and similar) see the same all-day or timed event.
+
+Personal projects copy every dated task; group and organization projects copy only tasks assigned to you. **Sync** forces a refresh; create/update/assign/delete also push while the connection is active.
 
 ## Production (`pipeline.aerisbeaute.com`)
 
@@ -169,7 +174,7 @@ Regenerate PWA icons with `node scripts/generate-pwa-icons.mjs`.
 
 1. Sign in, then create a project (personal, group, or organization) or join with a code.
 2. Pick a Flaticon icon when creating a project. Older projects that still use a color circle: click the icon (pencil) on the home card or sidebar — owner only.
-3. Work in the project menu: Overview, Product log, Scrum log, Daily check, Kanban, Calendar, Timeline, Share.
+3. Work in the project menu: Overview, Product log, Scrum log, Daily check, Kanban, Calendar, Timeline, Share. On a task, set start/due with a time, or check **All day**. Connect Google Calendar if you want those dates on your phone calendar.
 4. Group and organization projects are open to those people automatically. Share still works for extra invites. The owner can rotate the code and change the name/description/icon.
 5. The header shows who is active in the app.
 
