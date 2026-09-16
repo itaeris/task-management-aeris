@@ -55,7 +55,8 @@ async function writeTask(kind: "insert" | "update", row: Record<string, unknown>
     return await run(row);
   } catch (error) {
     if (!isMissingAllDaySchema(error) || !("all_day" in row)) throw error;
-    const { all_day: _allDay, ...without } = row;
+    const without = { ...row };
+    delete without.all_day;
     return await run(without);
   }
 }

@@ -84,7 +84,7 @@ function StructuredBody({ data, work }: { data: StructuredAnalysis; work: Analys
           <BulletList items={data.next7days} />
         </section>
       ) : null}
-      <AnalyzeWorkPlan work={data.work} />
+      <AnalyzeWorkPlan work={work} />
     </div>
   );
 }
@@ -203,22 +203,23 @@ function MagicCast({ reduce }: { reduce: boolean | null }) {
 export function AnalyzeView({ projectId, projectName }: { projectId: string; projectName: string }) {
   const { tasks } = useWorkspace();
   const [analysis, setAnalysis] = useState<ProjectAnalysis | null>(null);
-  const [ready, setReady] = useState(false);
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const reduce = useReducedMotion();
+  const ready = loadedFor === projectId;
 
   useEffect(() => {
     let cancelled = false;
-    setReady(false);
     loadProjectAnalysis(projectId)
       .then((row) => {
-        if (!cancelled) setAnalysis(row);
+        if (cancelled) return;
+        setAnalysis(row);
+        setLoadedFor(projectId);
       })
       .catch(() => {
-        if (!cancelled) setAnalysis(null);
-      })
-      .finally(() => {
-        if (!cancelled) setReady(true);
+        if (cancelled) return;
+        setAnalysis(null);
+        setLoadedFor(projectId);
       });
     return () => {
       cancelled = true;

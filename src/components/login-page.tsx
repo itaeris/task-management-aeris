@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState, useSyncExternalStore } from "react";
 import {
   CalendarDays,
   Eye,
@@ -33,6 +33,14 @@ function greetingLabel() {
   if (hour < 11) return "GOOD MORNING";
   if (hour < 18) return "GOOD AFTERNOON";
   return "GOOD EVENING";
+}
+
+function subscribeGreeting() {
+  return () => {};
+}
+
+function greetingServer() {
+  return "WELCOME";
 }
 
 function GoogleMark() {
@@ -79,14 +87,10 @@ export function LoginPage({
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const [notice, setNotice] = useState(GOOGLE_ERRORS[error ?? ""] ?? "");
-  const [greeting, setGreeting] = useState("WELCOME");
+  const greeting = useSyncExternalStore(subscribeGreeting, greetingLabel, greetingServer);
   const [state, action, pending] = useActionState(login, {} as LoginState);
   const reduce = useReducedMotion();
   useToastMessage(state);
-
-  useEffect(() => {
-    setGreeting(greetingLabel());
-  }, []);
 
   return (
     <main className="flex min-h-dvh flex-col bg-gradient-to-b from-paper via-sand to-paper-2 text-ink lg:grid lg:grid-cols-2">
