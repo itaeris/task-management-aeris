@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import {
   CalendarDays,
   Eye,
@@ -79,10 +79,14 @@ export function LoginPage({
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const [notice, setNotice] = useState(GOOGLE_ERRORS[error ?? ""] ?? "");
+  const [greeting, setGreeting] = useState("WELCOME");
   const [state, action, pending] = useActionState(login, {} as LoginState);
-  const greeting = greetingLabel();
   const reduce = useReducedMotion();
   useToastMessage(state);
+
+  useEffect(() => {
+    setGreeting(greetingLabel());
+  }, []);
 
   return (
     <main className="flex min-h-dvh flex-col bg-gradient-to-b from-paper via-sand to-paper-2 text-ink lg:grid lg:grid-cols-2">

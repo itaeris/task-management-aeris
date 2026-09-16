@@ -151,6 +151,15 @@ create table public.activities (
   created_at timestamptz not null default now()
 );
 
+create table public.project_analyses (
+  project_id text primary key references public.projects (id) on delete cascade,
+  content text not null,
+  model text not null,
+  created_by text references public.users (id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create index tasks_project_rank_idx on public.tasks (project_id, rank, created_at);
 create index task_assignees_task_idx on public.task_assignees (task_id);
 create index task_assignees_user_idx on public.task_assignees (user_id);
@@ -207,6 +216,7 @@ alter table public.comments enable row level security;
 alter table public.attachments enable row level security;
 alter table public.daily_logs enable row level security;
 alter table public.activities enable row level security;
+alter table public.project_analyses enable row level security;
 alter table public.presences enable row level security;
 alter table public.google_calendar_connections enable row level security;
 alter table public.google_calendar_events enable row level security;

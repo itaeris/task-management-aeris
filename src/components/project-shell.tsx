@@ -15,6 +15,7 @@ import {
   Share2,
   Sunrise,
   CircleHelp,
+  Sparkles,
   X,
 } from "lucide-react";
 import { btnGhost, iconBtn } from "@/components/ui";
@@ -38,6 +39,7 @@ const NAV = [
   { href: "/kanban", label: "Kanban check", icon: Columns3 },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/timeline", label: "Timeline", icon: GanttChart },
+  { href: "/analyze", label: "Analyze", icon: Sparkles },
   { href: "/share", label: "Share", icon: Share2 },
   { href: "/guide", label: "How to use", icon: CircleHelp },
 ];

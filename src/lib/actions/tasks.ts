@@ -220,7 +220,9 @@ export async function addComment(taskId: string, formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
   if (!body) throw new Error("Comment cannot be empty.");
   unwrap(await supabase.from("comments").insert({ task_id: taskId, user_id: user.id, body }));
-  refresh(existing.project_id);
+  after(() => {
+    refresh(existing.project_id);
+  });
 }
 
 export async function loadTaskDetail(taskId: string) {

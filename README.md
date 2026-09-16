@@ -8,7 +8,8 @@ Stack: **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4**, **Framer 
 
 - Sign in with email/username + password (Cloudflare Turnstile) or Google OAuth
 - Create a project as **Personal**, **Group**, or **Organization**; pin organization projects to the top of your own list; join with a share code; change the Flaticon icon (UIcons)
-- Product log, Scrum log, Daily check, Kanban, Calendar, Timeline
+- Product log, Scrum log, Daily check, Kanban, Calendar, Timeline, **Analyze**
+- AI Analyze is saved per project (not shared across projects)
 - Task start/due with time of day, or **All day**; Google Calendar / CalDAV sync uses the same
 - Comments, attachments, and project activity
 - Presence in the header: who has a page or task open
@@ -38,6 +39,9 @@ Fill in:
 | `GOOGLE_CLIENT_SECRET` | OAuth client secret (optional) |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key (production login) |
 | `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret (server only, do not commit) |
+| `AI_BASE_URL` | OpenAI-compatible API base, default `https://9router.aerisfti.web.id/v1` |
+| `AI_API_KEY` | Server-only key for Analyze (do not commit) |
+| `AI_MODEL` | Model id, default `free-forever` |
 
 On `localhost` / `127.0.0.1`, login uses Cloudflare’s dummy Turnstile keys (`1x00000000000000000000AA`) so the widget always passes without adding the hostname in the dashboard. Production still uses the keys above.
 
@@ -53,6 +57,7 @@ In the Supabase SQL Editor:
 4. Project access (personal / group / organization): run `supabase/migration_project_access.sql`
 5. Per-user organization pins: run `supabase/migration_project_pins.sql`
 6. Task start/due times + all-day: run `supabase/migration_task_all_day.sql`
+7. AI Analyze per project: run `supabase/migration_project_analyses.sql`
 
 The schema also creates a private storage bucket named `attachments`.
 
@@ -139,6 +144,9 @@ Personal projects copy every dated task; group and organization projects copy on
    | `GOOGLE_CLIENT_SECRET` | yes, if you use Google login |
    | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | yes, password login |
    | `TURNSTILE_SECRET_KEY` | yes, password login |
+   | `AI_BASE_URL` | yes, if you use Analyze |
+   | `AI_API_KEY` | yes, if you use Analyze |
+   | `AI_MODEL` | optional, default `free-forever` |
 
    Then **Redeploy**.
 3. Google Console: add the production origin and redirect URI above.
@@ -174,7 +182,7 @@ Regenerate PWA icons with `node scripts/generate-pwa-icons.mjs`.
 
 1. Sign in, then create a project (personal, group, or organization) or join with a code.
 2. Pick a Flaticon icon when creating a project. Older projects that still use a color circle: click the icon (pencil) on the home card or sidebar — owner only.
-3. Work in the project menu: Overview, Product log, Scrum log, Daily check, Kanban, Calendar, Timeline, Share. On a task, set start/due with a time, or check **All day**. Connect Google Calendar if you want those dates on your phone calendar.
+3. Work in the project menu: Overview, Product log, Scrum log, Daily check, Kanban, Calendar, Timeline, Analyze, Share. On a task, set start/due with a time, or check **All day**. Connect Google Calendar if you want those dates on your phone calendar. Open **Analyze** for an AI health report of that project only, including a work table and plan timeline.
 4. Group and organization projects are open to those people automatically. Share still works for extra invites. The owner can rotate the code and change the name/description/icon.
 5. The header shows who is active in the app.
 

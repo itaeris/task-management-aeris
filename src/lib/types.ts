@@ -116,6 +116,12 @@ export type ProjectWorkspace = {
   todayCheckins: number;
 };
 
+export type ProjectAnalysis = {
+  content: string;
+  model: string;
+  updatedAt: string;
+};
+
 export function memberFromUser(
   user: Pick<Profile, "id" | "name" | "email" | "initials" | "color">,
   role = "member",

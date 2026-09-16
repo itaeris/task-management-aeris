@@ -7,7 +7,7 @@ import { deleteAttachment, uploadAttachment } from "@/lib/actions/attachments";
 import { PRIORITIES, STATUSES, TASK_TYPES } from "@/lib/constants";
 import { cn, formatBytes, formatDay, formatTaskWhen } from "@/lib/utils";
 import type { MemberDTO, SprintDTO, TaskDTO, TaskDetailDTO } from "@/lib/types";
-import { Avatar, PriorityBadge, TypeBadge, AvatarStack, btnGhost, field, iconBtn, Skeleton } from "@/components/ui";
+import { Avatar, PriorityBadge, TypeBadge, AvatarStack, btnGhost, btnPrimary, field, iconBtn, Skeleton } from "@/components/ui";
 import { PendingSubmit } from "@/components/pending-submit";
 import { MultiSelect, Select, TaskScheduleFields } from "@/components/fields";
 import { TaskDrawerSkeleton } from "@/components/skeletons";
@@ -287,6 +287,8 @@ export function TaskDrawer({
 
 function CommentForm({ taskId, onAdded }: { taskId: string; onAdded: () => Promise<void> }) {
   const [body, setBody] = useState("");
+  const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   const canSend = body.trim().length > 0;
 
   return (
@@ -294,11 +296,18 @@ function CommentForm({ taskId, onAdded }: { taskId: string; onAdded: () => Promi
       className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row"
       action={async (formData) => {
         const next = String(formData.get("body") ?? "").trim();
-        if (!next) return;
+        if (!next || sendingRef.current) return;
         formData.set("body", next);
-        await notifyChange(addComment(taskId, formData), "Comment added");
-        setBody("");
-        await onAdded();
+        sendingRef.current = true;
+        setSending(true);
+        try {
+          await notifyChange(addComment(taskId, formData), "Comment added");
+          setBody("");
+          await onAdded();
+        } finally {
+          sendingRef.current = false;
+          setSending(false);
+        }
       }}
     >
       <input
@@ -309,8 +318,17 @@ function CommentForm({ taskId, onAdded }: { taskId: string; onAdded: () => Promi
         placeholder="Write a comment..."
         required
         aria-required
+        disabled={sending}
       />
-      <PendingSubmit idle="Send" busy="Sending…" disabled={!canSend} className="shrink-0" />
+      <button
+        type="submit"
+        className={cn(btnPrimary, "shrink-0")}
+        disabled={!canSend || sending}
+        aria-busy={sending}
+      >
+        {sending ? <LoaderCircle size={16} className="animate-spin" /> : null}
+        {sending ? "Sending…" : "Send"}
+      </button>
     </form>
   );
 }

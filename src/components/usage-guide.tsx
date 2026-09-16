@@ -19,6 +19,7 @@ const TOC = [
   { id: "kanban", label: "Kanban check" },
   { id: "calendar", label: "Calendar" },
   { id: "timeline", label: "Timeline" },
+  { id: "analyze", label: "Analyze" },
   { id: "share", label: "Share" },
   { id: "detail", label: "Task detail" },
   { id: "presence", label: "Active now" },
@@ -422,6 +423,22 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
             <p className="mt-3 text-sm leading-relaxed text-muted">
               The title inside the bar starts from the left. A short bar will clip the text — the full title is
               still in the left column and in the tooltip. Tasks without dates do not appear on the timeline.
+            </p>
+          </section>
+
+          <section id="analyze" className={cn(surface, "scroll-mt-8 rounded-3xl p-5 sm:p-6")}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <h2 className="font-serif text-2xl">Analyze</h2>
+              {go("/analyze") ? (
+                <Link href={go("/analyze")!} className={cn(btnGhost, "shrink-0 px-3 py-1.5 text-sm")}>
+                  Open
+                </Link>
+              ) : null}
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              AI reads this project&apos;s tasks, sprints, and daily checks, then writes a health report plus a
+              work table and a plan timeline of what should be done next. Each project has its own saved
+              analysis. Refresh when the board has changed. It does not change tasks for you.
             </p>
           </section>
 

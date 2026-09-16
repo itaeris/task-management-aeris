@@ -104,3 +104,15 @@ export function isMissingAllDaySchema(error: unknown) {
         : String(error);
   return /column .*all_day|could not find .*all_day/i.test(message);
 }
+
+export function isMissingAnalysisSchema(error: unknown) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "object" && error && "message" in error
+        ? String((error as { message: unknown }).message)
+        : String(error);
+  return /relation ["']?(public\.)?project_analyses|could not find the (table|relationship).*project_analyses|schema cache/i.test(
+    message,
+  );
+}

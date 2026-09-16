@@ -187,11 +187,87 @@ html.dark *::-webkit-scrollbar-thumb:hover {
   animation: reveal-up 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+@keyframes magic-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes magic-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes magic-twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.6) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(18deg);
+  }
+}
+
+@keyframes magic-drift {
+  0% {
+    transform: translate3d(0, 10px, 0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--magic-x, 0px), -88px, 0);
+    opacity: 0;
+  }
+}
+
+.magic-spin {
+  animation: magic-spin 9s linear infinite;
+}
+
+.magic-pulse {
+  animation: magic-pulse 1.8s ease-in-out infinite;
+}
+
+.magic-twinkle {
+  animation: magic-twinkle 1.4s ease-in-out infinite;
+}
+
+@keyframes magic-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+.magic-shimmer {
+  animation: magic-shimmer 1.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skeleton::after {
     animation: none;
   }
   .reveal-up {
+    animation: none;
+  }
+  .magic-spin,
+  .magic-pulse,
+  .magic-twinkle,
+  .magic-drift,
+  .magic-shimmer {
     animation: none;
   }
 }

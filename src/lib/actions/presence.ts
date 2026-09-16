@@ -33,6 +33,7 @@ function pageLabel(path: string) {
     "/kanban": "Kanban",
     "/calendar": "Calendar",
     "/timeline": "Timeline",
+    "/analyze": "Analyze",
     "/share": "Share",
     "/guide": "How to use",
   };

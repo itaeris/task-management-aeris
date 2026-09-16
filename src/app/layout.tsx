@@ -40,7 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${poppins.variable} ${poppins.className} h-full antialiased`}
+      className={`${poppins.variable} h-full antialiased`}
     >
       <head>
         <script
@@ -57,7 +57,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           href="https://cdn-uicons.flaticon.com/2.6.0/uicons-brands/css/uicons-brands.css"
         />
       </head>
-      <body className="relative min-h-full font-sans text-ink">
+      <body className="relative min-h-full font-sans text-ink" suppressHydrationWarning>
         <PwaRoot />
         <ToastHost />
         {children}
