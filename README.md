@@ -2,7 +2,7 @@
 
 A team collaboration workspace: product log, scrum, daily check, kanban, calendar, timeline, project sharing, attachments, and who is active now.
 
-Stack: **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4**, **Framer Motion**, **Supabase**.
+Stack: **Next.js 16** (App Router) + **NestJS** API in an npm workspaces monorepo, **React 19**, **Tailwind CSS v4**, **Framer Motion**, **Supabase**, **Upstash Redis**.
 
 ## Features
 
@@ -21,13 +21,14 @@ Stack: **Next.js 16** (App Router), **React 19**, **Tailwind CSS v4**, **Framer 
 
 ### 1. Environment
 
-Copy `.env.example` to `.env`:
+Frontend env lives at the repo root. Backend env lives in `apps/api`.
 
 ```bash
 cp .env.example .env
+cp apps/api/.env.example apps/api/.env
 ```
 
-Fill in:
+**Frontend (`.env`)**
 
 | Variable | Description |
 | --- | --- |
@@ -42,10 +43,22 @@ Fill in:
 | `AI_BASE_URL` | OpenAI-compatible API base, default `https://9router.aerisfti.web.id/v1` |
 | `AI_API_KEY` | Server-only key for Analyze (do not commit) |
 | `AI_MODEL` | Model id, default `free-forever` |
+| `NEST_API_URL` | NestJS API origin. Local: `http://localhost:4000` |
+| `NEST_INTERNAL_SECRET` | Shared secret with the API (same value as backend) |
+
+**Backend (`apps/api/.env`)**
+
+| Variable | Description |
+| --- | --- |
+| `PORT` | Nest listen port, local default `4000` |
+| `APP_URL` | Frontend origin for CORS |
+| `NEST_INTERNAL_SECRET` | Shared secret with the frontend (same value) |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token (do not commit) |
 
 On `localhost` / `127.0.0.1`, login uses Cloudflare’s dummy Turnstile keys (`1x00000000000000000000AA`) so the widget always passes without adding the hostname in the dashboard. Production still uses the keys above.
 
-Do not commit `.env`.
+Do not commit `.env` or `apps/api/.env`.
 
 ### 2. Database
 
@@ -68,6 +81,8 @@ npm install
 npm run db:seed
 npm run dev
 ```
+
+`npm run dev` starts Next.js on [http://localhost:3000](http://localhost:3000) and NestJS on [http://localhost:4000](http://localhost:4000). Use `npm run dev:web` or `npm run dev:api` to run one side.
 
 Admin account only, no demo data:
 
@@ -132,7 +147,9 @@ Personal projects copy every dated task; group and organization projects copy on
 ## Production (`pipeline.aerisbeaute.com`)
 
 1. HTTPS domain (PWA and login cookies require HTTPS).
-2. In **Vercel → Project → Settings → Environment Variables**, set (Production + Preview), copied from local `.env`:
+2. In **Vercel → Project → Settings → Environment Variables**, set (Production + Preview):
+
+   **Next.js project** (root), copied from `.env`:
 
    | Name | Required |
    | --- | --- |
@@ -147,6 +164,25 @@ Personal projects copy every dated task; group and organization projects copy on
    | `AI_BASE_URL` | yes, if you use Analyze |
    | `AI_API_KEY` | yes, if you use Analyze |
    | `AI_MODEL` | optional, default `free-forever` |
+   | `NEST_API_URL` | yes, NestJS deployment URL |
+   | `NEST_INTERNAL_SECRET` | yes, same value as the API project |
+
+   **NestJS project** (`apps/api`), copied from `apps/api/.env`:
+
+   | Name | Required |
+   | --- | --- |
+   | `APP_URL` | `https://pipeline.aerisbeaute.com` |
+   | `NEST_INTERNAL_SECRET` | yes, same value as the Next.js project |
+   | `UPSTASH_REDIS_REST_URL` | yes |
+   | `UPSTASH_REDIS_REST_TOKEN` | yes |
+
+   This repo is a monorepo. Keep the existing Vercel project pointed at the **repository root** (Next.js). Add a **second** Vercel project for NestJS:
+
+   1. Import the same Git repo.
+   2. Set **Root Directory** to `apps/api`.
+   3. Enable including files outside the root directory so npm workspaces resolve.
+   4. Set the backend env vars on that project.
+   5. Set `NEST_API_URL` on the Next.js project to the NestJS URL (for example `https://your-api.vercel.app`).
 
    Then **Redeploy**.
 3. Google Console: add the production origin and redirect URI above.
@@ -169,9 +205,12 @@ The service worker is not active in `next dev` so cache does not interfere with 
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Dev server (Turbopack) |
-| `npm run build` | Production build |
-| `npm run start` | Run the production build |
+| `npm run dev` | Next.js + NestJS together |
+| `npm run dev:web` | Next.js only |
+| `npm run dev:api` | NestJS only (port 4000) |
+| `npm run build` | Next.js production build (Vercel web) |
+| `npm run build:api` | NestJS production build (Vercel API) |
+| `npm run start` | Run the Next.js production build |
 | `npm run lint` | ESLint |
 | `npm run db:seed` | Seed users + demo project |
 | `npm run db:admin` | Create/update admin account `itaeris` |
@@ -189,10 +228,11 @@ Regenerate PWA icons with `node scripts/generate-pwa-icons.mjs`.
 ## Structure
 
 ```
-src/app/                 # routes, loading skeleton, API
+apps/api/                # NestJS + Upstash Redis cache
+src/app/                 # Next.js routes, loading skeleton, API
 src/components/          # UI (shell, boards, drawer, picker)
 src/lib/actions/         # server actions
-src/lib/                 # auth, queries, supabase client
+src/lib/                 # auth, queries, supabase, Nest cache client
 supabase/                # schema + migrations
 scripts/                 # seed & admin
 ```

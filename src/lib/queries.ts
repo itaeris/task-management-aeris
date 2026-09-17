@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { withBackendCache } from "@/lib/backend";
 import { isMissingAccessSchema, isMissingAssigneesSchema, isMissingPinsSchema, parseProjectAccess, type ProjectAccess } from "@/lib/access";
 import { ensureProjectAccess } from "@/lib/project-access";
 import { supabase, unwrap } from "@/lib/supabase";
@@ -154,7 +155,7 @@ async function loadTaskAssigneeRows(taskIds: string[]) {
   return unwrap(result) as Array<{ task_id: string; user_id: string }>;
 }
 
-export async function listProjectsForUser(userId: string) {
+async function listProjectsForUserFromDb(userId: string) {
   const [memberships, extraIds] = await Promise.all([
     supabase
       .from("project_members")
@@ -300,7 +301,11 @@ export async function listProjectsForUser(userId: string) {
     });
 }
 
-export async function listProjectSwitcherForUser(userId: string): Promise<ProjectSwitcherItem[]> {
+export async function listProjectsForUser(userId: string) {
+  return withBackendCache({ kind: "home", userId }, () => listProjectsForUserFromDb(userId));
+}
+
+async function listProjectSwitcherForUserFromDb(userId: string): Promise<ProjectSwitcherItem[]> {
   const [memberships, extraIds] = await Promise.all([
     supabase
       .from("project_members")
@@ -349,17 +354,27 @@ export async function listProjectSwitcherForUser(userId: string): Promise<Projec
     }));
 }
 
+export async function listProjectSwitcherForUser(userId: string) {
+  return withBackendCache({ kind: "switcher", userId }, () => listProjectSwitcherForUserFromDb(userId));
+}
+
 export const getProjectShell = cache(async (projectId: string, userId: string) => {
-  const membership = await ensureProjectAccess(projectId, userId);
-  if (!membership) return null;
-  const project = unwrap(
-    await supabase.from("projects").select("id, name, color").eq("id", projectId).maybeSingle(),
-  ) as { id: string; name: string; color: string } | null;
-  if (!project) return null;
-  return { project, role: membership.role };
+  return withBackendCache({ kind: "shell", projectId, userId }, async () => {
+    const membership = await ensureProjectAccess(projectId, userId);
+    if (!membership) return null;
+    const project = unwrap(
+      await supabase.from("projects").select("id, name, color").eq("id", projectId).maybeSingle(),
+    ) as { id: string; name: string; color: string } | null;
+    if (!project) return null;
+    return { project, role: membership.role };
+  });
 });
 
 export const getProjectWorkspace = cache(async (projectId: string, userId: string): Promise<ProjectWorkspace | null> => {
+  return withBackendCache({ kind: "workspace", projectId, userId }, () => loadProjectWorkspaceFromDb(projectId, userId));
+});
+
+async function loadProjectWorkspaceFromDb(projectId: string, userId: string): Promise<ProjectWorkspace | null> {
   const ensured = await ensureProjectAccess(projectId, userId);
   if (!ensured) return null;
 
@@ -612,7 +627,7 @@ export const getProjectWorkspace = cache(async (projectId: string, userId: strin
     todayCheckins: dailyRows.filter((log) => log.date === todayKey()).length,
     groupMembers,
   };
-});
+}
 
 export async function getTaskDetail(taskId: string, userId: string): Promise<TaskDetailDTO | null> {
   const task = unwrap(

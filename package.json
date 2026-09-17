@@ -2,10 +2,18 @@
   "name": "task-management",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently -k -n web,api -c cyan,magenta \"next dev\" \"npm run start:dev --workspace=api\"",
+    "dev:web": "next dev",
+    "dev:api": "npm run start:dev --workspace=api",
     "build": "next build",
+    "build:api": "npm run build --workspace=api",
+    "build:all": "next build && npm run build --workspace=api",
     "start": "next start",
+    "start:api": "npm run start --workspace=api",
     "lint": "eslint",
     "db:seed": "tsx scripts/seed.ts",
     "db:admin": "tsx scripts/ensure-admin.ts"
@@ -30,10 +38,15 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.2.4",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
-    "typescript": "^5"
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "typescript": "5.9.3",
+    "@nestjs/schematics": "11.0.9"
   }
 }

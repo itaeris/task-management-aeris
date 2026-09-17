@@ -17,6 +17,10 @@
 /.next/
 /out/
 
+# nest
+/apps/api/dist
+
+
 # production
 /build
 
@@ -33,6 +37,7 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+!apps/api/.env.example
 
 # local database + uploads
 /prisma/dev.db
