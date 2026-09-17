@@ -15,6 +15,7 @@ import { useSetActiveTask } from "@/components/presence";
 import { AnimatePresence, motion } from "framer-motion";
 import { easeOutSoft } from "@/components/motion";
 import { notifyChange } from "@/components/toast";
+import { useWorkspace } from "@/components/workspace-provider";
 
 export function TaskDrawer({
   taskId,
@@ -29,11 +30,15 @@ export function TaskDrawer({
   onClose: () => void;
   onChanged?: () => void;
 }) {
+  const { tasks } = useWorkspace();
   const [loaded, setLoaded] = useState<{ id: string; data: TaskDetailDTO } | null>(null);
   const [pending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
   const setActiveTask = useSetActiveTask();
-  const detail = taskId && loaded?.id === taskId ? loaded.data : null;
+  const preview = taskId ? (tasks.find((task) => task.id === taskId) ?? null) : null;
+  const fetched = taskId && loaded?.id === taskId ? loaded.data : null;
+  const detail = fetched ?? (preview ? { ...preview, comments: [], attachments: [] } : null);
+  const extrasReady = Boolean(fetched);
 
   useEffect(() => {
     setActiveTask(taskId);
@@ -198,7 +203,12 @@ export function TaskDrawer({
               />
             </div>
             <ul className="space-y-2">
-              {detail.attachments.length === 0 ? (
+              {!extrasReady ? (
+                <li className="space-y-2">
+                  <Skeleton className="h-12 w-full rounded-2xl" />
+                  <Skeleton className="h-12 w-full rounded-2xl" />
+                </li>
+              ) : detail.attachments.length === 0 ? (
                 <li className="text-sm text-muted">No files yet.</li>
               ) : (
                 detail.attachments.map((file) => (
@@ -227,6 +237,12 @@ export function TaskDrawer({
           <div className="border-t border-line px-4 py-5 sm:px-6">
             <h3 className="mb-3 text-sm font-semibold">Collaboration — comments</h3>
             <ul className="space-y-3">
+              {!extrasReady ? (
+                <li className="space-y-2">
+                  <Skeleton className="h-16 w-full rounded-2xl" />
+                  <Skeleton className="h-16 w-full rounded-2xl" />
+                </li>
+              ) : null}
               {detail.comments.map((comment) => (
                 <li key={comment.id} className="flex gap-3">
                   <Avatar {...comment.user} size="sm" />

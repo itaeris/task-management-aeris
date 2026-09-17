@@ -1,6 +1,14 @@
-const API_URL = process.env.NEST_API_URL?.trim().replace(/\/$/, "");
 const SECRET = process.env.NEST_INTERNAL_SECRET?.trim();
-const TIMEOUT_MS = 1500;
+const TIMEOUT_MS = 400;
+
+function nestApiUrl() {
+  const url = process.env.NEST_API_URL?.trim().replace(/\/$/, "") ?? "";
+  if (!url) return "";
+  if (process.env.VERCEL && /localhost|127\.0\.0\.1/i.test(url)) return "";
+  return url;
+}
+
+const API_URL = nestApiUrl();
 
 export type CacheScope =
   | { kind: "workspace" | "shell"; projectId: string; userId: string }

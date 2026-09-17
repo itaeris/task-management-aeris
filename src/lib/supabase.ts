@@ -11,7 +11,7 @@ function required(name: string) {
   return value;
 }
 
-const MAX_CONCURRENT = 4;
+const MAX_CONCURRENT = 12;
 let activeFetches = 0;
 const fetchQueue: Array<() => void> = [];
 
