@@ -2,7 +2,7 @@
 
 A team collaboration workspace: product log, scrum, daily check, kanban, calendar, timeline, project sharing, attachments, and who is active now.
 
-Stack: **Next.js 16** (App Router) + **NestJS** API in an npm workspaces monorepo, **React 19**, **Tailwind CSS v4**, **Framer Motion**, **Supabase**, **Upstash Redis**.
+Stack: **Next.js 16** (App Router) + **Merlot API** (NestJS on **Fastify**) in an npm workspaces monorepo, **React 19**, **Tailwind CSS v4**, **Framer Motion**, **Supabase**, **Upstash Redis**.
 
 ## Features
 
@@ -43,7 +43,7 @@ cp apps/api/.env.example apps/api/.env
 | `AI_BASE_URL` | OpenAI-compatible API base, default `https://9router.aerisfti.web.id/v1` |
 | `AI_API_KEY` | Server-only key for Analyze (do not commit) |
 | `AI_MODEL` | Model id, default `free-forever` |
-| `NEST_API_URL` | NestJS API origin. Local: `http://localhost:4000` |
+| `NEST_API_URL` | Merlot API origin. Local: `http://localhost:4000` |
 | `NEST_INTERNAL_SECRET` | Shared secret with the API (same value as backend) |
 
 **Backend (`apps/api/.env`)**
@@ -82,7 +82,7 @@ npm run db:seed
 npm run dev
 ```
 
-`npm run dev` starts Next.js on [http://localhost:3000](http://localhost:3000) and NestJS on [http://localhost:4000](http://localhost:4000). Use `npm run dev:web` or `npm run dev:api` to run one side.
+`npm run dev` starts Next.js on [http://localhost:3000](http://localhost:3000) and Merlot API on [http://localhost:4000](http://localhost:4000). Use `npm run dev:web` or `npm run dev:api` to run one side.
 
 Admin account only, no demo data:
 
@@ -164,10 +164,10 @@ Personal projects copy every dated task; group and organization projects copy on
    | `AI_BASE_URL` | yes, if you use Analyze |
    | `AI_API_KEY` | yes, if you use Analyze |
    | `AI_MODEL` | optional, default `free-forever` |
-   | `NEST_API_URL` | yes, NestJS deployment URL |
+   | `NEST_API_URL` | yes, Merlot API deployment URL |
    | `NEST_INTERNAL_SECRET` | yes, same value as the API project |
 
-   **NestJS project** (`apps/api`), copied from `apps/api/.env`:
+   **Merlot API project** (`apps/api`), copied from `apps/api/.env`:
 
    | Name | Required |
    | --- | --- |
@@ -176,13 +176,13 @@ Personal projects copy every dated task; group and organization projects copy on
    | `UPSTASH_REDIS_REST_URL` | yes |
    | `UPSTASH_REDIS_REST_TOKEN` | yes |
 
-   This repo is a monorepo. Keep the existing Vercel project pointed at the **repository root** (Next.js). Add a **second** Vercel project for NestJS:
+   This repo is a monorepo. Keep the existing Vercel project pointed at the **repository root** (Next.js). Add a **second** Vercel project for Merlot API:
 
    1. Import the same Git repo.
    2. Set **Root Directory** to `apps/api`.
    3. Enable including files outside the root directory so npm workspaces resolve.
    4. Set the backend env vars on that project.
-   5. Set `NEST_API_URL` on the Next.js project to the NestJS URL (for example `https://your-api.vercel.app`).
+   5. Set `NEST_API_URL` on the Next.js project to the Merlot API URL (for example `https://your-api.vercel.app`).
 
    Then **Redeploy**.
 3. Google Console: add the production origin and redirect URI above.
@@ -205,11 +205,11 @@ The service worker is not active in `next dev` so cache does not interfere with 
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Next.js + NestJS together |
+| `npm run dev` | Next.js + Merlot API together |
 | `npm run dev:web` | Next.js only |
-| `npm run dev:api` | NestJS only (port 4000) |
+| `npm run dev:api` | Merlot API only (port 4000) |
 | `npm run build` | Next.js production build (Vercel web) |
-| `npm run build:api` | NestJS production build (Vercel API) |
+| `npm run build:api` | Merlot API production build (Vercel API) |
 | `npm run start` | Run the Next.js production build |
 | `npm run lint` | ESLint |
 | `npm run db:seed` | Seed users + demo project |
@@ -228,7 +228,7 @@ Regenerate PWA icons with `node scripts/generate-pwa-icons.mjs`.
 ## Structure
 
 ```
-apps/api/                # NestJS + Upstash Redis cache
+apps/api/                # Merlot API (Fastify) + Upstash Redis cache
 src/app/                 # Next.js routes, loading skeleton, API
 src/components/          # UI (shell, boards, drawer, picker)
 src/lib/actions/         # server actions

@@ -6,14 +6,14 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently -k -n web,api -c cyan,magenta \"next dev\" \"npm run start:dev --workspace=api\"",
+    "dev": "concurrently -k -n web,api -c cyan,magenta \"next dev\" \"npm run start:dev --workspace=merlot-api\"",
     "dev:web": "next dev",
-    "dev:api": "npm run start:dev --workspace=api",
+    "dev:api": "npm run start:dev --workspace=merlot-api",
     "build": "next build",
-    "build:api": "npm run build --workspace=api",
-    "build:all": "next build && npm run build --workspace=api",
+    "build:api": "npm run build --workspace=merlot-api",
+    "build:all": "next build && npm run build --workspace=merlot-api",
     "start": "next start",
-    "start:api": "npm run start --workspace=api",
+    "start:api": "npm run start --workspace=merlot-api",
     "lint": "eslint",
     "db:seed": "tsx scripts/seed.ts",
     "db:admin": "tsx scripts/ensure-admin.ts"
