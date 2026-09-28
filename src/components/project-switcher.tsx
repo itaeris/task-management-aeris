@@ -95,7 +95,7 @@ export function ProjectSwitcher({
       <button
         ref={buttonRef}
         type="button"
-        className="flex min-w-0 max-w-full items-center gap-2 rounded-full border border-line bg-paper py-1 pr-2 pl-1.5 text-left text-ink transition hover:bg-paper-2"
+        className="flex min-w-0 max-w-full items-center gap-2 rounded-xl border border-line bg-paper py-1 pr-2 pl-1.5 text-left text-ink transition hover:bg-paper-2"
         onClick={() => {
           if (open) close();
           else setOpen(true);

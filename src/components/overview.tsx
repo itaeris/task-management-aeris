@@ -44,7 +44,7 @@ function Pager({
       <div className="flex items-center gap-1">
         <button
           type="button"
-          className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-paper text-ink transition hover:bg-paper-2 disabled:opacity-40"
+          className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-line bg-paper text-ink transition hover:bg-paper-2 disabled:opacity-40"
           disabled={page <= 1}
           onClick={() => onPage(page - 1)}
           aria-label={`Previous ${label} page`}
@@ -53,7 +53,7 @@ function Pager({
         </button>
         <button
           type="button"
-          className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-paper text-ink transition hover:bg-paper-2 disabled:opacity-40"
+          className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-line bg-paper text-ink transition hover:bg-paper-2 disabled:opacity-40"
           disabled={page >= pageCount}
           onClick={() => onPage(page + 1)}
           aria-label={`Next ${label} page`}
@@ -126,7 +126,7 @@ export function Overview({
             </Link>
           </div>
           <p className="mt-1 text-sm text-muted">{active.goal}</p>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-paper-2">
+          <div className="mt-4 h-2 overflow-hidden rounded bg-paper-2">
             <div
               className="h-full bg-forest"
               style={{

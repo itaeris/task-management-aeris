@@ -38,7 +38,7 @@ function Term({ name, children }: { name: string; children: ReactNode }) {
 function Step({ n, title, children }: { n: string; title: string; children: ReactNode }) {
   return (
     <li className="flex gap-3">
-      <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-terracotta text-[11px] font-bold text-white">
+      <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-terracotta text-[11px] font-bold text-white">
         {n}
       </span>
       <div>

@@ -31,7 +31,7 @@ function OfflineBanner() {
         >
           <p
             role="status"
-            className="pointer-events-auto rounded-full bg-zinc-900 px-4 py-2 text-center text-sm font-medium text-white shadow-lg dark:bg-zinc-100 dark:text-zinc-900"
+            className="pointer-events-auto rounded-xl bg-zinc-900 px-4 py-2 text-center text-sm font-medium text-white shadow-lg dark:bg-zinc-100 dark:text-zinc-900"
           >
             You are offline. Some actions may be delayed.
           </p>

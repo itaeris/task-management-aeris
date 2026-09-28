@@ -36,7 +36,7 @@ export function PendingSubmit({
       {pending ? busy : idle}
       {progress && pending ? (
         <span className="absolute inset-x-0 bottom-0 h-1 overflow-hidden bg-white/25">
-          <span className="block h-full w-1/2 animate-[create-progress_1.1s_ease-in-out_infinite] rounded-full bg-white" />
+          <span className="block h-full w-1/2 animate-[create-progress_1.1s_ease-in-out_infinite] rounded bg-white" />
         </span>
       ) : null}
     </button>

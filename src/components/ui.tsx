@@ -1,13 +1,13 @@
 import { cn } from "@/lib/utils";
 
 export const btnPrimary =
-  "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full bg-terracotta px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-terracotta-dark disabled:opacity-60";
+  "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-terracotta px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-terracotta-dark disabled:opacity-60";
 
 export const btnGhost =
-  "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full border border-line bg-transparent px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-paper-2 disabled:opacity-60";
+  "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-line bg-transparent px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-paper-2 disabled:opacity-60";
 
 export const iconBtn =
-  "inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-paper text-[22px] font-semibold leading-none text-ink transition hover:bg-paper-2";
+  "inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-line bg-paper text-[22px] font-semibold leading-none text-ink transition hover:bg-paper-2";
 
 export const field =
   "w-full rounded-xl border border-line bg-paper px-3 py-2.5 text-sm text-ink outline-none transition focus:border-terracotta/60 focus:ring-2 focus:ring-terracotta/20";
@@ -15,7 +15,7 @@ export const field =
 export const surface = "border border-line bg-paper/80 backdrop-blur-sm";
 
 export const chip =
-  "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold tracking-wide uppercase";
+  "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5 text-[11px] font-bold tracking-wide uppercase";
 
 export function Avatar({
   name,

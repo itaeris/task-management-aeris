@@ -66,7 +66,7 @@ export function GoogleCalendarConnect({
     <div className="flex min-w-0 flex-col items-stretch gap-2 sm:items-end">
       {connection.connected ? (
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-line bg-paper px-3 py-2 text-[12px] font-medium text-ink">
+          <span className="inline-flex max-w-full items-center gap-1.5 rounded-xl border border-line bg-paper px-3 py-2 text-[12px] font-medium text-ink">
             <CalendarCheck className="h-3.5 w-3.5 shrink-0 text-terracotta" />
             <span className="truncate">{connection.email ?? "Google Calendar"}</span>
           </span>

@@ -132,7 +132,7 @@ export function ToastHost() {
             key={item.id}
             role="status"
             className={cn(
-              "pointer-events-auto flex max-w-[min(100%,24rem)] items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium shadow-[0_10px_28px_rgba(15,23,42,0.14)]",
+              "pointer-events-auto flex max-w-[min(100%,24rem)] items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium shadow-[0_10px_28px_rgba(15,23,42,0.14)]",
               item.tone === "error"
                 ? "border-red-200 bg-red-50 text-red-800 dark:border-red-900/60 dark:bg-red-950/80 dark:text-red-200"
                 : "border-line bg-paper text-ink",

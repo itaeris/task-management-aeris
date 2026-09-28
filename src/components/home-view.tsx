@@ -62,9 +62,9 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
   const width = `${Math.max(value, value > 0 ? 4 : 0)}%`;
   return (
     <div className="flex items-center gap-2 sm:gap-3">
-      <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-paper-2">
+      <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded bg-paper-2">
         <motion.div
-          className="h-full rounded-full bg-terracotta"
+          className="h-full rounded bg-terracotta"
           initial={false}
           animate={{ width }}
           transition={{ duration: 0.35, ease: easeOutSoft }}
@@ -261,7 +261,7 @@ export function HomeProjectList({ projects }: { projects: ProjectCard[] }) {
                         setPage(1);
                       }}
                       className={cn(
-                        "inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition",
+                        "inline-flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition",
                         active ? "bg-terracotta text-white" : "bg-paper-2 text-muted hover:bg-sand hover:text-ink",
                       )}
                     >
@@ -316,10 +316,10 @@ export function HomeProjectList({ projects }: { projects: ProjectCard[] }) {
                               {pinned ? (
                                 <Pin size={12} className="shrink-0 fill-current text-terracotta" aria-hidden />
                               ) : null}
-                              <span className="hidden shrink-0 rounded-full bg-paper-2 px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted uppercase sm:inline">
+                              <span className="hidden shrink-0 rounded-md bg-paper-2 px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted uppercase sm:inline">
                                 {ACCESS_LABEL[project.access]}
                               </span>
-                              <span className="hidden shrink-0 rounded-full bg-paper-2 px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted uppercase sm:inline">
+                              <span className="hidden shrink-0 rounded-md bg-paper-2 px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted uppercase sm:inline">
                                 {project.role === "owner" ? "Yours" : "Joined"}
                               </span>
                             </div>
@@ -330,7 +330,7 @@ export function HomeProjectList({ projects }: { projects: ProjectCard[] }) {
                               type="button"
                               disabled={pinPending}
                               className={cn(
-                                "inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition",
+                                "inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl transition",
                                 pinned
                                   ? "text-terracotta opacity-100 hover:bg-terracotta/10"
                                   : "text-muted opacity-100 hover:bg-paper-2 hover:text-ink sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100",
@@ -363,7 +363,7 @@ export function HomeProjectList({ projects }: { projects: ProjectCard[] }) {
                           {project.role === "owner" ? (
                             <button
                               type="button"
-                              className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted transition hover:bg-red-50 hover:text-red-700 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                              className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-muted transition hover:bg-red-50 hover:text-red-700 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                               aria-label={`Delete ${project.name}`}
                               onClick={() => setPendingDelete({ id: project.id, name: project.name })}
                             >
@@ -427,7 +427,7 @@ export function HomeProjectList({ projects }: { projects: ProjectCard[] }) {
                         type="button"
                         onClick={() => setPage(number)}
                         className={cn(
-                          "inline-flex h-9 min-w-9 items-center justify-center rounded-full px-2 text-sm font-semibold",
+                          "inline-flex h-9 min-w-9 items-center justify-center rounded-xl px-2 text-sm font-semibold",
                           number === currentPage ? "bg-terracotta text-white" : "text-muted hover:bg-sand",
                         )}
                       >

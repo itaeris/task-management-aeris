@@ -247,7 +247,7 @@ export function ProjectIconEditor({
         )}
       >
         <ProjectIcon value={value} size={size} />
-        <span className="absolute -right-1 -bottom-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-line bg-paper text-terracotta shadow-sm">
+        <span className="absolute -right-1 -bottom-1 inline-flex h-5 w-5 items-center justify-center rounded-md border border-line bg-paper text-terracotta shadow-sm">
           <Pencil size={10} />
         </span>
       </button>

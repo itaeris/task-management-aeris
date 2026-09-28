@@ -102,7 +102,7 @@ export function AnalyzeWorkPlan({ work }: { work: AnalysisWorkItem[] }) {
                       </span>
                       <span
                         className={cn(
-                          "inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums",
+                          "inline-flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-semibold tabular-nums",
                           isToday ? "bg-terracotta text-white" : "text-ink",
                         )}
                       >
@@ -123,7 +123,7 @@ export function AnalyzeWorkPlan({ work }: { work: AnalysisWorkItem[] }) {
                   </div>
                   <div className="relative h-12" style={{ width }}>
                     <div
-                      className="absolute top-1/2 h-7 -translate-y-1/2 overflow-hidden rounded-full border border-white/70 bg-terracotta/80 px-2 text-[11px] leading-7 font-semibold text-white shadow-[0_6px_16px_rgba(37,99,235,0.16),inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-sm"
+                      className="absolute top-1/2 h-7 -translate-y-1/2 overflow-hidden rounded-md border border-white/70 bg-terracotta/80 px-2 text-[11px] leading-7 font-semibold text-white shadow-[0_6px_16px_rgba(37,99,235,0.16),inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-sm"
                       style={{ left: offset * dayWidth, width: span * dayWidth }}
                       title={`${item.title}: ${dayLabel(item.from)} – ${dayLabel(item.to)}`}
                     >

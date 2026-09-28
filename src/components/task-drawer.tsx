@@ -377,7 +377,7 @@ export function TaskChip({
         {task.assignees?.length ? (
           <AvatarStack members={task.assignees} />
         ) : (
-          <span className="h-7 w-7 rounded-full border border-dashed border-line" />
+          <span className="h-7 w-7 rounded-xl border border-dashed border-line" />
         )}
       </div>
     </div>

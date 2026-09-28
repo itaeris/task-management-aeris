@@ -129,7 +129,7 @@ export function LoginPage({
               return (
                 <span
                   key={item.label}
-                  className="inline-flex items-center gap-2 rounded-full border border-line bg-paper/60 px-3.5 py-2 text-[12px] text-ink"
+                  className="inline-flex items-center gap-2 rounded-xl border border-line bg-paper/60 px-3.5 py-2 text-[12px] text-ink"
                 >
                   <Icon size={14} />
                   {item.label}
@@ -145,7 +145,7 @@ export function LoginPage({
                 <span
                   key={item.label}
                   title={item.label}
-                  className="grid h-10 w-10 place-items-center rounded-full border border-line bg-paper/50 text-ink"
+                  className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-paper/50 text-ink"
                 >
                   <Icon size={16} />
                 </span>
@@ -157,17 +157,17 @@ export function LoginPage({
         <p className="mt-8 hidden text-xs text-muted lg:block">Task Management</p>
       </section>
 
-      <section className="relative -mt-6 flex-1 rounded-t-[2.4rem] bg-paper px-6 pt-4 pb-8 sm:px-8 lg:mt-0 lg:flex lg:items-center lg:justify-center lg:rounded-none lg:bg-transparent lg:px-10 lg:py-12">
+      <section className="relative -mt-6 flex-1 rounded-t-2xl bg-paper px-6 pt-4 pb-8 sm:px-8 lg:mt-0 lg:flex lg:items-center lg:justify-center lg:rounded-none lg:bg-transparent lg:px-10 lg:py-12">
         <div className="absolute top-4 right-4 z-10 lg:top-6 lg:right-6">
           <ThemeToggle />
         </div>
         <motion.div
-          className="relative lg:w-full lg:max-w-[440px] lg:rounded-[32px] lg:bg-paper/90 lg:px-9 lg:py-10 lg:shadow-[0_24px_60px_rgba(37,99,235,0.12)] lg:backdrop-blur"
+          className="relative lg:w-full lg:max-w-[440px] lg:rounded-2xl lg:bg-paper/90 lg:px-9 lg:py-10 lg:shadow-[0_24px_60px_rgba(37,99,235,0.12)] lg:backdrop-blur"
           initial={reduce ? false : { opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.12, ease: easeOutSoft }}
         >
-          <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-paper-2 lg:hidden" />
+          <div className="mx-auto mb-5 h-1.5 w-12 rounded bg-paper-2 lg:hidden" />
 
           <h2 className="font-serif text-[2rem] leading-none text-ink">Welcome back</h2>
           <p className="mt-2 text-sm text-muted">Sign in to continue to Task Management</p>

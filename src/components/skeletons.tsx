@@ -34,7 +34,7 @@ export function HomeStatsSkeleton() {
           className={cn(surface, "rounded-2xl px-3 py-2.5 sm:rounded-3xl sm:px-4 sm:py-3")}
         >
           <Skeleton className="mb-2 h-3 w-28" />
-          <Skeleton className="h-2.5 w-full !rounded-full" />
+          <Skeleton className="h-2.5 w-full !rounded-xl" />
         </article>
       ))}
     </section>
@@ -52,7 +52,7 @@ export function HomeListSkeleton() {
         </div>
         <div className="flex flex-wrap gap-1">
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-7 w-[4.5rem] !rounded-full" />
+            <Skeleton key={index} className="h-7 w-[4.5rem] !rounded-xl" />
           ))}
         </div>
       </div>
@@ -65,18 +65,18 @@ export function HomeListSkeleton() {
                 <Skeleton className="h-5 w-52 max-w-full" />
                 <Skeleton className="mt-1 h-4 w-64 max-w-full" />
               </div>
-              <Skeleton className="hidden h-7 w-16 !rounded-full sm:block" />
+              <Skeleton className="hidden h-7 w-16 !rounded-xl sm:block" />
             </div>
-            <Skeleton className="mt-3 h-2.5 w-full !rounded-full sm:ml-11 sm:w-[calc(100%-2.75rem)]" />
+            <Skeleton className="mt-3 h-2.5 w-full !rounded-xl sm:ml-11 sm:w-[calc(100%-2.75rem)]" />
           </div>
         ))}
       </div>
       <div className="flex shrink-0 items-center justify-between border-t border-line px-3 py-2 sm:px-4 sm:py-2.5">
         <Skeleton className="h-3 w-24" />
         <div className="flex gap-1">
-          <Skeleton className="h-9 w-9 !rounded-full" />
-          <Skeleton className="h-9 w-9 !rounded-full" />
-          <Skeleton className="h-9 w-9 !rounded-full" />
+          <Skeleton className="h-9 w-9 !rounded-xl" />
+          <Skeleton className="h-9 w-9 !rounded-xl" />
+          <Skeleton className="h-9 w-9 !rounded-xl" />
         </div>
       </div>
     </section>
@@ -179,15 +179,15 @@ export function ProjectShellSkeleton() {
       </aside>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
         <header className="flex min-w-0 shrink-0 items-center gap-1.5 rounded-3xl border border-line bg-paper/80 px-2 py-2 shadow-sm backdrop-blur-md sm:gap-3 sm:px-4 sm:py-2.5">
-          <Skeleton className="h-10 w-10 shrink-0 !rounded-full lg:hidden" />
-          <Skeleton className="h-10 w-10 shrink-0 !rounded-full sm:w-24" />
-          <Skeleton className="h-9 min-w-0 flex-1 !rounded-full sm:max-w-xs" />
+          <Skeleton className="h-10 w-10 shrink-0 !rounded-xl lg:hidden" />
+          <Skeleton className="h-10 w-10 shrink-0 !rounded-xl sm:w-24" />
+          <Skeleton className="h-9 min-w-0 flex-1 !rounded-xl sm:max-w-xs" />
           <div className="hidden min-w-0 flex-1 items-center gap-2 md:flex">
-            <Skeleton className="h-8 w-28 !rounded-full" />
-            <Skeleton className="h-8 w-36 !rounded-full" />
+            <Skeleton className="h-8 w-28 !rounded-xl" />
+            <Skeleton className="h-8 w-36 !rounded-xl" />
           </div>
-          <Skeleton className="ml-auto h-9 w-9 shrink-0 !rounded-full sm:w-28" />
-          <Skeleton className="h-10 w-10 shrink-0 !rounded-full" />
+          <Skeleton className="ml-auto h-9 w-9 shrink-0 !rounded-xl sm:w-28" />
+          <Skeleton className="h-10 w-10 shrink-0 !rounded-xl" />
         </header>
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-1 py-3 sm:px-2 sm:py-4 lg:px-6">
           <ProjectPageSkeleton />
@@ -248,20 +248,20 @@ export function LoginSkeleton() {
           <Skeleton className="mt-2 h-4 w-3/4 max-w-xs" />
           <div className="mt-8 flex flex-wrap gap-2 lg:hidden">
             {Array.from({ length: 5 }).map((_, index) => (
-              <Skeleton key={index} className="h-10 w-10 !rounded-full" />
+              <Skeleton key={index} className="h-10 w-10 !rounded-xl" />
             ))}
           </div>
           <div className="mt-8 hidden gap-2 lg:flex">
             {Array.from({ length: 5 }).map((_, index) => (
-              <Skeleton key={index} className="h-9 w-24 !rounded-full" />
+              <Skeleton key={index} className="h-9 w-24 !rounded-xl" />
             ))}
           </div>
         </div>
       </section>
-      <section className="relative -mt-6 flex-1 rounded-t-[2.4rem] bg-paper px-6 pt-4 pb-8 sm:px-8 lg:mt-0 lg:flex lg:items-center lg:justify-center lg:rounded-none lg:bg-transparent lg:px-10 lg:py-12">
-        <Skeleton className="absolute top-4 right-4 h-10 w-10 !rounded-full lg:top-6 lg:right-6" />
+      <section className="relative -mt-6 flex-1 rounded-t-2xl bg-paper px-6 pt-4 pb-8 sm:px-8 lg:mt-0 lg:flex lg:items-center lg:justify-center lg:rounded-none lg:bg-transparent lg:px-10 lg:py-12">
+        <Skeleton className="absolute top-4 right-4 h-10 w-10 !rounded-xl lg:top-6 lg:right-6" />
         <div className={cn(surface, "w-full max-w-[440px] rounded-3xl p-0 lg:p-10")}>
-          <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-paper-2 lg:hidden" />
+          <div className="mx-auto mb-5 h-1.5 w-12 rounded bg-paper-2 lg:hidden" />
           <Skeleton className="h-8 w-40 max-w-full sm:h-9 sm:w-48" />
           <Skeleton className="mt-3 h-4 w-48 max-w-full sm:w-56" />
           <Skeleton className="mt-8 h-12 w-full rounded-xl" />
@@ -281,8 +281,8 @@ export function GuideSkeleton() {
       <div className="flex items-center justify-between gap-2">
         <Skeleton className="h-6 w-32 max-w-[50%]" />
         <div className="flex shrink-0 gap-2">
-          <Skeleton className="h-10 w-10 !rounded-full" />
-          <Skeleton className="h-10 w-16 !rounded-full sm:w-20" />
+          <Skeleton className="h-10 w-10 !rounded-xl" />
+          <Skeleton className="h-10 w-16 !rounded-xl sm:w-20" />
         </div>
       </div>
       <div className="mt-6">
@@ -319,7 +319,7 @@ export function JoinSkeleton() {
         <Skeleton className="mx-auto mt-4 h-10 w-40 max-w-full sm:w-48" />
         <Skeleton className="mx-auto mt-3 h-4 w-full max-w-64" />
         <Skeleton className="mx-auto mt-3 h-3 w-36 max-w-full" />
-        <Skeleton className="mx-auto mt-6 h-11 w-36 !rounded-full" />
+        <Skeleton className="mx-auto mt-6 h-11 w-36 !rounded-xl" />
       </Card>
     </main>
   );
@@ -338,14 +338,14 @@ export function TaskDrawerSkeleton() {
             <Skeleton key={index} className="h-11 w-full rounded-xl" />
           ))}
         </div>
-        <Skeleton className="h-10 w-32 !rounded-full" />
+        <Skeleton className="h-10 w-32 !rounded-xl" />
       </div>
       <div className="border-t border-line px-4 py-5 sm:px-6">
         <Skeleton className="h-4 w-40 max-w-full" />
         <Skeleton className="mt-3 h-12 w-full rounded-2xl" />
         <div className="mt-4 flex gap-2">
           <Skeleton className="h-11 min-w-0 flex-1 rounded-xl" />
-          <Skeleton className="h-11 w-16 shrink-0 !rounded-full sm:w-20" />
+          <Skeleton className="h-11 w-16 shrink-0 !rounded-xl sm:w-20" />
         </div>
       </div>
     </div>
@@ -361,7 +361,7 @@ export function SettingsSkeleton() {
           <Skeleton className="h-9 w-32 sm:h-10 sm:w-40" />
           <Skeleton className="mt-2 h-4 w-full max-w-sm" />
         </div>
-        <Skeleton className="h-10 w-24 shrink-0 !rounded-full" />
+        <Skeleton className="h-10 w-24 shrink-0 !rounded-xl" />
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         {Array.from({ length: 2 }).map((_, index) => (
@@ -370,7 +370,7 @@ export function SettingsSkeleton() {
             <Skeleton className="mt-4 h-11 w-full rounded-xl" />
             <Skeleton className="mt-3 h-11 w-full rounded-xl" />
             <Skeleton className="mt-3 h-11 w-full rounded-xl" />
-            <Skeleton className="mt-4 h-10 w-28 !rounded-full" />
+            <Skeleton className="mt-4 h-10 w-28 !rounded-xl" />
           </Card>
         ))}
       </div>

@@ -67,7 +67,7 @@ export function UserMenu({ user }: { user: UserLite }) {
       <button
         ref={buttonRef}
         type="button"
-        className="flex max-w-full min-w-0 items-center gap-1.5 rounded-full border border-line bg-paper py-1 pr-1.5 pl-1.5 text-ink transition hover:bg-paper-2 sm:gap-2 sm:pr-2 sm:pl-3"
+        className="flex max-w-full min-w-0 items-center gap-1.5 rounded-xl border border-line bg-paper py-1 pr-1.5 pl-1.5 text-ink transition hover:bg-paper-2 sm:gap-2 sm:pr-2 sm:pl-3"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-haspopup="menu"

@@ -100,7 +100,7 @@ export function SharePanel({
           <p className="font-serif mt-1 text-3xl tracking-[0.12em]">{shareCode}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <button
-              className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-terracotta transition hover:bg-sand"
+              className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-terracotta transition hover:bg-sand"
               onClick={async () => {
                 await navigator.clipboard.writeText(shareUrl);
                 setCopied(true);

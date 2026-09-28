@@ -123,7 +123,7 @@ export function ScrumView({
                   </button>
                 </div>
               </div>
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-paper-2">
+              <div className="mt-4 h-2 overflow-hidden rounded bg-paper-2">
                 <div className="h-full bg-forest" style={{ width: `${progress}%` }} />
               </div>
               <ul className="mt-3 -mx-1">
