@@ -9,19 +9,16 @@ concurrency:
   group: production
   cancel-in-progress: true
 
+env:
+  FRONTEND_IMAGE: itaeris/pipeline_frontend_app
+  BACKEND_IMAGE: itaeris/pipeline_backend_app
+
 jobs:
-  build-and-deploy:
-    name: Production
+  build:
+    name: Build & Push
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      deployments: write
-    environment:
-      name: Production
-      url: https://pipeline.aerisbeaute.com
-    env:
-      FRONTEND_IMAGE: itaeris/pipeline_frontend_app
-      BACKEND_IMAGE: itaeris/pipeline_backend_app
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -71,6 +68,20 @@ jobs:
           tags: |
             ${{ env.FRONTEND_IMAGE }}:latest
             ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+
+  deploy:
+    name: Deploy to Server
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    environment:
+      name: Production
+      url: https://pipeline.aerisbeaute.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Write env files
         env:
