@@ -75,9 +75,22 @@ function seedPath() {
 
 function mysqlDateTimes(sql) {
   return sql.replace(
-    /(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)(?:[+-]\d{2}:?(?:\d{2})?|Z)/g,
-    "$1",
+    /(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(?:\.(\d+))?(?:[Zz]|[+-][\d:]*)?/g,
+    (_full, stamp, frac = "") => `${stamp}.${(frac + "000").slice(0, 3)}`,
   );
+}
+
+function seedStatements(sql) {
+  return mysqlDateTimes(sql)
+    .split(/;\s*(?:\r?\n|$)/)
+    .map((part) =>
+      part
+        .split("\n")
+        .filter((line) => !line.trim().startsWith("--"))
+        .join("\n")
+        .trim(),
+    )
+    .filter(Boolean);
 }
 
 async function countRows(conn, table) {
@@ -87,8 +100,8 @@ async function countRows(conn, table) {
 
 async function seedIfEmpty(conn) {
   const projects = await countRows(conn, "projects");
-  const tasks = await countRows(conn, "tasks");
-  if (projects > 0 && tasks > 0) {
+  const analyses = await countRows(conn, "project_analyses");
+  if (projects > 0 && analyses > 0) {
     console.log("skip seed (data already present)");
     return;
   }
@@ -98,11 +111,11 @@ async function seedIfEmpty(conn) {
     return;
   }
 
-  const sql = mysqlDateTimes(readFileSync(file, "utf8"));
+  const statements = seedStatements(readFileSync(file, "utf8"));
   await conn.beginTransaction();
   try {
     await conn.query("SET FOREIGN_KEY_CHECKS = 0");
-    if (projects > 0 && tasks === 0) {
+    if (projects > 0 || analyses === 0) {
       console.log("incomplete seed detected; wiping partial rows");
       for (const table of [
         "project_analyses",
@@ -123,7 +136,9 @@ async function seedIfEmpty(conn) {
     await conn.query(
       "DELETE FROM users WHERE email IN ('it@aerisbeaute.com', 'dwiki@aerisbeaute.com', 'leonardo@aerisbeaute.com')",
     );
-    await conn.query(sql);
+    for (const statement of statements) {
+      await conn.query(statement);
+    }
     await conn.query("SET FOREIGN_KEY_CHECKS = 1");
     await conn.commit();
     console.log("seed imported");
