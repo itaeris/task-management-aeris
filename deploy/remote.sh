@@ -15,6 +15,7 @@ on_network() {
 join_network() {
   name="$1"
   required="${2:-0}"
+  alias="${3:-}"
   if ! docker inspect "$name" >/dev/null 2>&1; then
     if [ "$required" = 1 ]; then
       echo "container $name is missing; cannot join $NETWORK"
@@ -26,21 +27,84 @@ join_network() {
   if on_network "$name"; then
     return 0
   fi
-  docker network connect "$NETWORK" "$name"
+  if [ -n "$alias" ]; then
+    docker network connect --alias "$alias" "$NETWORK" "$name"
+  else
+    docker network connect "$NETWORK" "$name"
+  fi
+}
+
+network_aliases() {
+  name="$1"
+  docker inspect -f "{{range \$k, \$v := .NetworkSettings.Networks}}{{if eq \$k \"$NETWORK\"}}{{range \$v.Aliases}}{{println .}}{{end}}{{end}}{{end}}" "$name" 2>/dev/null
+}
+
+attach_mysql() {
+  found=""
+  for name in mysql mariadb; do
+    if docker inspect "$name" >/dev/null 2>&1; then
+      found="$name"
+      break
+    fi
+  done
+  if [ -z "$found" ]; then
+    found=$(docker ps --format '{{.Names}} {{.Image}}' | awk 'tolower($2) ~ /mysql|mariadb/ { print $1; exit }')
+  fi
+  if [ -z "$found" ]; then
+    echo "no mysql/mariadb container found; DATABASE_URL host mysql must already resolve on $NETWORK"
+    return 0
+  fi
+  if on_network "$found"; then
+    if [ "$found" = "mysql" ] || network_aliases "$found" | grep -qx mysql; then
+      echo "$found already reachable as mysql on $NETWORK"
+      return 0
+    fi
+    echo "adding mysql alias to $found on $NETWORK"
+    docker network disconnect "$NETWORK" "$found"
+  fi
+  docker network connect --alias mysql --alias "$found" "$NETWORK" "$found"
+  echo "joined $found to $NETWORK as mysql"
 }
 
 mkdir -p "$APP_DIR"
 umask 077
-printf '%s\n' "${BACKEND_ENV:-}" > "$APP_DIR/backend.env"
-printf '%s\n' "${FRONTEND_ENV:-}" > "$APP_DIR/frontend.env"
-chmod 600 "$APP_DIR/backend.env" "$APP_DIR/frontend.env"
+
+install_env() {
+  name="$1"
+  required_key="${2:-}"
+  src=""
+  if [ -f "$APP_DIR/env-files/$name" ]; then
+    src="$APP_DIR/env-files/$name"
+  elif [ -f "$APP_DIR/deploy/env-files/$name" ]; then
+    src="$APP_DIR/deploy/env-files/$name"
+  fi
+  if [ -n "$src" ]; then
+    cp "$src" "$APP_DIR/$name"
+  elif [ "$name" = "backend.env" ] && [ -n "${BACKEND_ENV:-}" ]; then
+    printf '%s\n' "$BACKEND_ENV" > "$APP_DIR/$name"
+  elif [ "$name" = "frontend.env" ] && [ -n "${FRONTEND_ENV:-}" ]; then
+    printf '%s\n' "$FRONTEND_ENV" > "$APP_DIR/$name"
+  else
+    : > "$APP_DIR/$name"
+  fi
+  chmod 600 "$APP_DIR/$name"
+  keys=$(grep -E '^[A-Za-z_][A-Za-z0-9_]*=' "$APP_DIR/$name" | cut -d= -f1 | tr '\n' ' ') || keys=""
+  echo "$name keys: ${keys:-none}"
+  if [ -n "$required_key" ] && ! grep -qE "^${required_key}=.+" "$APP_DIR/$name"; then
+    echo "$name is missing $required_key"
+    exit 1
+  fi
+}
+
+install_env backend.env DATABASE_URL
+install_env frontend.env DATABASE_URL
 
 if [ -n "${DOCKERHUB_USERNAME:-}" ] && [ -n "${DOCKERHUB_TOKEN:-}" ]; then
   printf '%s\n' "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
 fi
 
 docker network inspect "$NETWORK" >/dev/null 2>&1 || docker network create "$NETWORK"
-join_network mysql 0
+attach_mysql
 
 if docker inspect pipeline_redis >/dev/null 2>&1; then
   docker start pipeline_redis >/dev/null

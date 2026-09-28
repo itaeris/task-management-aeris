@@ -160,7 +160,7 @@ NGINX on the server:
 - `https://pipeline.aerisbeaute.com` → frontend `:2028`
 - `host.docker.local` → backend `:2027`
 
-Containers join Docker network `pipeline-network`. Deploy starts an internal Redis container `pipeline_redis` (no host port). Existing MySQL is attached to that network if present; it is never created by this deploy. Task attachments are stored on disk at `/DATA/AppData/pipeline/attachment` and bind-mounted into the frontend container.
+Containers join Docker network `pipeline-network`. Deploy starts an internal Redis container `pipeline_redis` (no host port). Existing MySQL/MariaDB is attached to that network with hostname **mysql**; it is never created by this deploy. Use `DATABASE_URL=mysql://user:pass@mysql:3306/task_management`. Task attachments are stored on disk at `/DATA/AppData/pipeline/attachment` and bind-mounted into the frontend container.
 
 ### GitHub secrets
 
@@ -174,10 +174,10 @@ Containers join Docker network `pipeline-network`. Deploy starts an internal Red
 | `SERVER_USER` | SSH user |
 | `SERVER_SSH_KEY` | SSH private key |
 
-Example **FRONTEND_ENV** (from inside the frontend container, MySQL on the host is `host.docker.local`):
+Example **FRONTEND_ENV** (from inside the app containers, MySQL is hostname `mysql` on `pipeline-network`):
 
 ```
-DATABASE_URL=mysql://root:password@host.docker.local:3306/task_management
+DATABASE_URL=mysql://root:password@mysql:3306/task_management
 APP_URL=https://pipeline.aerisbeaute.com
 NEST_API_URL=http://pipeline_backend_app:4000
 NEST_INTERNAL_SECRET=same-as-backend
@@ -197,7 +197,7 @@ Example **BACKEND_ENV**:
 PORT=4000
 APP_URL=https://pipeline.aerisbeaute.com
 NEST_INTERNAL_SECRET=same-as-frontend
-DATABASE_URL=mysql://root:password@host.docker.local:3306/task_management
+DATABASE_URL=mysql://root:password@mysql:3306/task_management
 REDIS_URL=redis://pipeline_redis:6379
 ```
 

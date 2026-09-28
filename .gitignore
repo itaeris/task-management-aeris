@@ -38,6 +38,7 @@ yarn-error.log*
 .env*
 !.env.example
 !apps/api/.env.example
+/env-files/
 
 # local database + uploads
 /prisma/dev.db

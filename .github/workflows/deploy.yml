@@ -72,28 +72,67 @@ jobs:
             ${{ env.FRONTEND_IMAGE }}:latest
             ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
 
+      - name: Write env files
+        env:
+          BACKEND_ENV: ${{ secrets.BACKEND_ENV }}
+          FRONTEND_ENV: ${{ secrets.FRONTEND_ENV }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          dest = Path("env-files")
+          dest.mkdir(exist_ok=True)
+
+          def write(filename: str, secret_name: str) -> None:
+              raw = os.environ.get(secret_name, "").replace("\r\n", "\n").replace("\r", "\n")
+              lines = []
+              keys = []
+              for line in raw.splitlines():
+                  text = line.strip()
+                  if not text or text.startswith("#"):
+                      continue
+                  if text.startswith("export "):
+                      text = text[7:].strip()
+                  if "=" not in text:
+                      continue
+                  key, value = text.split("=", 1)
+                  key = key.strip()
+                  value = value.strip()
+                  if not key:
+                      continue
+                  lines.append(f"{key}={value}")
+                  keys.append(key)
+              (dest / filename).write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+              print(f"{secret_name} keys: {', '.join(keys) or '(empty)'}")
+              if "DATABASE_URL" not in keys:
+                  raise SystemExit(f"{secret_name} is missing DATABASE_URL")
+
+          write("backend.env", "BACKEND_ENV")
+          write("frontend.env", "FRONTEND_ENV")
+          PY
+
       - name: Copy deploy files
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "deploy"
+          source: "deploy,env-files"
           target: "/opt/pipeline"
+          overwrite: true
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.2
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          BACKEND_ENV: ${{ secrets.BACKEND_ENV }}
-          FRONTEND_ENV: ${{ secrets.FRONTEND_ENV }}
           IMAGE_TAG: ${{ github.sha }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,BACKEND_ENV,FRONTEND_ENV,IMAGE_TAG
+          envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,IMAGE_TAG
           command_timeout: 20m
           script: |
             set -eu
