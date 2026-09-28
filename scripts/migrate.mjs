@@ -68,7 +68,30 @@ async function tableExists(conn, database, table) {
   return Array.isArray(rows) && rows.length > 0;
 }
 
-async function main() {
+function seedPath() {
+  const candidates = [join(here, "mysql/seed.sql"), join(here, "../mysql/seed.sql")];
+  return candidates.find((file) => existsSync(file));
+}
+
+async function seedIfEmpty(conn) {
+  const [rows] = await conn.query("SELECT COUNT(*) AS c FROM projects");
+  if (Number(rows[0]?.c ?? 0) > 0) {
+    console.log("skip seed (projects already present)");
+    return;
+  }
+  const file = seedPath();
+  if (!file) {
+    console.log("skip seed (mysql/seed.sql not found)");
+    return;
+  }
+  await conn.query("SET FOREIGN_KEY_CHECKS = 0");
+  await conn.query(
+    "DELETE FROM users WHERE email IN ('it@aerisbeaute.com', 'dwiki@aerisbeaute.com', 'leonardo@aerisbeaute.com')",
+  );
+  await conn.query(readFileSync(file, "utf8"));
+  await conn.query("SET FOREIGN_KEY_CHECKS = 1");
+  console.log("seed imported");
+}
   const databaseUrl = process.env.DATABASE_URL?.trim();
   if (!databaseUrl) throw new Error("DATABASE_URL is not set");
   const cfg = parseDatabaseUrl(databaseUrl);
@@ -97,6 +120,7 @@ async function main() {
     console.log(`added ${table}.${column.replace(/`/g, "")}`);
   }
 
+  await seedIfEmpty(conn);
   await conn.end();
   console.log("migrate ok");
 }

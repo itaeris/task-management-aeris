@@ -51,8 +51,9 @@ jobs:
           import os
           value = ""
           for line in os.environ.get("FRONTEND_ENV", "").splitlines():
-              if line.startswith("NEXT_PUBLIC_TURNSTILE_SITE_KEY="):
-                  value = line.split("=", 1)[1]
+              text = line.strip()
+              if text.startswith("NEXT_PUBLIC_TURNSTILE_SITE_KEY="):
+                  value = text.split("=", 1)[1].strip().strip('"').strip("'")
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
               fh.write(f"turnstile={value}\n")
           PY
@@ -108,7 +109,7 @@ jobs:
                       continue
                   key, value = text.split("=", 1)
                   key = key.strip()
-                  value = value.strip()
+                  value = value.strip().strip('"').strip("'")
                   if key:
                       values[key] = value
               print(f"{secret_name} keys: {', '.join(values) or '(empty)'}")
@@ -121,6 +122,10 @@ jobs:
               raise SystemExit("DATABASE_URL is missing from both BACKEND_ENV and FRONTEND_ENV")
           backend.setdefault("DATABASE_URL", database_url)
           frontend.setdefault("DATABASE_URL", database_url)
+          site_key = frontend.get("TURNSTILE_SITE_KEY") or frontend.get("NEXT_PUBLIC_TURNSTILE_SITE_KEY")
+          if site_key:
+              frontend["TURNSTILE_SITE_KEY"] = site_key
+              frontend["NEXT_PUBLIC_TURNSTILE_SITE_KEY"] = site_key
 
           def write(filename: str, values: dict[str, str]) -> None:
               body = "".join(f"{key}={value}\n" for key, value in values.items())
