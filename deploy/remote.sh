@@ -5,6 +5,7 @@ APP_DIR="${APP_DIR:-/opt/pipeline}"
 FRONTEND_IMAGE="${FRONTEND_IMAGE:-itaeris/pipeline_frontend_app:latest}"
 BACKEND_IMAGE="${BACKEND_IMAGE:-itaeris/pipeline_backend_app:latest}"
 NETWORK="${NETWORK:-pipeline-network}"
+ATTACHMENT_DIR="${ATTACHMENT_DIR:-/DATA/AppData/pipeline/attachment}"
 
 on_network() {
   name="$1"
@@ -57,24 +58,15 @@ if ! grep -qE '[[:space:]]host\.docker\.local([[:space:]]|$)' /etc/hosts 2>/dev/
   echo "127.0.0.1 host.docker.local" | sudo tee -a /etc/hosts >/dev/null
 fi
 
-if [ -d "$APP_DIR/deploy/nginx" ]; then
-  sudo cp "$APP_DIR/deploy/nginx/pipeline-frontend.conf" /etc/nginx/conf.d/pipeline-frontend.conf
-  sudo cp "$APP_DIR/deploy/nginx/pipeline-backend.conf" /etc/nginx/conf.d/pipeline-backend.conf
-  sudo nginx -t
-  sudo systemctl reload nginx
-elif [ -d "$APP_DIR/nginx" ]; then
-  sudo cp "$APP_DIR/nginx/pipeline-frontend.conf" /etc/nginx/conf.d/pipeline-frontend.conf
-  sudo cp "$APP_DIR/nginx/pipeline-backend.conf" /etc/nginx/conf.d/pipeline-backend.conf
-  sudo nginx -t
-  sudo systemctl reload nginx
-fi
-
 for name in pipeline_backend_app pipeline_frontend_app; do
   if docker ps -a --format '{{.Names}}' | grep -qx "$name"; then
     docker stop "$name" || true
     docker rm "$name" || true
   fi
 done
+
+sudo mkdir -p "$ATTACHMENT_DIR"
+sudo chmod 0777 "$ATTACHMENT_DIR"
 
 docker pull "$BACKEND_IMAGE"
 docker pull "$FRONTEND_IMAGE"
@@ -116,7 +108,9 @@ docker run -d \
   --restart unless-stopped \
   --env-file "$APP_DIR/frontend.env" \
   -e NEST_API_URL=http://pipeline_backend_app:4000 \
+  -e ATTACHMENT_DIR="$ATTACHMENT_DIR" \
   --add-host=host.docker.local:host-gateway \
+  -v "$ATTACHMENT_DIR:$ATTACHMENT_DIR" \
   -p 2028:3000 \
   "$FRONTEND_IMAGE"
 join_network pipeline_frontend_app 1
@@ -127,6 +121,54 @@ for name in pipeline_redis pipeline_backend_app pipeline_frontend_app; do
     exit 1
   fi
 done
+
+apply_nginx() {
+  src=""
+  if [ -d "$APP_DIR/deploy/nginx" ]; then
+    src="$APP_DIR/deploy/nginx"
+  elif [ -d "$APP_DIR/nginx" ]; then
+    src="$APP_DIR/nginx"
+  else
+    echo "no nginx config bundled; skip"
+    return 0
+  fi
+
+  nginx_bin=""
+  if command -v nginx >/dev/null 2>&1; then
+    nginx_bin=$(command -v nginx)
+  elif [ -x /usr/sbin/nginx ]; then
+    nginx_bin=/usr/sbin/nginx
+  fi
+  if [ -z "$nginx_bin" ]; then
+    echo "nginx not installed; apps listen on :2027 and :2028"
+    return 0
+  fi
+
+  if [ -d /etc/nginx/sites-available ]; then
+    sudo cp "$src/pipeline-frontend.conf" /etc/nginx/sites-available/pipeline-frontend.conf
+    sudo cp "$src/pipeline-backend.conf" /etc/nginx/sites-available/pipeline-backend.conf
+    if [ -d /etc/nginx/sites-enabled ]; then
+      sudo ln -sfn /etc/nginx/sites-available/pipeline-frontend.conf /etc/nginx/sites-enabled/pipeline-frontend.conf
+      sudo ln -sfn /etc/nginx/sites-available/pipeline-backend.conf /etc/nginx/sites-enabled/pipeline-backend.conf
+    fi
+  else
+    sudo mkdir -p /etc/nginx/conf.d
+    sudo cp "$src/pipeline-frontend.conf" /etc/nginx/conf.d/pipeline-frontend.conf
+    sudo cp "$src/pipeline-backend.conf" /etc/nginx/conf.d/pipeline-backend.conf
+  fi
+
+  if ! sudo "$nginx_bin" -t; then
+    echo "nginx -t failed; apps are up on :2027 and :2028"
+    return 0
+  fi
+  if command -v systemctl >/dev/null 2>&1; then
+    sudo systemctl reload nginx || sudo systemctl restart nginx || true
+  else
+    sudo "$nginx_bin" -s reload || true
+  fi
+}
+
+apply_nginx
 
 echo "deploy ok"
 echo "$NETWORK:"

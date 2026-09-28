@@ -1,3 +1,5 @@
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { createPool, type Pool, type RowDataPacket } from "mysql2/promise";
 import { randomUUID } from "node:crypto";
 
@@ -421,24 +423,28 @@ class QueryBuilder<TData = DbRow[]> implements PromiseLike<QueryResult<TData>> {
   }
 }
 
+function attachmentRoot() {
+  return path.resolve(process.env.ATTACHMENT_DIR?.trim() || "/DATA/AppData/pipeline/attachment");
+}
+
+function attachmentPath(storedName: string) {
+  const root = attachmentRoot();
+  const resolved = path.resolve(root, storedName);
+  if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
+    throw new Error("Invalid attachment path.");
+  }
+  return resolved;
+}
+
 function storage() {
   return {
     from(_bucket: string) {
       return {
         async upload(storedName: string, body: Buffer, opts?: { contentType?: string; upsert?: boolean }) {
           try {
-            const mime = opts?.contentType || "application/octet-stream";
-            if (opts?.upsert) {
-              await pool().query(
-                `INSERT INTO file_blobs (stored_name, mime_type, size, data) VALUES (?, ?, ?, ?) AS new ON DUPLICATE KEY UPDATE mime_type = new.mime_type, size = new.size, data = new.data`,
-                [storedName, mime, body.length, body],
-              );
-            } else {
-              await pool().query(
-                `INSERT INTO file_blobs (stored_name, mime_type, size, data) VALUES (?, ?, ?, ?)`,
-                [storedName, mime, body.length, body],
-              );
-            }
+            const filePath = attachmentPath(storedName);
+            await mkdir(path.dirname(filePath), { recursive: true });
+            await writeFile(filePath, body, opts?.upsert ? undefined : { flag: "wx" });
             return { data: { path: storedName }, error: null };
           } catch (error) {
             return { data: null, error: { message: error instanceof Error ? error.message : String(error) } };
@@ -446,22 +452,44 @@ function storage() {
         },
         async download(storedName: string) {
           try {
-            const [rows] = await pool().query<RowDataPacket[]>(
-              `SELECT mime_type, data FROM file_blobs WHERE stored_name = ? LIMIT 1`,
-              [storedName],
-            );
-            const row = rows[0] as { mime_type: string; data: Buffer } | undefined;
-            if (!row) return { data: null, error: { message: "Missing file" } };
-            const blob = new Blob([new Uint8Array(row.data)], { type: row.mime_type });
+            const data = await readFile(attachmentPath(storedName));
+            const blob = new Blob([new Uint8Array(data)], { type: "application/octet-stream" });
             return { data: blob, error: null };
           } catch (error) {
-            return { data: null, error: { message: error instanceof Error ? error.message : String(error) } };
+            try {
+              const [rows] = await pool().query<RowDataPacket[]>(
+                `SELECT mime_type, data FROM file_blobs WHERE stored_name = ? LIMIT 1`,
+                [storedName],
+              );
+              const row = rows[0] as { mime_type: string; data: Buffer } | undefined;
+              if (!row) {
+                return { data: null, error: { message: error instanceof Error ? error.message : "Missing file" } };
+              }
+              const blob = new Blob([new Uint8Array(row.data)], { type: row.mime_type });
+              return { data: blob, error: null };
+            } catch (fallbackError) {
+              return {
+                data: null,
+                error: { message: fallbackError instanceof Error ? fallbackError.message : String(fallbackError) },
+              };
+            }
           }
         },
         async remove(names: string[]) {
           if (!names.length) return { data: [], error: null };
           try {
-            await pool().query(`DELETE FROM file_blobs WHERE stored_name IN (${names.map(() => "?").join(", ")})`, names);
+            await Promise.all(
+              names.map(async (name) => {
+                try {
+                  await unlink(attachmentPath(name));
+                } catch {
+                  // already gone on disk
+                }
+              }),
+            );
+            await pool()
+              .query(`DELETE FROM file_blobs WHERE stored_name IN (${names.map(() => "?").join(", ")})`, names)
+              .catch(() => undefined);
             return { data: names, error: null };
           } catch (error) {
             return { data: null, error: { message: error instanceof Error ? error.message : String(error) } };

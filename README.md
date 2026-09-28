@@ -43,6 +43,7 @@ cp apps/api/.env.example apps/api/.env
 | `AI_MODEL` | Model id, default `free-forever` |
 | `NEST_API_URL` | Merlot API origin. Local: `http://localhost:4000` |
 | `NEST_INTERNAL_SECRET` | Shared secret with the API (same value as backend) |
+| `ATTACHMENT_DIR` | Folder for uploaded files. Default `/DATA/AppData/pipeline/attachment` |
 
 **Backend (`apps/api/.env`)**
 
@@ -159,7 +160,7 @@ NGINX on the server:
 - `https://pipeline.aerisbeaute.com` → frontend `:2028`
 - `host.docker.local` → backend `:2027`
 
-Containers join Docker network `pipeline-network`. Deploy starts an internal Redis container `pipeline_redis` (no host port). Existing MySQL is attached to that network if present; it is never created by this deploy.
+Containers join Docker network `pipeline-network`. Deploy starts an internal Redis container `pipeline_redis` (no host port). Existing MySQL is attached to that network if present; it is never created by this deploy. Task attachments are stored on disk at `/DATA/AppData/pipeline/attachment` and bind-mounted into the frontend container.
 
 ### GitHub secrets
 
@@ -187,6 +188,7 @@ GOOGLE_CLIENT_SECRET=
 AI_BASE_URL=
 AI_API_KEY=
 AI_MODEL=free-forever
+ATTACHMENT_DIR=/DATA/AppData/pipeline/attachment
 ```
 
 Example **BACKEND_ENV**:
