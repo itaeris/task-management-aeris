@@ -5,11 +5,20 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+concurrency:
+  group: production
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
+    name: Production
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      deployments: write
+    environment:
+      name: Production
+      url: https://pipeline.aerisbeaute.com
     env:
       FRONTEND_IMAGE: itaeris/pipeline_frontend_app
       BACKEND_IMAGE: itaeris/pipeline_backend_app

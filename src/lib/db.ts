@@ -1,8 +1,15 @@
 import { createPool, type Pool, type RowDataPacket } from "mysql2/promise";
 import { randomUUID } from "node:crypto";
 
-type QueryError = { message: string };
-type QueryResult<T> = { data: T; error: QueryError | null; count?: number | null };
+type DbRow = Record<string, any>;
+type QueryError = { message: string; code?: string };
+type QueryResult<T = DbRow[]> = { data: T; error: QueryError | null; count?: number | null };
+
+function toQueryError(error: unknown): QueryError {
+  const message = error instanceof Error ? error.message : String(error);
+  const code = error && typeof error === "object" && "code" in error && typeof error.code === "string" ? error.code : undefined;
+  return { message, code: code === "ER_DUP_ENTRY" ? "23505" : code };
+}
 
 const NO_ID_TABLES = new Set([
   "project_analyses",
@@ -144,7 +151,7 @@ function fkColumn(embedName: string) {
   return `${embedName}_id`;
 }
 
-class QueryBuilder {
+class QueryBuilder<TData = DbRow[]> implements PromiseLike<QueryResult<TData>> {
   private filters: Filter[] = [];
   private orderBy: { column: string; ascending: boolean } | null = null;
   private limitCount: number | null = null;
@@ -228,22 +235,27 @@ class QueryBuilder {
     return this;
   }
 
-  maybeSingle() {
+  maybeSingle(): QueryBuilder<TData extends (infer Item)[] ? Item | null : TData | null> {
     this.want = "maybe";
     this.limitCount = 1;
-    return this;
+    return this as QueryBuilder<TData extends (infer Item)[] ? Item | null : TData | null>;
   }
 
-  single() {
+  single(): QueryBuilder<TData extends (infer Item)[] ? Item : TData> {
     this.want = "single";
     this.limitCount = this.limitCount ?? 1;
-    return this;
+    return this as QueryBuilder<TData extends (infer Item)[] ? Item : TData>;
   }
 
-  then<TResult1 = QueryResult<unknown>, TResult2 = never>(
-    onfulfilled?: ((value: QueryResult<unknown>) => TResult1 | PromiseLike<TResult1>) | null,
+  then(): Promise<QueryResult<TData>>;
+  then<TResult1, TResult2 = never>(
+    onfulfilled: (value: QueryResult<TData>) => TResult1 | PromiseLike<TResult1>,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
-  ) {
+  ): Promise<TResult1 | TResult2>;
+  then(
+    onfulfilled?: ((value: QueryResult<TData>) => unknown) | null,
+    onrejected?: ((reason: unknown) => unknown) | null,
+  ): Promise<unknown> {
     return this.execute().then(onfulfilled, onrejected);
   }
 
@@ -295,21 +307,19 @@ class QueryBuilder {
     return hydrate(picked);
   }
 
-  private async execute(): Promise<QueryResult<unknown>> {
+  private async execute(): Promise<QueryResult<TData>> {
     try {
-      if (this.op === "select") return await this.executeSelect();
-      if (this.op === "insert") return await this.executeInsert();
-      if (this.op === "update") return await this.executeUpdate();
-      if (this.op === "upsert") return await this.executeUpsert();
-      return await this.executeDelete();
+      if (this.op === "select") return (await this.executeSelect()) as QueryResult<TData>;
+      if (this.op === "insert") return (await this.executeInsert()) as QueryResult<TData>;
+      if (this.op === "update") return (await this.executeUpdate()) as QueryResult<TData>;
+      if (this.op === "upsert") return (await this.executeUpsert()) as QueryResult<TData>;
+      return (await this.executeDelete()) as QueryResult<TData>;
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (this.want === "maybe") return { data: null, error: { message } };
-      return { data: null, error: { message } };
+      return { data: null, error: toQueryError(error) } as QueryResult<TData>;
     }
   }
 
-  private async executeSelect(): Promise<QueryResult<unknown>> {
+  private async executeSelect(): Promise<QueryResult<any>> {
     const { sql: whereSql, params } = this.whereSql();
     const table = quoteIdent(this.table);
     if (this.selectOpts.head && this.selectOpts.count === "exact") {
@@ -355,7 +365,7 @@ class QueryBuilder {
     return { data, error: null };
   }
 
-  private async executeInsert(): Promise<QueryResult<unknown>> {
+  private async executeInsert(): Promise<QueryResult<any>> {
     if (!this.payload) return { data: null, error: { message: "Nothing to insert." } };
     const rows = this.normalizeRows(this.payload);
     if (!rows.length) return { data: [], error: null };
@@ -371,7 +381,7 @@ class QueryBuilder {
     return { data: Array.isArray(this.payload) ? returning : returning[0], error: null };
   }
 
-  private async executeUpdate(): Promise<QueryResult<unknown>> {
+  private async executeUpdate(): Promise<QueryResult<any>> {
     if (!this.payload || Array.isArray(this.payload)) return { data: null, error: { message: "Nothing to update." } };
     const patch = this.normalizeRows(this.payload, { generateId: false })[0];
     const columns = Object.keys(patch);
@@ -394,7 +404,7 @@ class QueryBuilder {
     return select.execute();
   }
 
-  private async executeUpsert(): Promise<QueryResult<unknown>> {
+  private async executeUpsert(): Promise<QueryResult<any>> {
     if (!this.payload || Array.isArray(this.payload)) return { data: null, error: { message: "Nothing to upsert." } };
     const row = this.normalizeRows(this.payload)[0];
     const columns = Object.keys(row);
@@ -404,7 +414,7 @@ class QueryBuilder {
     return { data: this.pickReturning(row), error: null };
   }
 
-  private async executeDelete(): Promise<QueryResult<unknown>> {
+  private async executeDelete(): Promise<QueryResult<any>> {
     const { sql: whereSql, params } = this.whereSql();
     await pool().query(`DELETE FROM ${quoteIdent(this.table)}${whereSql}`, params);
     return { data: null, error: null };
@@ -464,12 +474,12 @@ function storage() {
 
 export const db = {
   from(table: string) {
-    return new QueryBuilder(table);
+    return new QueryBuilder<DbRow[]>(table);
   },
   storage: storage(),
 };
 
-export function unwrap<T>(result: { data: T; error: { message: string } | null }) {
+export function unwrap<T>(result: { data: T; error: QueryError | null }) {
   if (result.error) throw new Error(result.error.message);
   return result.data;
 }
