@@ -1,5 +1,5 @@
 import { isMissingAssigneesSchema, parseProjectAccess, type ProjectAccess } from "@/lib/access";
-import { supabase, unwrap } from "@/lib/supabase";
+import { db, unwrap } from "@/lib/db";
 import { siteUrl } from "@/lib/site";
 import type { TaskRow } from "@/lib/mappers";
 import type { CalendarConnectionPublic } from "@/lib/types";
@@ -35,7 +35,7 @@ export function isMissingCalendarTable(error: unknown) {
 export async function getCalendarConnection(userId: string): Promise<CalendarConnectionPublic> {
   try {
     const row = unwrap(
-      await supabase.from("google_calendar_connections").select("google_email, last_synced_at").eq("user_id", userId).maybeSingle(),
+      await db.from("google_calendar_connections").select("google_email, last_synced_at").eq("user_id", userId).maybeSingle(),
     ) as { google_email: string; last_synced_at: string | null } | null;
     if (!row) return { connected: false, email: null, lastSyncedAt: null };
     return { connected: true, email: row.google_email, lastSyncedAt: row.last_synced_at };
@@ -53,14 +53,14 @@ export async function saveCalendarConnection(input: {
   expiresIn?: number;
 }) {
   const existing = unwrap(
-    await supabase.from("google_calendar_connections").select("refresh_token").eq("user_id", input.userId).maybeSingle(),
+    await db.from("google_calendar_connections").select("refresh_token").eq("user_id", input.userId).maybeSingle(),
   ) as { refresh_token: string } | null;
   const refreshToken = input.refreshToken || existing?.refresh_token;
   if (!refreshToken) throw new Error("Google did not send a refresh token. Try connecting again.");
 
   const expiry = new Date(Date.now() + Math.max(60, input.expiresIn ?? 3600) * 1000).toISOString();
   unwrap(
-    await supabase.from("google_calendar_connections").upsert({
+    await db.from("google_calendar_connections").upsert({
       user_id: input.userId,
       google_email: input.googleEmail,
       calendar_id: "primary",
@@ -73,7 +73,7 @@ export async function saveCalendarConnection(input: {
 
 export async function disconnectCalendar(userId: string) {
   const row = unwrap(
-    await supabase.from("google_calendar_connections").select("access_token, refresh_token").eq("user_id", userId).maybeSingle(),
+    await db.from("google_calendar_connections").select("access_token, refresh_token").eq("user_id", userId).maybeSingle(),
   ) as { access_token: string; refresh_token: string } | null;
   if (row?.access_token) {
     await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(row.access_token)}`, {
@@ -81,13 +81,13 @@ export async function disconnectCalendar(userId: string) {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
     }).catch(() => undefined);
   }
-  unwrap(await supabase.from("google_calendar_events").delete().eq("user_id", userId));
-  unwrap(await supabase.from("google_calendar_connections").delete().eq("user_id", userId));
+  unwrap(await db.from("google_calendar_events").delete().eq("user_id", userId));
+  unwrap(await db.from("google_calendar_connections").delete().eq("user_id", userId));
 }
 
 async function getValidAccessToken(userId: string) {
   const row = unwrap(
-    await supabase.from("google_calendar_connections").select("*").eq("user_id", userId).maybeSingle(),
+    await db.from("google_calendar_connections").select("*").eq("user_id", userId).maybeSingle(),
   ) as ConnectionRow | null;
   if (!row) return null;
 
@@ -109,7 +109,7 @@ async function getValidAccessToken(userId: string) {
     }),
   });
   if (!tokenRes.ok) {
-    unwrap(await supabase.from("google_calendar_connections").delete().eq("user_id", userId));
+    unwrap(await db.from("google_calendar_connections").delete().eq("user_id", userId));
     throw new Error("Google Calendar session expired. Connect again.");
   }
   const tokens = (await tokenRes.json()) as GoogleTokens;
@@ -117,7 +117,7 @@ async function getValidAccessToken(userId: string) {
 
   const expiry = new Date(Date.now() + Math.max(60, tokens.expires_in ?? 3600) * 1000).toISOString();
   unwrap(
-    await supabase
+    await db
       .from("google_calendar_connections")
       .update({ access_token: tokens.access_token, token_expiry: expiry })
       .eq("user_id", userId),
@@ -205,7 +205,7 @@ async function deleteGoogleEvent(accessToken: string, calendarId: string, eventI
 
 async function mappedEvent(userId: string, taskId: string) {
   return unwrap(
-    await supabase
+    await db
       .from("google_calendar_events")
       .select("event_id, calendar_id")
       .eq("user_id", userId)
@@ -224,7 +224,7 @@ type CalendarProject = {
 async function loadTaskAssigneeIds(taskId: string, fallbackAssigneeId: string | null) {
   try {
     const rows = unwrap(
-      await supabase.from("task_assignees").select("user_id").eq("task_id", taskId),
+      await db.from("task_assignees").select("user_id").eq("task_id", taskId),
     ) as Array<{ user_id: string }>;
     if (rows.length) return [...new Set(rows.map((row) => row.user_id))];
   } catch (error) {
@@ -235,7 +235,7 @@ async function loadTaskAssigneeIds(taskId: string, fallbackAssigneeId: string | 
 
 async function isProjectMember(projectId: string, userId: string) {
   const row = unwrap(
-    await supabase
+    await db
       .from("project_members")
       .select("id")
       .eq("project_id", projectId)
@@ -281,14 +281,14 @@ export async function upsertTaskOnGoogleCalendar(userId: string, taskId: string)
   const connection = await getValidAccessToken(userId);
   if (!connection) return false;
 
-  const task = unwrap(await supabase.from("tasks").select("*").eq("id", taskId).maybeSingle()) as TaskRow | null;
+  const task = unwrap(await db.from("tasks").select("*").eq("id", taskId).maybeSingle()) as TaskRow | null;
   if (!task) {
     await deleteTaskOnGoogleCalendar(userId, taskId);
     return false;
   }
 
   const project = unwrap(
-    await supabase.from("projects").select("id, name, access, owner_id").eq("id", task.project_id).maybeSingle(),
+    await db.from("projects").select("id, name, access, owner_id").eq("id", task.project_id).maybeSingle(),
   ) as CalendarProject | null;
   const assigneeIds = await loadTaskAssigneeIds(task.id, task.assignee_id);
   const allowed = project ? await userShouldHaveCalendarEvent(userId, project, assigneeIds) : false;
@@ -310,7 +310,7 @@ export async function upsertTaskOnGoogleCalendar(userId: string, taskId: string)
       return true;
     } catch {
       unwrap(
-        await supabase.from("google_calendar_events").delete().eq("user_id", userId).eq("task_id", taskId),
+        await db.from("google_calendar_events").delete().eq("user_id", userId).eq("task_id", taskId),
       );
     }
   }
@@ -322,7 +322,7 @@ export async function upsertTaskOnGoogleCalendar(userId: string, taskId: string)
   );
   if (!created?.id) return false;
   unwrap(
-    await supabase.from("google_calendar_events").upsert(
+    await db.from("google_calendar_events").upsert(
       {
         user_id: userId,
         task_id: taskId,
@@ -341,18 +341,18 @@ export async function deleteTaskOnGoogleCalendar(userId: string, taskId: string)
   if (connection && existing) {
     await deleteGoogleEvent(connection.access_token, existing.calendar_id, existing.event_id);
   }
-  unwrap(await supabase.from("google_calendar_events").delete().eq("user_id", userId).eq("task_id", taskId));
+  unwrap(await db.from("google_calendar_events").delete().eq("user_id", userId).eq("task_id", taskId));
 }
 
 export async function removeProjectFromGoogleCalendar(projectId: string) {
   try {
     const tasks = unwrap(
-      await supabase.from("tasks").select("id").eq("project_id", projectId),
+      await db.from("tasks").select("id").eq("project_id", projectId),
     ) as Array<{ id: string }>;
     const taskIds = tasks.map((task) => task.id);
     const maps = taskIds.length
       ? ((unwrap(
-          await supabase
+          await db
             .from("google_calendar_events")
             .select("user_id, event_id, calendar_id, task_id")
             .in("task_id", taskIds),
@@ -360,7 +360,7 @@ export async function removeProjectFromGoogleCalendar(projectId: string) {
       : [];
 
     const members = unwrap(
-      await supabase.from("project_members").select("user_id").eq("project_id", projectId),
+      await db.from("project_members").select("user_id").eq("project_id", projectId),
     ) as Array<{ user_id: string }>;
     const userIds = [...new Set([...maps.map((row) => row.user_id), ...members.map((row) => row.user_id)])];
 
@@ -387,7 +387,7 @@ export async function removeProjectFromGoogleCalendar(projectId: string) {
     );
 
     if (taskIds.length) {
-      unwrap(await supabase.from("google_calendar_events").delete().in("task_id", taskIds));
+      unwrap(await db.from("google_calendar_events").delete().in("task_id", taskIds));
     }
   } catch (error) {
     if (isMissingCalendarTable(error)) return;
@@ -400,7 +400,7 @@ export async function syncProjectToGoogleCalendar(userId: string, projectId: str
   if (!connection) throw new Error("Google Calendar is not connected.");
 
   const tasks = unwrap(
-    await supabase.from("tasks").select("id").eq("project_id", projectId),
+    await db.from("tasks").select("id").eq("project_id", projectId),
   ) as Array<{ id: string }>;
 
   let synced = 0;
@@ -409,7 +409,7 @@ export async function syncProjectToGoogleCalendar(userId: string, projectId: str
   }
 
   unwrap(
-    await supabase
+    await db
       .from("google_calendar_connections")
       .update({ last_synced_at: new Date().toISOString() })
       .eq("user_id", userId),
@@ -420,26 +420,26 @@ export async function syncProjectToGoogleCalendar(userId: string, projectId: str
 export async function notifyGoogleCalendarTaskChanged(taskId: string) {
   try {
     const task = unwrap(
-      await supabase.from("tasks").select("id, project_id, assignee_id").eq("id", taskId).maybeSingle(),
+      await db.from("tasks").select("id, project_id, assignee_id").eq("id", taskId).maybeSingle(),
     ) as { id: string; project_id: string; assignee_id: string | null } | null;
     if (!task) return;
 
     const project = unwrap(
-      await supabase.from("projects").select("id, access, owner_id").eq("id", task.project_id).maybeSingle(),
+      await db.from("projects").select("id, access, owner_id").eq("id", task.project_id).maybeSingle(),
     ) as { id: string; access?: string | null; owner_id: string } | null;
     if (!project) return;
 
     const [members, connections, maps, assigneeIds] = await Promise.all([
-      supabase
+      db
         .from("project_members")
         .select("user_id")
         .eq("project_id", task.project_id)
         .then((result) => unwrap(result) as Array<{ user_id: string }>),
-      supabase
+      db
         .from("google_calendar_connections")
         .select("user_id")
         .then((result) => unwrap(result) as Array<{ user_id: string }>),
-      supabase
+      db
         .from("google_calendar_events")
         .select("user_id")
         .eq("task_id", taskId)
@@ -464,7 +464,7 @@ export async function notifyGoogleCalendarTaskChanged(taskId: string) {
 export async function notifyGoogleCalendarTaskDeleted(taskId: string) {
   try {
     const maps = unwrap(
-      await supabase.from("google_calendar_events").select("user_id").eq("task_id", taskId),
+      await db.from("google_calendar_events").select("user_id").eq("task_id", taskId),
     ) as Array<{ user_id: string }>;
     await Promise.all(maps.map((row) => deleteTaskOnGoogleCalendar(row.user_id, taskId).catch(() => undefined)));
   } catch (error) {

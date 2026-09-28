@@ -10,7 +10,7 @@ import {
 } from "@/lib/access";
 import { isGroupMember } from "@/lib/project-access";
 import { addGroupMembersToProject, createGroupRecord } from "@/lib/groups";
-import { supabase, unwrap } from "@/lib/supabase";
+import { db, unwrap } from "@/lib/db";
 import { requireProjectMember, requireUser } from "@/lib/auth";
 import { removeProjectFromGoogleCalendar } from "@/lib/google-calendar";
 import { DEFAULT_PROJECT_ICON, encodeProjectIcon, isFlaticonId } from "@/lib/project-icon";
@@ -23,16 +23,16 @@ function refresh(projectId?: string) {
 }
 
 function migrationHint() {
-  return "Project access columns are missing. Run supabase/migration_project_access.sql in the SQL Editor.";
+  return "Project access columns are missing. Apply mysql/schema.sql.";
 }
 
 async function logActivity(projectId: string, userId: string, message: string) {
-  unwrap(await supabase.from("activities").insert({ project_id: projectId, user_id: userId, message }));
+  unwrap(await db.from("activities").insert({ project_id: projectId, user_id: userId, message }));
 }
 
 async function findProjectByCode(code: string) {
   return unwrap(
-    await supabase
+    await db
       .from("projects")
       .select("id, share_code")
       .eq("share_code", code)
@@ -42,7 +42,7 @@ async function findProjectByCode(code: string) {
 
 async function joinMember(projectId: string, userId: string) {
   const existing = unwrap(
-    await supabase
+    await db
       .from("project_members")
       .select("id")
       .eq("project_id", projectId)
@@ -50,7 +50,7 @@ async function joinMember(projectId: string, userId: string) {
       .maybeSingle(),
   );
   if (existing) return;
-  const result = await supabase.from("project_members").insert({
+  const result = await db.from("project_members").insert({
     project_id: projectId,
     user_id: userId,
     role: "member",
@@ -58,7 +58,7 @@ async function joinMember(projectId: string, userId: string) {
   });
   if (result.error && isMissingAccessSchema(result.error)) {
     unwrap(
-      await supabase.from("project_members").insert({
+      await db.from("project_members").insert({
         project_id: projectId,
         user_id: userId,
         role: "member",
@@ -127,11 +127,11 @@ export async function createProject(formData: FormData) {
   };
 
   let project: { id: string };
-  const inserted = await supabase.from("projects").insert(payload).select("id").single();
+  const inserted = await db.from("projects").insert(payload).select("id").single();
   if (inserted.error && isMissingAccessSchema(inserted.error)) {
     if (access !== "personal") throw new Error(migrationHint());
     project = unwrap(
-      await supabase
+      await db
         .from("projects")
         .insert({
           name,
@@ -149,7 +149,7 @@ export async function createProject(formData: FormData) {
     project = inserted.data as { id: string };
   }
 
-  const ownerResult = await supabase.from("project_members").insert({
+  const ownerResult = await db.from("project_members").insert({
     project_id: project.id,
     user_id: user.id,
     role: "owner",
@@ -157,7 +157,7 @@ export async function createProject(formData: FormData) {
   });
   if (ownerResult.error && isMissingAccessSchema(ownerResult.error)) {
     unwrap(
-      await supabase.from("project_members").insert({
+      await db.from("project_members").insert({
         project_id: project.id,
         user_id: user.id,
         role: "owner",
@@ -206,18 +206,18 @@ export async function updateProject(projectId: string, formData: FormData) {
     patch.access = resolved.access;
     patch.group_id = resolved.groupId;
     if (resolved.access === "personal") {
-      await supabase.from("project_members").delete().eq("project_id", projectId).eq("source", "access");
+      await db.from("project_members").delete().eq("project_id", projectId).eq("source", "access");
     }
     if (resolved.access === "group" && resolved.groupId) {
       await addGroupMembersToProject(projectId, resolved.groupId, user.id);
     }
     if (resolved.access !== "organization") {
-      const cleared = await supabase.from("project_pins").delete().eq("project_id", projectId);
+      const cleared = await db.from("project_pins").delete().eq("project_id", projectId);
       if (cleared.error && !isMissingPinsSchema(cleared.error)) throw new Error(cleared.error.message);
     }
   }
 
-  const updated = await supabase.from("projects").update(patch).eq("id", projectId);
+  const updated = await db.from("projects").update(patch).eq("id", projectId);
   if (updated.error && isMissingAccessSchema(updated.error) && (patch.access || patch.group_id !== undefined)) {
     throw new Error(migrationHint());
   }
@@ -231,7 +231,7 @@ export async function updateProjectIcon(projectId: string, icon: string) {
   if (membership.role !== "owner") throw new Error("Only the owner can change the icon.");
   if (!isFlaticonId(icon)) throw new Error("Invalid icon.");
   unwrap(
-    await supabase
+    await db
       .from("projects")
       .update({ color: encodeProjectIcon(icon), updated_at: new Date().toISOString() })
       .eq("id", projectId),
@@ -269,7 +269,7 @@ export async function rotateShareCode(projectId: string) {
   const { user, membership } = await requireProjectMember(projectId);
   if (membership.role !== "owner") throw new Error("Only the owner can rotate the code.");
   const next = shareCode();
-  unwrap(await supabase.from("projects").update({ share_code: next, updated_at: new Date().toISOString() }).eq("id", projectId));
+  unwrap(await db.from("projects").update({ share_code: next, updated_at: new Date().toISOString() }).eq("id", projectId));
   await logActivity(projectId, user.id, `rotated the share code`);
   refresh(projectId);
   return next;
@@ -283,7 +283,7 @@ export async function toggleProjectPin(projectId: string) {
 
   try {
     const existing = unwrap(
-      await supabase
+      await db
         .from("project_pins")
         .select("id")
         .eq("user_id", user.id)
@@ -292,13 +292,13 @@ export async function toggleProjectPin(projectId: string) {
     ) as { id: string } | null;
 
     if (existing) {
-      unwrap(await supabase.from("project_pins").delete().eq("id", existing.id));
+      unwrap(await db.from("project_pins").delete().eq("id", existing.id));
     } else {
-      unwrap(await supabase.from("project_pins").insert({ user_id: user.id, project_id: projectId }));
+      unwrap(await db.from("project_pins").insert({ user_id: user.id, project_id: projectId }));
     }
   } catch (error) {
     if (isMissingPinsSchema(error)) {
-      throw new Error("Project pins are missing. Run supabase/migration_project_pins.sql in the SQL Editor.");
+      throw new Error("Project pins are missing. Apply mysql/schema.sql.");
     }
     throw error;
   }
@@ -319,7 +319,7 @@ export async function leaveProject(projectId: string) {
     throw new Error("Group members keep access automatically. Ask the owner to remove you from the group.");
   }
   unwrap(
-    await supabase.from("project_members").delete().eq("project_id", projectId).eq("user_id", user.id),
+    await db.from("project_members").delete().eq("project_id", projectId).eq("user_id", user.id),
   );
   await logActivity(projectId, user.id, `left the project`);
   refresh(projectId);
@@ -332,15 +332,15 @@ export async function deleteProject(projectId: string, confirmation: string) {
   if (confirmation !== "DELETE") throw new Error("Type DELETE to confirm.");
 
   const tasks = unwrap(
-    await supabase.from("tasks").select("id").eq("project_id", projectId),
+    await db.from("tasks").select("id").eq("project_id", projectId),
   ) as Array<{ id: string }>;
   const taskIds = tasks.map((task) => task.id);
   if (taskIds.length) {
     const files = unwrap(
-      await supabase.from("attachments").select("stored_name").in("task_id", taskIds),
+      await db.from("attachments").select("stored_name").in("task_id", taskIds),
     ) as Array<{ stored_name: string }>;
     if (files.length) {
-      await supabase.storage.from("attachments").remove(files.map((file) => file.stored_name));
+      await db.storage.from("attachments").remove(files.map((file) => file.stored_name));
     }
   }
 
@@ -350,6 +350,6 @@ export async function deleteProject(projectId: string, confirmation: string) {
     // Calendar cleanup is best-effort; the project still deletes.
   }
 
-  unwrap(await supabase.from("projects").delete().eq("id", projectId));
+  unwrap(await db.from("projects").delete().eq("id", projectId));
   revalidateHome();
 }

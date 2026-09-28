@@ -22,7 +22,7 @@ import { btnGhost, iconBtn } from "@/components/ui";
 import { ProjectIconEditor } from "@/components/icon-picker";
 import { PresenceBoard, PresenceProvider } from "@/components/presence";
 import { cn } from "@/lib/utils";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { easeOutSoft } from "@/components/motion";
 import { BrandLockup } from "@/components/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -68,7 +68,6 @@ function SidebarBody({
   base: string;
   onClose?: () => void;
 }) {
-  const reduce = useReducedMotion();
   return (
     <>
       <div className="flex min-w-0 items-start justify-between px-5 pt-6">
@@ -93,30 +92,24 @@ function SidebarBody({
         ) : null}
       </div>
       <nav className="mt-8 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3 pb-4">
-        {NAV.map((item, index) => {
+        {NAV.map((item) => {
           const href = `${base}${item.href}`;
           const active = item.href === "" ? pathname === base : pathname.startsWith(href);
           const Icon = item.icon;
           return (
-            <motion.div
+            <Link
               key={href}
-              initial={reduce ? false : { opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.24, delay: reduce ? 0 : 0.05 + index * 0.045, ease: easeOutSoft }}
+              href={href}
+              prefetch
+              onClick={onClose}
+              className={cn(
+                "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm",
+                active ? "bg-paper-2 text-terracotta" : "text-muted hover:bg-sand hover:text-ink",
+              )}
             >
-              <Link
-                href={href}
-                prefetch
-                onClick={onClose}
-                className={cn(
-                  "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm",
-                  active ? "bg-paper-2 text-terracotta" : "text-muted hover:bg-sand hover:text-ink",
-                )}
-              >
-                <Icon size={16} />
-                {item.label}
-              </Link>
-            </motion.div>
+              <Icon size={16} />
+              {item.label}
+            </Link>
           );
         })}
       </nav>
@@ -158,35 +151,19 @@ export function ProjectShell({
   return (
     <PresenceProvider>
       <div className="relative flex h-dvh flex-col gap-3 overflow-hidden p-3 sm:p-4 lg:flex-row lg:gap-4">
-        <AnimatePresence>
-          {navOpen ? (
-            <motion.button
-              key="nav-overlay"
-              type="button"
-              className="fixed inset-0 z-30 bg-ink/25 lg:hidden"
-              onClick={() => setNavOpen(false)}
-              aria-label="Close menu"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-            />
-          ) : null}
-        </AnimatePresence>
-        <AnimatePresence>
-          {navOpen ? (
-            <motion.aside
-              key="nav-drawer"
-              className="fixed inset-y-3 left-3 z-40 flex w-[min(17.5rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-3xl border border-line bg-paper text-ink shadow-lg lg:hidden"
-              initial={{ x: -28, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -28, opacity: 0 }}
-              transition={{ duration: 0.22, ease: easeOutSoft }}
-            >
-              <SidebarBody {...sidebar} onClose={() => setNavOpen(false)} />
-            </motion.aside>
-          ) : null}
-        </AnimatePresence>
+        {navOpen ? (
+          <button
+            type="button"
+            className="fixed inset-0 z-30 bg-ink/25 lg:hidden"
+            onClick={() => setNavOpen(false)}
+            aria-label="Close menu"
+          />
+        ) : null}
+        {navOpen ? (
+          <aside className="fixed inset-y-3 left-3 z-40 flex w-[min(17.5rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-3xl border border-line bg-paper text-ink shadow-lg lg:hidden">
+            <SidebarBody {...sidebar} onClose={() => setNavOpen(false)} />
+          </aside>
+        ) : null}
         <aside className="hidden h-auto w-64 shrink-0 flex-col overflow-hidden rounded-3xl border border-line bg-paper/80 text-ink shadow-sm backdrop-blur-md lg:flex">
           <SidebarBody {...sidebar} />
         </aside>

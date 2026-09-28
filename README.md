@@ -2,7 +2,7 @@
 
 A team collaboration workspace: product log, scrum, daily check, kanban, calendar, timeline, project sharing, attachments, and who is active now.
 
-Stack: **Next.js 16** (App Router) + **Merlot API** (NestJS on **Fastify**) in an npm workspaces monorepo, **React 19**, **Tailwind CSS v4**, **Framer Motion**, **Supabase**, **Upstash Redis**.
+Stack: **Next.js 16** (App Router) + **Merlot API** (NestJS on **Fastify**) in an npm workspaces monorepo, **React 19**, **Tailwind CSS v4**, **Framer Motion**, **MySQL 8**, **Redis**.
 
 ## Features
 
@@ -32,9 +32,7 @@ cp apps/api/.env.example apps/api/.env
 
 | Variable | Description |
 | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key |
-| `SUPABASE_SECRET_KEY` | Secret key (server only, do not commit) |
+| `DATABASE_URL` | MySQL 8 URL, e.g. `mysql://root:password@127.0.0.1:3306/task_management` |
 | `APP_URL` | Public URL, production: `https://pipeline.aerisbeaute.com` |
 | `GOOGLE_CLIENT_ID` | OAuth client ID (optional) |
 | `GOOGLE_CLIENT_SECRET` | OAuth client secret (optional) |
@@ -53,26 +51,29 @@ cp apps/api/.env.example apps/api/.env
 | `PORT` | Nest listen port, local default `4000` |
 | `APP_URL` | Frontend origin for CORS |
 | `NEST_INTERNAL_SECRET` | Shared secret with the frontend (same value) |
-| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL |
-| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token (do not commit) |
+| `REDIS_URL` | Redis URL. Local: `redis://127.0.0.1:6379`. Server: `redis://pipeline_redis:6379` |
 
 On `localhost` / `127.0.0.1`, login uses Cloudflare’s dummy Turnstile keys (`1x00000000000000000000AA`) so the widget always passes without adding the hostname in the dashboard. Production still uses the keys above.
 
 Do not commit `.env` or `apps/api/.env`.
 
-### 2. Database
+### 2. Database (MySQL 8)
 
-In the Supabase SQL Editor:
+Point `.env` at MySQL 8 on localhost:
 
-1. New project: run `supabase/schema.sql`
-2. If the `users` table already exists: run `supabase/migration_auth.sql`
-3. Presence (“active now”): run `supabase/migration_presence.sql`
-4. Project access (personal / group / organization): run `supabase/migration_project_access.sql`
-5. Per-user organization pins: run `supabase/migration_project_pins.sql`
-6. Task start/due times + all-day: run `supabase/migration_task_all_day.sql`
-7. AI Analyze per project: run `supabase/migration_project_analyses.sql`
+```
+DATABASE_URL=mysql://root:password@127.0.0.1:3306/task_management
+```
 
-The schema also creates a private storage bucket named `attachments`.
+Create an empty schema:
+
+```bash
+mysql -h 127.0.0.1 -u root -p task_management < mysql/schema.sql
+```
+
+Files are stored in `file_blobs` (LONGBLOB), not a storage bucket.
+
+Merlot API cache uses Redis at `REDIS_URL` (local: `redis://127.0.0.1:6379`, no password).
 
 ### 3. Install and seed
 
@@ -137,8 +138,8 @@ In Google Cloud Console:
 
 1. Enable **Google Calendar API** (CalDAV is covered by the Calendar scope).
 2. OAuth consent screen: add scope `https://www.googleapis.com/auth/calendar`.
-3. Run `supabase/migration_google_calendar.sql` in the SQL Editor.
-4. For timed vs all-day events: run `supabase/migration_task_all_day.sql` if the project is not a fresh `schema.sql` install.
+3. Google Calendar tables are in `mysql/schema.sql` (`google_calendar_connections`, `google_calendar_events`).
+4. Timed vs all-day tasks use the `all_day` column on `tasks`.
 
 Tasks with a start or due date sync to the **primary** calendar of the connected Google account (Asia/Jakarta). Leave **All day** on for a date-only event; uncheck it to send a clock time. CalDAV clients that sync that Google calendar (Apple Calendar, Thunderbird, and similar) see the same all-day or timed event.
 
@@ -146,47 +147,63 @@ Personal projects copy every dated task; group and organization projects copy on
 
 ## Production (`pipeline.aerisbeaute.com`)
 
-1. HTTPS domain (PWA and login cookies require HTTPS).
-2. In **Vercel → Project → Settings → Environment Variables**, set (Production + Preview):
+GitHub Actions builds Docker images, pushes them to Docker Hub, then SSH-deploys with `docker run` (no Compose, no new MySQL container).
 
-   **Next.js project** (root), copied from `.env`:
+Images:
 
-   | Name | Required |
-   | --- | --- |
-   | `NEXT_PUBLIC_SUPABASE_URL` | yes |
-   | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes |
-   | `SUPABASE_SECRET_KEY` | yes |
-   | `APP_URL` | `https://pipeline.aerisbeaute.com` |
-   | `GOOGLE_CLIENT_ID` | yes, if you use Google login |
-   | `GOOGLE_CLIENT_SECRET` | yes, if you use Google login |
-   | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | yes, password login |
-   | `TURNSTILE_SECRET_KEY` | yes, password login |
-   | `AI_BASE_URL` | yes, if you use Analyze |
-   | `AI_API_KEY` | yes, if you use Analyze |
-   | `AI_MODEL` | optional, default `free-forever` |
-   | `NEST_API_URL` | yes, Merlot API deployment URL |
-   | `NEST_INTERNAL_SECRET` | yes, same value as the API project |
+- `itaeris/pipeline_frontend_app` (host port **2028** → container 3000)
+- `itaeris/pipeline_backend_app` (host port **2027** → container 4000)
 
-   **Merlot API project** (`apps/api`), copied from `apps/api/.env`:
+NGINX on the server:
 
-   | Name | Required |
-   | --- | --- |
-   | `APP_URL` | `https://pipeline.aerisbeaute.com` |
-   | `NEST_INTERNAL_SECRET` | yes, same value as the Next.js project |
-   | `UPSTASH_REDIS_REST_URL` | yes |
-   | `UPSTASH_REDIS_REST_TOKEN` | yes |
+- `https://pipeline.aerisbeaute.com` → frontend `:2028`
+- `host.docker.local` → backend `:2027`
 
-   This repo is a monorepo. Keep the existing Vercel project pointed at the **repository root** (Next.js). Add a **second** Vercel project for Merlot API:
+Containers join Docker network `pipeline-network`. Deploy starts an internal Redis container `pipeline_redis` (no host port). Existing MySQL is attached to that network if present; it is never created by this deploy.
 
-   1. Import the same Git repo.
-   2. Set **Root Directory** to `apps/api`.
-   3. Enable including files outside the root directory so npm workspaces resolve.
-   4. Set the backend env vars on that project.
-   5. Set `NEST_API_URL` on the Next.js project to the Merlot API URL (for example `https://your-api.vercel.app`).
+### GitHub secrets
 
-   Then **Redeploy**.
-3. Google Console: add the production origin and redirect URI above.
-4. PWA: the service worker activates automatically on the domain. Chrome/Edge: menu ⋮ → Install app. iOS: Safari Share → Add to Home Screen.
+| Secret | Purpose |
+| --- | --- |
+| `DOCKERHUB_USERNAME` | Docker Hub user |
+| `DOCKERHUB_TOKEN` | Docker Hub access token |
+| `BACKEND_ENV` | Full `apps/api` env file contents |
+| `FRONTEND_ENV` | Full root `.env` contents (needed) |
+| `SERVER_HOST` | SSH host |
+| `SERVER_USER` | SSH user |
+| `SERVER_SSH_KEY` | SSH private key |
+
+Example **FRONTEND_ENV** (from inside the frontend container, MySQL on the host is `host.docker.local`):
+
+```
+DATABASE_URL=mysql://root:password@host.docker.local:3306/task_management
+APP_URL=https://pipeline.aerisbeaute.com
+NEST_API_URL=http://pipeline_backend_app:4000
+NEST_INTERNAL_SECRET=same-as-backend
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+AI_BASE_URL=
+AI_API_KEY=
+AI_MODEL=free-forever
+```
+
+Example **BACKEND_ENV**:
+
+```
+PORT=4000
+APP_URL=https://pipeline.aerisbeaute.com
+NEST_INTERNAL_SECRET=same-as-frontend
+DATABASE_URL=mysql://root:password@host.docker.local:3306/task_management
+REDIS_URL=redis://pipeline_redis:6379
+```
+
+After the backend container is up, deploy runs `node /app/migrate.mjs`: create missing tables, add missing columns, skip what already exists.
+
+The SSH user needs Docker plus passwordless `sudo` for NGINX (`cp` into `/etc/nginx/conf.d`, `nginx -t`, `systemctl reload nginx`). TLS certs are expected at `/etc/letsencrypt/live/pipeline.aerisbeaute.com/`.
+
+Google Console: add production origin `https://pipeline.aerisbeaute.com` and redirect `https://pipeline.aerisbeaute.com/api/auth/google/callback`.
 
 ## PWA
 
@@ -214,6 +231,7 @@ The service worker is not active in `next dev` so cache does not interfere with 
 | `npm run lint` | ESLint |
 | `npm run db:seed` | Seed users + demo project |
 | `npm run db:admin` | Create/update admin account `itaeris` |
+| `npm run db:migrate` | Create missing MySQL tables/columns (skip existing) |
 
 Regenerate PWA icons with `node scripts/generate-pwa-icons.mjs`.
 
@@ -228,13 +246,15 @@ Regenerate PWA icons with `node scripts/generate-pwa-icons.mjs`.
 ## Structure
 
 ```
-apps/api/                # Merlot API (Fastify) + Upstash Redis cache
+apps/api/                # Merlot API (Fastify) + Redis cache
 src/app/                 # Next.js routes, loading skeleton, API
 src/components/          # UI (shell, boards, drawer, picker)
 src/lib/actions/         # server actions
-src/lib/                 # auth, queries, supabase, Nest cache client
-supabase/                # schema + migrations
-scripts/                 # seed & admin
+src/lib/                 # auth, queries, MySQL client, Nest cache client
+mysql/                   # schema + idempotent migrate
+deploy/                  # NGINX + server deploy script
+.github/workflows/       # Docker Hub + SSH deploy
+scripts/                 # seed, admin, migrate
 ```
 
 Flaticon icons come from [UIcons](https://www.flaticon.com/uicons) (solid rounded + brands).

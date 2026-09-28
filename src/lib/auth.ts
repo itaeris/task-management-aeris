@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { ensureProjectAccess } from "@/lib/project-access";
-import { supabase, unwrap } from "@/lib/supabase";
+import { db, unwrap } from "@/lib/db";
 import { mapUser, type UserRow } from "@/lib/mappers";
 import { cookieOptions } from "@/lib/site";
 
@@ -12,7 +12,7 @@ export const getCurrentUser = cache(async () => {
   const userId = store.get(USER_COOKIE)?.value;
   if (!userId) return null;
   const row = unwrap(
-    await supabase
+    await db
       .from("users")
       .select("id, name, email, initials, color, username, role")
       .eq("id", userId)
@@ -33,7 +33,7 @@ export async function requireProjectMember(projectId: string) {
   if (!membership) throw new Error("You are not a member of this project.");
 
   const project = unwrap(
-    await supabase.from("projects").select("*").eq("id", projectId).single(),
+    await db.from("projects").select("*").eq("id", projectId).single(),
   ) as { id: string; name: string; access?: string; group_id?: string | null; owner_id: string };
   return { user, membership, project };
 }

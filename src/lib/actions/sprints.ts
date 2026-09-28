@@ -1,6 +1,6 @@
 "use server";
 
-import { supabase, unwrap } from "@/lib/supabase";
+import { db, unwrap } from "@/lib/db";
 import { requireProjectMember } from "@/lib/auth";
 import { parseDateInput } from "@/lib/utils";
 import { revalidateProject } from "@/lib/revalidate";
@@ -20,7 +20,7 @@ export async function createSprint(projectId: string, formData: FormData) {
   }
 
   unwrap(
-    await supabase.from("sprints").insert({
+    await db.from("sprints").insert({
       project_id: projectId,
       name,
       goal,
@@ -30,7 +30,7 @@ export async function createSprint(projectId: string, formData: FormData) {
     }),
   );
   unwrap(
-    await supabase.from("activities").insert({
+    await db.from("activities").insert({
       project_id: projectId,
       user_id: user.id,
       message: `created sprint ${name}`,
@@ -53,7 +53,7 @@ export async function updateSprint(projectId: string, sprintId: string, formData
   }
 
   unwrap(
-    await supabase
+    await db
       .from("sprints")
       .update({
         name,
@@ -65,7 +65,7 @@ export async function updateSprint(projectId: string, sprintId: string, formData
       .eq("project_id", projectId),
   );
   unwrap(
-    await supabase.from("activities").insert({
+    await db.from("activities").insert({
       project_id: projectId,
       user_id: user.id,
       message: `updated sprint ${name}`,
@@ -77,16 +77,16 @@ export async function updateSprint(projectId: string, sprintId: string, formData
 export async function deleteSprint(projectId: string, sprintId: string) {
   const { user } = await requireProjectMember(projectId);
   const sprint = unwrap(
-    await supabase
+    await db
       .from("sprints")
       .select("name")
       .eq("id", sprintId)
       .eq("project_id", projectId)
       .single(),
   ) as { name: string };
-  unwrap(await supabase.from("sprints").delete().eq("id", sprintId).eq("project_id", projectId));
+  unwrap(await db.from("sprints").delete().eq("id", sprintId).eq("project_id", projectId));
   unwrap(
-    await supabase.from("activities").insert({
+    await db.from("activities").insert({
       project_id: projectId,
       user_id: user.id,
       message: `deleted sprint ${sprint.name}`,
@@ -99,14 +99,14 @@ export async function updateSprintStatus(projectId: string, sprintId: string, st
   const { user } = await requireProjectMember(projectId);
   if (status === "active") {
     unwrap(
-      await supabase.from("sprints").update({ status: "completed" }).eq("project_id", projectId).eq("status", "active"),
+      await db.from("sprints").update({ status: "completed" }).eq("project_id", projectId).eq("status", "active"),
     );
   }
   const sprint = unwrap(
-    await supabase.from("sprints").update({ status }).eq("id", sprintId).select("name").single(),
+    await db.from("sprints").update({ status }).eq("id", sprintId).select("name").single(),
   ) as { name: string };
   unwrap(
-    await supabase.from("activities").insert({
+    await db.from("activities").insert({
       project_id: projectId,
       user_id: user.id,
       message: `changed ${sprint.name} to ${status}`,

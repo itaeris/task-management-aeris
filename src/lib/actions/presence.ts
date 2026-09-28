@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { supabase } from "@/lib/supabase";
+import { db } from "@/lib/db";
 import { USER_COOKIE } from "@/lib/auth";
 
 export type PresencePerson = {
@@ -57,11 +57,11 @@ export async function pingPresence(path: string, taskId?: string | null) {
     path: cleanPath,
     updated_at: new Date().toISOString(),
   };
-  const { error } = await supabase.from("presences").upsert(payload);
+  const { error } = await db.from("presences").upsert(payload);
   if (!error) return;
   if (/presences|schema cache|does not exist/i.test(error.message)) return;
   if (payload.task_id) {
-    const retry = await supabase.from("presences").upsert({ ...payload, task_id: null });
+    const retry = await db.from("presences").upsert({ ...payload, task_id: null });
     if (!retry.error) return;
   }
 }
@@ -71,7 +71,7 @@ export async function listPresence(): Promise<PresencePerson[]> {
   if (!meId) return [];
 
   const cutoff = new Date(Date.now() - 90_000).toISOString();
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("presences")
     .select("user_id, project_id, task_id, path, updated_at")
     .gte("updated_at", cutoff)
@@ -95,12 +95,12 @@ export async function listPresence(): Promise<PresencePerson[]> {
   const taskIds = [...new Set(rows.map((row) => row.task_id).filter(Boolean))] as string[];
 
   const [{ data: users }, { data: projects }, { data: tasks }] = await Promise.all([
-    supabase.from("users").select("id, name, initials, color").in("id", userIds),
+    db.from("users").select("id, name, initials, color").in("id", userIds),
     projectIds.length
-      ? supabase.from("projects").select("id, name, color").in("id", projectIds)
+      ? db.from("projects").select("id, name, color").in("id", projectIds)
       : Promise.resolve({ data: [] as Array<{ id: string; name: string; color: string }> }),
     taskIds.length
-      ? supabase.from("tasks").select("id, title").in("id", taskIds)
+      ? db.from("tasks").select("id, title").in("id", taskIds)
       : Promise.resolve({ data: [] as Array<{ id: string; title: string }> }),
   ]);
 
@@ -135,5 +135,5 @@ export async function listPresence(): Promise<PresencePerson[]> {
 export async function clearPresence() {
   const userId = (await cookies()).get(USER_COOKIE)?.value;
   if (!userId) return;
-  await supabase.from("presences").delete().eq("user_id", userId);
+  await db.from("presences").delete().eq("user_id", userId);
 }

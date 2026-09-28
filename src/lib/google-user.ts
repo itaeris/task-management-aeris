@@ -1,4 +1,4 @@
-import { supabase, unwrap } from "@/lib/supabase";
+import { db, unwrap } from "@/lib/db";
 import { colorFromSeed, initialsFromName } from "@/lib/utils";
 import type { UserRow } from "@/lib/mappers";
 
@@ -7,7 +7,7 @@ async function uniqueUsername(base: string) {
   for (let i = 0; i < 8; i += 1) {
     const candidate = i === 0 ? cleaned : `${cleaned}${i + 1}`;
     const existing = unwrap(
-      await supabase.from("users").select("id").eq("username", candidate).maybeSingle(),
+      await db.from("users").select("id").eq("username", candidate).maybeSingle(),
     );
     if (!existing) return candidate;
   }
@@ -20,12 +20,12 @@ export async function findOrCreateGoogleUser(profile: { email: string; name: str
   if (!email) throw new Error("Google did not return an email.");
 
   const existing = unwrap(
-    await supabase.from("users").select("*").eq("email", email).maybeSingle(),
+    await db.from("users").select("*").eq("email", email).maybeSingle(),
   ) as UserRow | null;
   if (existing) return existing.id;
 
   const created = unwrap(
-    await supabase
+    await db
       .from("users")
       .insert({
         name,

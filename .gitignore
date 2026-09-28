@@ -42,6 +42,7 @@ yarn-error.log*
 # local database + uploads
 /prisma/dev.db
 /prisma/dev.db-journal
+/mysql/data.sql
 /data/uploads
 *.tsbuildinfo
 

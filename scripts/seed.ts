@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
+import { db } from "../src/lib/db";
 
 for (const line of readFileSync(resolve(process.cwd(), ".env"), "utf8").split("\n")) {
   const match = line.match(/^([^#=]+)=(.*)$/);
@@ -27,27 +27,27 @@ function dayKey(offset: number) {
 }
 
 async function main() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const secret = process.env.SUPABASE_SECRET_KEY;
-  if (!url || !secret) throw new Error("Supabase env is not set.");
-
-  const supabase = createClient(url, secret, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: { headers: { apikey: secret } },
-  });
-
-  await supabase.from("activities").delete().neq("id", "");
-  await supabase.from("comments").delete().neq("id", "");
-  await supabase.from("attachments").delete().neq("id", "");
-  await supabase.from("daily_logs").delete().neq("id", "");
-  await supabase.from("tasks").delete().neq("id", "");
-  await supabase.from("sprints").delete().neq("id", "");
-  await supabase.from("project_members").delete().neq("id", "");
-  await supabase.from("projects").delete().neq("id", "");
-  await supabase.from("users").delete().neq("id", "");
+  await db.from("file_blobs").delete().neq("stored_name", "");
+  await db.from("google_calendar_events").delete().neq("id", "");
+  await db.from("google_calendar_connections").delete().neq("user_id", "");
+  await db.from("presences").delete().neq("user_id", "");
+  await db.from("project_analyses").delete().neq("project_id", "");
+  await db.from("activities").delete().neq("id", "");
+  await db.from("comments").delete().neq("id", "");
+  await db.from("attachments").delete().neq("id", "");
+  await db.from("daily_logs").delete().neq("id", "");
+  await db.from("task_assignees").delete().neq("id", "");
+  await db.from("tasks").delete().neq("id", "");
+  await db.from("sprints").delete().neq("id", "");
+  await db.from("project_pins").delete().neq("id", "");
+  await db.from("project_members").delete().neq("id", "");
+  await db.from("projects").delete().neq("id", "");
+  await db.from("group_members").delete().neq("id", "");
+  await db.from("groups").delete().neq("id", "");
+  await db.from("users").delete().neq("id", "");
 
   const passwordHash = await bcrypt.hash("aerisbeaute", 10);
-  const { data: users, error: userError } = await supabase
+  const { data: users, error: userError } = await db
     .from("users")
     .insert([
       {
@@ -64,14 +64,14 @@ async function main() {
     ])
     .select("*");
   if (userError || !users) {
-    throw userError ?? new Error("Failed to seed users. Run supabase/schema.sql or migration_auth.sql first.");
+    throw userError ?? new Error("Failed to seed users. Apply mysql/schema.sql first.");
   }
 
   const aeris = users.find((user) => user.email === "it@aerisbeaute.com")!;
   const maya = users.find((user) => user.email === "maya@nara.app")!;
   const dimas = users.find((user) => user.email === "dimas@nara.app")!;
 
-  const { data: project, error: projectError } = await supabase
+  const { data: project, error: projectError } = await db
     .from("projects")
     .insert({
       name: "Relia Pay",
@@ -85,14 +85,14 @@ async function main() {
     .single();
   if (projectError || !project) throw projectError;
 
-  const { error: memberError } = await supabase.from("project_members").insert([
+  const { error: memberError } = await db.from("project_members").insert([
     { project_id: project.id, user_id: aeris.id, role: "owner" },
     { project_id: project.id, user_id: maya.id, role: "member" },
     { project_id: project.id, user_id: dimas.id, role: "member" },
   ]);
   if (memberError) throw memberError;
 
-  const { data: sprints, error: sprintError } = await supabase
+  const { data: sprints, error: sprintError } = await db
     .from("sprints")
     .insert([
       {
@@ -117,7 +117,7 @@ async function main() {
   const sprint1 = sprints[0];
   const sprint2 = sprints[1];
 
-  const { data: tasks, error: taskError } = await supabase
+  const { data: tasks, error: taskError } = await db
     .from("tasks")
     .insert([
       {
@@ -251,10 +251,10 @@ async function main() {
       .map((task) => ({ task_id: task.id, user_id: task.assignee_id })),
     { task_id: tasks[0].id, user_id: aeris.id },
   ];
-  const { error: assigneeError } = await supabase.from("task_assignees").insert(assigneeRows);
+  const { error: assigneeError } = await db.from("task_assignees").insert(assigneeRows);
   if (assigneeError && !/task_assignees/i.test(assigneeError.message)) throw assigneeError;
 
-  const { error: commentError } = await supabase.from("comments").insert([
+  const { error: commentError } = await db.from("comments").insert([
     {
       task_id: tasks[0].id,
       user_id: aeris.id,
@@ -273,7 +273,7 @@ async function main() {
   ]);
   if (commentError) throw commentError;
 
-  const { error: dailyError } = await supabase.from("daily_logs").insert([
+  const { error: dailyError } = await db.from("daily_logs").insert([
     {
       project_id: project.id,
       user_id: aeris.id,
@@ -301,14 +301,14 @@ async function main() {
   ]);
   if (dailyError) throw dailyError;
 
-  const { error: activityError } = await supabase.from("activities").insert([
+  const { error: activityError } = await db.from("activities").insert([
     { project_id: project.id, user_id: aeris.id, message: "activated Sprint 12 — KYC & Core Pay" },
     { project_id: project.id, user_id: maya.id, message: 'moved "e-KTP KYC onboarding flow" to In Progress' },
     { project_id: project.id, user_id: dimas.id, message: 'completed "Fix OTP timeout"' },
   ]);
   if (activityError) throw activityError;
 
-  console.log("Seeded Relia Pay to Supabase.");
+  console.log("Seeded Relia Pay.");
 }
 
 main().catch((error) => {

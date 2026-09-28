@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
@@ -8,7 +9,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { btnGhost } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Settings — Task Management",
 };
 

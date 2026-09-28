@@ -16,17 +16,18 @@
     "start:api": "npm run start --workspace=merlot-api",
     "lint": "eslint",
     "db:seed": "tsx scripts/seed.ts",
-    "db:admin": "tsx scripts/ensure-admin.ts"
+    "db:admin": "tsx scripts/ensure-admin.ts",
+    "db:migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@supabase/supabase-js": "^2.116.0",
     "bcryptjs": "^3.0.3",
     "date-fns": "^4.4.0",
     "framer-motion": "^13.2.0",
     "lucide-react": "^1.43.0",
+    "mysql2": "^3.24.4",
     "nanoid": "^6.0.1",
     "next": "16.3.4",
     "react": "19.2.8",

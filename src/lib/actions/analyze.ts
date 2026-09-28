@@ -4,7 +4,7 @@ import { requireProjectMember } from "@/lib/auth";
 import { isMissingAnalysisSchema } from "@/lib/access";
 import { chatCompletion } from "@/lib/ai";
 import { getProjectWorkspace } from "@/lib/queries";
-import { supabase, unwrap } from "@/lib/supabase";
+import { db, unwrap } from "@/lib/db";
 import { dateKeyJakarta } from "@/lib/utils";
 import { iso, type ProjectAnalysis, type ProjectWorkspace } from "@/lib/types";
 import { revalidatePath } from "next/cache";
@@ -21,7 +21,7 @@ export async function loadProjectAnalysis(projectId: string): Promise<ProjectAna
   await requireProjectMember(projectId);
   try {
     const row = unwrap(
-      await supabase
+      await db
         .from("project_analyses")
         .select("content, model, updated_at")
         .eq("project_id", projectId)
@@ -111,7 +111,7 @@ export async function generateProjectAnalysis(projectId: string): Promise<Projec
 
   try {
     unwrap(
-      await supabase.from("project_analyses").upsert(
+      await db.from("project_analyses").upsert(
         {
           project_id: projectId,
           content,
@@ -124,7 +124,7 @@ export async function generateProjectAnalysis(projectId: string): Promise<Projec
     );
   } catch (error) {
     if (!isMissingAnalysisSchema(error)) throw error;
-    throw new Error("Run supabase/migration_project_analyses.sql in the SQL Editor first.");
+    throw new Error("Apply mysql/schema.sql (project_analyses is missing).");
   }
 
   revalidatePath(`/projects/${projectId}/analyze`);

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase, unwrap } from "@/lib/supabase";
+import { db, unwrap } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { isProjectMember } from "@/lib/queries";
 
@@ -12,7 +12,7 @@ export async function GET(
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const file = unwrap(
-    await supabase
+    await db
       .from("attachments")
       .select("filename, mime_type, stored_name, task_id, tasks (project_id)")
       .eq("id", id)
@@ -31,7 +31,7 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const downloaded = await supabase.storage.from("attachments").download(file.stored_name);
+  const downloaded = await db.storage.from("attachments").download(file.stored_name);
   if (downloaded.error || !downloaded.data) {
     return NextResponse.json({ error: "Missing file" }, { status: 404 });
   }

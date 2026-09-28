@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidateProject } from "@/lib/revalidate";
-import { supabase, unwrap } from "@/lib/supabase";
+import { db, unwrap } from "@/lib/db";
 import { requireProjectMember } from "@/lib/auth";
 import { todayKey } from "@/lib/utils";
 
@@ -9,7 +9,7 @@ export async function saveDailyLog(projectId: string, formData: FormData) {
   const { user } = await requireProjectMember(projectId);
   const date = String(formData.get("date") ?? todayKey());
   unwrap(
-    await supabase.from("daily_logs").upsert(
+    await db.from("daily_logs").upsert(
       {
         project_id: projectId,
         user_id: user.id,
@@ -23,7 +23,7 @@ export async function saveDailyLog(projectId: string, formData: FormData) {
     ),
   );
   unwrap(
-    await supabase.from("activities").insert({
+    await db.from("activities").insert({
       project_id: projectId,
       user_id: user.id,
       message: `mengisi daily check ${date}`,

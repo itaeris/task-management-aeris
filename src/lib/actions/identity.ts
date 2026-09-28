@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { supabase, unwrap } from "@/lib/supabase";
+import { db, unwrap } from "@/lib/db";
 import { clearUserCookie, requireUser, safeNextPath, setUserCookie } from "@/lib/auth";
 import type { UserRow } from "@/lib/mappers";
 import { hashPassword, verifyPassword } from "@/lib/password";
@@ -48,13 +48,13 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 
   try {
     const byEmail = unwrap(
-      await supabase.from("users").select("*").eq("email", identifier).maybeSingle(),
+      await db.from("users").select("*").eq("email", identifier).maybeSingle(),
     ) as (UserRow & { password_hash?: string | null; username?: string | null }) | null;
 
     const user =
       byEmail ??
       ((unwrap(
-        await supabase.from("users").select("*").eq("username", identifier).maybeSingle(),
+        await db.from("users").select("*").eq("username", identifier).maybeSingle(),
       ) as (UserRow & { password_hash?: string | null; username?: string | null }) | null) ??
         null);
 
@@ -69,7 +69,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     revalidateApp();
   } catch (error) {
     if (isMissingAuthColumn(error)) {
-      return fail("Login columns are missing. Run supabase/migration_auth.sql in the SQL Editor.");
+      return fail("Login columns are missing. Apply mysql/schema.sql.");
     }
     const message = error instanceof Error ? error.message : "Could not sign in.";
     return fail(message);
@@ -95,7 +95,7 @@ export async function updateProfile(_prev: SettingsState, formData: FormData): P
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Name is required." };
 
-  const { error } = await supabase
+  const { error } = await db
     .from("users")
     .update({ name, initials: initialsFromName(name) })
     .eq("id", user.id);
@@ -117,7 +117,7 @@ export async function changePassword(_prev: SettingsState, formData: FormData): 
   if (next !== confirm) return { error: "Password confirmation does not match." };
 
   const row = unwrap(
-    await supabase.from("users").select("password_hash").eq("id", user.id).single(),
+    await db.from("users").select("password_hash").eq("id", user.id).single(),
   ) as { password_hash: string | null };
 
   if (!row.password_hash) return { error: "This account has no password yet." };
@@ -125,7 +125,7 @@ export async function changePassword(_prev: SettingsState, formData: FormData): 
   if (!ok) return { error: "Current password is wrong." };
 
   const passwordHash = await hashPassword(next);
-  const { error } = await supabase.from("users").update({ password_hash: passwordHash }).eq("id", user.id);
+  const { error } = await db.from("users").update({ password_hash: passwordHash }).eq("id", user.id);
   if (error) return { error: error.message };
 
   return { success: "Password changed." };

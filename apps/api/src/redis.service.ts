@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { Redis } from "@upstash/redis";
+import Redis from "ioredis";
 
 const TTL_SECONDS = 60;
 
@@ -9,10 +9,8 @@ export class RedisService {
   private readonly client: Redis | null;
 
   constructor() {
-    const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
-    const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
-    this.client = url && token ? new Redis({ url, token }) : null;
-    if (!this.client) this.log.warn("Upstash Redis is not configured. Cache is disabled.");
+    const url = process.env.REDIS_URL?.trim() || "redis://127.0.0.1:6379";
+    this.client = new Redis(url, { maxRetriesPerRequest: 2, lazyConnect: false });
   }
 
   enabled() {
@@ -27,7 +25,9 @@ export class RedisService {
   async get<T>(key: string): Promise<T | null> {
     if (!this.client) return null;
     try {
-      return (await this.client.get<T>(key)) ?? null;
+      const raw = await this.client.get(key);
+      if (raw == null) return null;
+      return JSON.parse(raw) as T;
     } catch (error) {
       this.log.warn(`Redis get failed for ${key}: ${error instanceof Error ? error.message : "unknown"}`);
       return null;
@@ -37,7 +37,7 @@ export class RedisService {
   async set(key: string, value: unknown, indexKey?: string) {
     if (!this.client) return;
     try {
-      await this.client.set(key, value, { ex: TTL_SECONDS });
+      await this.client.set(key, JSON.stringify(value), "EX", TTL_SECONDS);
       if (indexKey) await this.client.sadd(indexKey, key);
     } catch (error) {
       this.log.warn(`Redis set failed for ${key}: ${error instanceof Error ? error.message : "unknown"}`);
@@ -47,8 +47,7 @@ export class RedisService {
   async invalidateIndex(indexKey: string) {
     if (!this.client) return;
     try {
-      const keys = (await this.client.smembers<string[]>(indexKey)) ?? [];
-      const list = Array.isArray(keys) ? keys.filter(Boolean) : [];
+      const list = await this.client.smembers(indexKey);
       if (list.length) await this.client.del(...list, indexKey);
       else await this.client.del(indexKey);
     } catch (error) {

@@ -22,7 +22,7 @@ const ERRORS: Record<string, string> = {
   gcal_profile: "Could not load the Google account.",
   gcal_email: "This Google account has no email.",
   gcal_save: "Could not save the Google Calendar connection.",
-  gcal_migrate: "Run the google_calendar Supabase migration first.",
+  gcal_migrate: "Google Calendar tables are missing. Apply mysql/schema.sql.",
 };
 
 export function GoogleCalendarConnect({

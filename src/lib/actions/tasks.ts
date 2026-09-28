@@ -1,7 +1,7 @@
 "use server";
 
 import { after } from "next/server";
-import { supabase, unwrap } from "@/lib/supabase";
+import { db, unwrap } from "@/lib/db";
 import { requireProjectMember, requireUser } from "@/lib/auth";
 import { isMissingAssigneesSchema, isMissingAllDaySchema } from "@/lib/access";
 import { parseTaskDateTimeInput, readAllDay } from "@/lib/utils";
@@ -42,12 +42,12 @@ function taskDates(formData: FormData) {
 async function writeTask(kind: "insert" | "update", row: Record<string, unknown>, taskId?: string) {
   const run = async (payload: Record<string, unknown>) => {
     if (kind === "insert") {
-      return unwrap(await supabase.from("tasks").insert(payload).select("id, title").single()) as {
+      return unwrap(await db.from("tasks").insert(payload).select("id, title").single()) as {
         id: string;
         title: string;
       };
     }
-    unwrap(await supabase.from("tasks").update(payload).eq("id", taskId));
+    unwrap(await db.from("tasks").update(payload).eq("id", taskId));
     return null;
   };
 
@@ -64,10 +64,10 @@ async function writeTask(kind: "insert" | "update", row: Record<string, unknown>
 async function replaceTaskAssignees(taskId: string, userIds: string[]) {
   const unique = [...new Set(userIds)];
   try {
-    unwrap(await supabase.from("task_assignees").delete().eq("task_id", taskId));
+    unwrap(await db.from("task_assignees").delete().eq("task_id", taskId));
     if (unique.length) {
       unwrap(
-        await supabase.from("task_assignees").insert(unique.map((userId) => ({ task_id: taskId, user_id: userId }))),
+        await db.from("task_assignees").insert(unique.map((userId) => ({ task_id: taskId, user_id: userId }))),
       );
     }
   } catch (error) {
@@ -77,7 +77,7 @@ async function replaceTaskAssignees(taskId: string, userIds: string[]) {
 
 async function nextRank(projectId: string) {
   const last = unwrap(
-    await supabase
+    await db
       .from("tasks")
       .select("rank")
       .eq("project_id", projectId)
@@ -112,7 +112,7 @@ export async function createTask(projectId: string, formData: FormData) {
   await replaceTaskAssignees(task.id, assigneeIds);
 
   unwrap(
-    await supabase.from("activities").insert({
+    await db.from("activities").insert({
       project_id: projectId,
       user_id: user.id,
       message: `added "${task.title}"`,
@@ -125,7 +125,7 @@ export async function createTask(projectId: string, formData: FormData) {
 
 export async function updateTask(taskId: string, formData: FormData) {
   const existing = unwrap(
-    await supabase.from("tasks").select("*").eq("id", taskId).maybeSingle(),
+    await db.from("tasks").select("*").eq("id", taskId).maybeSingle(),
   ) as { project_id: string; title: string } | null;
   if (!existing) throw new Error("Task not found.");
   const { user } = await requireProjectMember(existing.project_id);
@@ -150,7 +150,7 @@ export async function updateTask(taskId: string, formData: FormData) {
   );
   await replaceTaskAssignees(taskId, assigneeIds);
   unwrap(
-    await supabase.from("activities").insert({
+    await db.from("activities").insert({
       project_id: existing.project_id,
       user_id: user.id,
       message: `updated "${existing.title}"`,
@@ -162,12 +162,12 @@ export async function updateTask(taskId: string, formData: FormData) {
 
 export async function moveTask(taskId: string, status: string, rank: number, sprintId?: string | null) {
   const existing = unwrap(
-    await supabase.from("tasks").select("project_id").eq("id", taskId).maybeSingle(),
+    await db.from("tasks").select("project_id").eq("id", taskId).maybeSingle(),
   ) as { project_id: string } | null;
   if (!existing) throw new Error("Task not found.");
   await requireProjectMember(existing.project_id);
   unwrap(
-    await supabase
+    await db
       .from("tasks")
       .update({
         status,
@@ -185,7 +185,7 @@ export async function reorderTasks(projectId: string, orderedIds: string[]) {
   await requireProjectMember(projectId);
   await Promise.all(
     orderedIds.map(async (id, index) => {
-      unwrap(await supabase.from("tasks").update({ rank: (index + 1) * 1000 }).eq("id", id));
+      unwrap(await db.from("tasks").update({ rank: (index + 1) * 1000 }).eq("id", id));
     }),
   );
   refresh(projectId);
@@ -193,14 +193,14 @@ export async function reorderTasks(projectId: string, orderedIds: string[]) {
 
 export async function deleteTask(taskId: string) {
   const existing = unwrap(
-    await supabase.from("tasks").select("project_id, title").eq("id", taskId).maybeSingle(),
+    await db.from("tasks").select("project_id, title").eq("id", taskId).maybeSingle(),
   ) as { project_id: string; title: string } | null;
   if (!existing) throw new Error("Task not found.");
   const { user } = await requireProjectMember(existing.project_id);
   await notifyGoogleCalendarTaskDeleted(taskId);
-  unwrap(await supabase.from("tasks").delete().eq("id", taskId));
+  unwrap(await db.from("tasks").delete().eq("id", taskId));
   unwrap(
-    await supabase.from("activities").insert({
+    await db.from("activities").insert({
       project_id: existing.project_id,
       user_id: user.id,
       message: `deleted "${existing.title}"`,
@@ -214,13 +214,13 @@ export async function deleteTask(taskId: string) {
 
 export async function addComment(taskId: string, formData: FormData) {
   const existing = unwrap(
-    await supabase.from("tasks").select("project_id").eq("id", taskId).maybeSingle(),
+    await db.from("tasks").select("project_id").eq("id", taskId).maybeSingle(),
   ) as { project_id: string } | null;
   if (!existing) throw new Error("Task not found.");
   const { user } = await requireProjectMember(existing.project_id);
   const body = String(formData.get("body") ?? "").trim();
   if (!body) throw new Error("Comment cannot be empty.");
-  unwrap(await supabase.from("comments").insert({ task_id: taskId, user_id: user.id, body }));
+  unwrap(await db.from("comments").insert({ task_id: taskId, user_id: user.id, body }));
   after(() => {
     refresh(existing.project_id);
   });

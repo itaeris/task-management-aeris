@@ -6,11 +6,11 @@ import {
   type MembershipSource,
   type ProjectAccessRow,
 } from "@/lib/access";
-import { supabase, unwrap } from "@/lib/supabase";
+import { db, unwrap } from "@/lib/db";
 
 export async function isGroupMember(groupId: string, userId: string) {
   const row = unwrap(
-    await supabase
+    await db
       .from("group_members")
       .select("id")
       .eq("group_id", groupId)
@@ -36,7 +36,7 @@ export async function canAccessProject(
 }
 
 async function insertMembership(projectId: string, userId: string, role: string, source: MembershipSource) {
-  const result = await supabase
+  const result = await db
     .from("project_members")
     .insert({
       project_id: projectId,
@@ -51,7 +51,7 @@ async function insertMembership(projectId: string, userId: string, role: string,
 
   if (result.error.code === "23505" || /duplicate/i.test(result.error.message)) {
     return unwrap(
-      await supabase
+      await db
         .from("project_members")
         .select("id, role, source")
         .eq("project_id", projectId)
@@ -62,14 +62,14 @@ async function insertMembership(projectId: string, userId: string, role: string,
 
   if (isMissingAccessSchema(result.error)) {
     unwrap(
-      await supabase.from("project_members").insert({
+      await db.from("project_members").insert({
         project_id: projectId,
         user_id: userId,
         role,
       }),
     );
     return unwrap(
-      await supabase
+      await db
         .from("project_members")
         .select("id, role, source")
         .eq("project_id", projectId)
@@ -84,13 +84,13 @@ async function insertMembership(projectId: string, userId: string, role: string,
 export const ensureProjectAccess = cache(async (projectId: string, userId: string): Promise<MembershipRow | null> => {
   try {
     const [project, membership] = await Promise.all([
-      supabase
+      db
         .from("projects")
         .select("id, access, group_id, owner_id")
         .eq("id", projectId)
         .maybeSingle()
         .then((result) => unwrap(result) as ProjectAccessRow | null),
-      supabase
+      db
         .from("project_members")
         .select("id, role, source")
         .eq("project_id", projectId)
@@ -108,7 +108,7 @@ export const ensureProjectAccess = cache(async (projectId: string, userId: strin
   } catch (error) {
     if (!isMissingAccessSchema(error)) throw error;
     return unwrap(
-      await supabase
+      await db
         .from("project_members")
         .select("id, role")
         .eq("project_id", projectId)

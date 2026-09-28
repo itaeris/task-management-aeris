@@ -22,7 +22,7 @@ export async function disconnectGoogleCalendar(
     return { success: "Google Calendar disconnected." };
   } catch (error) {
     if (isMissingCalendarTable(error)) {
-      return { error: "Google Calendar tables are missing. Run the Supabase migration first." };
+      return { error: "Google Calendar tables are missing. Apply mysql/schema.sql." };
     }
     return { error: error instanceof Error ? error.message : "Could not disconnect Google Calendar." };
   }
@@ -41,7 +41,7 @@ export async function syncGoogleCalendar(
     return { success: `${count} ${count === 1 ? "task" : "tasks"} synced to Google Calendar.` };
   } catch (error) {
     if (isMissingCalendarTable(error)) {
-      return { error: "Google Calendar tables are missing. Run the Supabase migration first." };
+      return { error: "Google Calendar tables are missing. Apply mysql/schema.sql." };
     }
     return { error: error instanceof Error ? error.message : "Could not sync to Google Calendar." };
   }

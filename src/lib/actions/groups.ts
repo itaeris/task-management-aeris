@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { parseProjectAccess } from "@/lib/access";
 import { addGroupMembersToProject } from "@/lib/groups";
 import { requireProjectMember } from "@/lib/auth";
-import { supabase, unwrap } from "@/lib/supabase";
+import { db, unwrap } from "@/lib/db";
 import { revalidateProject } from "@/lib/revalidate";
 
 function refresh(projectId: string) {
@@ -22,7 +22,7 @@ export async function addGroupMember(projectId: string, formData: FormData) {
   if (!userId) throw new Error("Pick a person to add.");
 
   const existing = unwrap(
-    await supabase
+    await db
       .from("group_members")
       .select("id")
       .eq("group_id", project.group_id)
@@ -31,7 +31,7 @@ export async function addGroupMember(projectId: string, formData: FormData) {
   );
   if (!existing) {
     unwrap(
-      await supabase.from("group_members").insert({
+      await db.from("group_members").insert({
         group_id: project.group_id,
         user_id: userId,
       }),
@@ -39,7 +39,7 @@ export async function addGroupMember(projectId: string, formData: FormData) {
   }
   await addGroupMembersToProject(projectId, project.group_id, user.id);
   unwrap(
-    await supabase.from("activities").insert({
+    await db.from("activities").insert({
       project_id: projectId,
       user_id: user.id,
       message: "added someone to the group",
@@ -57,7 +57,7 @@ export async function removeGroupMember(projectId: string, userId: string) {
   if (userId === user.id) throw new Error("You cannot remove yourself from the group.");
 
   unwrap(
-    await supabase
+    await db
       .from("group_members")
       .delete()
       .eq("group_id", project.group_id)
@@ -65,12 +65,12 @@ export async function removeGroupMember(projectId: string, userId: string) {
   );
 
   const linked = unwrap(
-    await supabase.from("projects").select("id").eq("group_id", project.group_id),
+    await db.from("projects").select("id").eq("group_id", project.group_id),
   ) as Array<{ id: string }>;
   const projectIds = linked.map((row) => row.id);
   if (projectIds.length) {
     unwrap(
-      await supabase
+      await db
         .from("project_members")
         .delete()
         .in("project_id", projectIds)
@@ -80,7 +80,7 @@ export async function removeGroupMember(projectId: string, userId: string) {
   }
 
   unwrap(
-    await supabase.from("activities").insert({
+    await db.from("activities").insert({
       project_id: projectId,
       user_id: user.id,
       message: "removed someone from the group",

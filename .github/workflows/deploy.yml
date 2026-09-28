@@ -1,0 +1,96 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      FRONTEND_IMAGE: itaeris/pipeline_frontend_app
+      BACKEND_IMAGE: itaeris/pipeline_backend_app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.backend
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:latest
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+
+      - name: Public frontend build args
+        id: fe
+        env:
+          FRONTEND_ENV: ${{ secrets.FRONTEND_ENV }}
+        run: |
+          python3 - <<'PY'
+          import os
+          value = ""
+          for line in os.environ.get("FRONTEND_ENV", "").splitlines():
+              if line.startswith("NEXT_PUBLIC_TURNSTILE_SITE_KEY="):
+                  value = line.split("=", 1)[1]
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"turnstile={value}\n")
+          PY
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.frontend
+          push: true
+          build-args: |
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ steps.fe.outputs.turnstile }}
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:latest
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+
+      - name: Copy deploy files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "deploy"
+          target: "/opt/pipeline"
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.2
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          BACKEND_ENV: ${{ secrets.BACKEND_ENV }}
+          FRONTEND_ENV: ${{ secrets.FRONTEND_ENV }}
+          IMAGE_TAG: ${{ github.sha }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,BACKEND_ENV,FRONTEND_ENV,IMAGE_TAG
+          command_timeout: 20m
+          script_stop: true
+          script: |
+            set -eu
+            chmod +x /opt/pipeline/deploy/remote.sh
+            export APP_DIR=/opt/pipeline
+            export FRONTEND_IMAGE="itaeris/pipeline_frontend_app:${IMAGE_TAG}"
+            export BACKEND_IMAGE="itaeris/pipeline_backend_app:${IMAGE_TAG}"
+            /opt/pipeline/deploy/remote.sh

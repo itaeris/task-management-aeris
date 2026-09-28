@@ -2,7 +2,7 @@ import { cache } from "react";
 import { withBackendCache } from "@/lib/backend";
 import { isMissingAccessSchema, isMissingAssigneesSchema, isMissingPinsSchema, parseProjectAccess, type ProjectAccess } from "@/lib/access";
 import { ensureProjectAccess } from "@/lib/project-access";
-import { supabase, unwrap } from "@/lib/supabase";
+import { db, unwrap } from "@/lib/db";
 import { iso, memberFromUser, type ProjectSwitcherItem, type ProjectWorkspace, type TaskDetailDTO } from "@/lib/types";
 import { mapTask, mapUser, memberFromRow, type TaskRow, type UserRow } from "@/lib/mappers";
 import { todayKey } from "@/lib/utils";
@@ -13,7 +13,7 @@ function asUser(value: UserRow | UserRow[] | null | undefined) {
 }
 
 async function countByProject(table: "project_members" | "tasks", projectId: string) {
-  const { count, error } = await supabase
+  const { count, error } = await db
     .from(table)
     .select("id", { count: "exact", head: true })
     .eq("project_id", projectId);
@@ -23,7 +23,7 @@ async function countByProject(table: "project_members" | "tasks", projectId: str
 
 export async function listUsers() {
   const rows = unwrap(
-    await supabase
+    await db
       .from("users")
       .select("id, name, email, initials, color, username, role")
       .order("created_at", { ascending: true }),
@@ -38,17 +38,17 @@ export async function isProjectMember(projectId: string, userId: string) {
 export async function listGroupsForUser(userId: string) {
   try {
     const rows = unwrap(
-      await supabase.from("group_members").select("group_id").eq("user_id", userId),
+      await db.from("group_members").select("group_id").eq("user_id", userId),
     ) as Array<{ group_id: string }>;
     const ids = [...new Set(rows.map((row) => row.group_id))];
     if (ids.length === 0) return [];
     const [groups, countRows] = await Promise.all([
-      supabase
+      db
         .from("groups")
         .select("id, name")
         .in("id", ids)
         .then((result) => unwrap(result) as Array<{ id: string; name: string }>),
-      supabase
+      db
         .from("group_members")
         .select("group_id")
         .in("group_id", ids)
@@ -68,7 +68,7 @@ export async function listGroupsForUser(userId: string) {
 
 export async function listGroupMembers(groupId: string) {
   const rows = unwrap(
-    await supabase
+    await db
       .from("group_members")
       .select("user_id, users (id, name, email, initials, color)")
       .eq("group_id", groupId),
@@ -81,7 +81,7 @@ export async function listGroupMembers(groupId: string) {
 
 export async function getProjectByShareCode(code: string) {
   const project = unwrap(
-    await supabase
+    await db
       .from("projects")
       .select("id, name, description, color, share_code")
       .eq("share_code", code.trim().toUpperCase())
@@ -111,14 +111,14 @@ export async function getProjectByShareCode(code: string) {
 async function loadSharedProjectIds(userId: string) {
   try {
     const [groupRows, orgResult] = await Promise.all([
-      supabase.from("group_members").select("group_id").eq("user_id", userId),
-      supabase.from("projects").select("id").eq("access", "organization"),
+      db.from("group_members").select("group_id").eq("user_id", userId),
+      db.from("projects").select("id").eq("access", "organization"),
     ]);
     const groupIds = [
       ...new Set((unwrap(groupRows) as Array<{ group_id: string }>).map((row) => row.group_id)),
     ];
     const groupResult = groupIds.length
-      ? await supabase.from("projects").select("id").eq("access", "group").in("group_id", groupIds)
+      ? await db.from("projects").select("id").eq("access", "group").in("group_id", groupIds)
       : { data: [] as Array<{ id: string }>, error: null };
     return [
       ...((unwrap(orgResult) as Array<{ id: string }>).map((row) => row.id)),
@@ -135,7 +135,7 @@ let assigneesTableReady: boolean | null = null;
 
 async function loadPinnedProjectIds(userId: string) {
   if (pinsTableReady === false) return [] as Array<{ project_id: string }>;
-  const result = await supabase.from("project_pins").select("project_id").eq("user_id", userId);
+  const result = await db.from("project_pins").select("project_id").eq("user_id", userId);
   if (result.error && isMissingPinsSchema(result.error)) {
     pinsTableReady = false;
     return [] as Array<{ project_id: string }>;
@@ -146,7 +146,7 @@ async function loadPinnedProjectIds(userId: string) {
 
 async function loadTaskAssigneeRows(taskIds: string[]) {
   if (taskIds.length === 0 || assigneesTableReady === false) return [] as Array<{ task_id: string; user_id: string }>;
-  const result = await supabase.from("task_assignees").select("task_id, user_id").in("task_id", taskIds);
+  const result = await db.from("task_assignees").select("task_id, user_id").in("task_id", taskIds);
   if (result.error && isMissingAssigneesSchema(result.error)) {
     assigneesTableReady = false;
     return [] as Array<{ task_id: string; user_id: string }>;
@@ -157,7 +157,7 @@ async function loadTaskAssigneeRows(taskIds: string[]) {
 
 async function listProjectsForUserFromDb(userId: string) {
   const [memberships, extraIds] = await Promise.all([
-    supabase
+    db
       .from("project_members")
       .select("role, joined_at, project_id")
       .eq("user_id", userId)
@@ -187,17 +187,17 @@ async function listProjectsForUserFromDb(userId: string) {
   };
 
   const [projects, memberRows, taskRows, pinRows] = await Promise.all([
-    supabase
+    db
       .from("projects")
       .select("id, name, description, color, share_code, owner_id, access, group_id")
       .in("id", projectIds)
       .then((result) => unwrap(result) as ProjectListRow[]),
-    supabase
+    db
       .from("project_members")
       .select("project_id, role, user_id")
       .in("project_id", projectIds)
       .then((result) => unwrap(result) as Array<{ project_id: string; role: string; user_id: string }>),
-    supabase
+    db
       .from("tasks")
       .select("project_id, status")
       .in("project_id", projectIds)
@@ -230,7 +230,7 @@ async function listProjectsForUserFromDb(userId: string) {
 
   const [userRows, groupRows] = await Promise.all([
     avatarUserIds.size
-      ? supabase
+      ? db
           .from("users")
           .select("id, name, initials, color")
           .in("id", [...avatarUserIds])
@@ -240,7 +240,7 @@ async function listProjectsForUserFromDb(userId: string) {
           )
       : Promise.resolve([] as Array<{ id: string; name: string; initials: string; color: string }>),
     groupIdsForNames.length
-      ? supabase
+      ? db
           .from("groups")
           .select("id, name")
           .in("id", groupIdsForNames)
@@ -307,7 +307,7 @@ export async function listProjectsForUser(userId: string) {
 
 async function listProjectSwitcherForUserFromDb(userId: string): Promise<ProjectSwitcherItem[]> {
   const [memberships, extraIds] = await Promise.all([
-    supabase
+    db
       .from("project_members")
       .select("project_id, joined_at")
       .eq("user_id", userId)
@@ -326,7 +326,7 @@ async function listProjectSwitcherForUserFromDb(userId: string): Promise<Project
   if (projectIds.length === 0) return [];
 
   const [projects, pinRows] = await Promise.all([
-    supabase
+    db
       .from("projects")
       .select("id, name, color, access")
       .in("id", projectIds)
@@ -363,7 +363,7 @@ export const getProjectShell = cache(async (projectId: string, userId: string) =
     const membership = await ensureProjectAccess(projectId, userId);
     if (!membership) return null;
     const project = unwrap(
-      await supabase.from("projects").select("id, name, color").eq("id", projectId).maybeSingle(),
+      await db.from("projects").select("id, name, color").eq("id", projectId).maybeSingle(),
     ) as { id: string; name: string; color: string } | null;
     if (!project) return null;
     return { project, role: membership.role };
@@ -379,7 +379,7 @@ async function loadProjectWorkspaceFromDb(projectId: string, userId: string): Pr
   if (!ensured) return null;
 
   const [project, memberRows] = await Promise.all([
-    supabase
+    db
       .from("projects")
       .select("*")
       .eq("id", projectId)
@@ -397,7 +397,7 @@ async function loadProjectWorkspaceFromDb(projectId: string, userId: string): Pr
             group_id?: string | null;
           } | null,
       ),
-    supabase
+    db
       .from("project_members")
       .select("role, user_id, source, joined_at, users (id, name, email, initials, color)")
       .eq("project_id", projectId)
@@ -405,7 +405,7 @@ async function loadProjectWorkspaceFromDb(projectId: string, userId: string): Pr
       .then(async (result) => {
         if (result.error && isMissingAccessSchema(result.error)) {
           return unwrap(
-            await supabase
+            await db
               .from("project_members")
               .select("role, user_id, joined_at, users (id, name, email, initials, color)")
               .eq("project_id", projectId)
@@ -429,7 +429,7 @@ async function loadProjectWorkspaceFromDb(projectId: string, userId: string): Pr
   const membership = memberRows.find((item) => item.user_id === userId) ?? ensured;
 
   const [sprintRows, tasks, dailyRows, activityRows, groupRow, groupMembers] = await Promise.all([
-    supabase
+    db
       .from("sprints")
       .select("*")
       .eq("project_id", projectId)
@@ -445,13 +445,13 @@ async function loadProjectWorkspaceFromDb(projectId: string, userId: string): Pr
             status: string;
           }>,
       ),
-    supabase
+    db
       .from("tasks")
       .select("*")
       .eq("project_id", projectId)
       .order("rank", { ascending: true })
       .then((result) => unwrap(result) as TaskRow[]),
-    supabase
+    db
       .from("daily_logs")
       .select("*, users (id, name, email, initials, color)")
       .eq("project_id", projectId)
@@ -468,7 +468,7 @@ async function loadProjectWorkspaceFromDb(projectId: string, userId: string): Pr
             users: UserRow | UserRow[] | null;
           }>,
       ),
-    supabase
+    db
       .from("activities")
       .select("id, message, created_at, users (id, name, email, initials, color)")
       .eq("project_id", projectId)
@@ -484,7 +484,7 @@ async function loadProjectWorkspaceFromDb(projectId: string, userId: string): Pr
           }>,
       ),
     project.group_id
-      ? supabase
+      ? db
           .from("groups")
           .select("name")
           .eq("id", project.group_id)
@@ -505,14 +505,14 @@ async function loadProjectWorkspaceFromDb(projectId: string, userId: string): Pr
   const taskIds = tasks.map((task) => task.id);
   const [commentRows, attachmentRows, assigneeRows] = await Promise.all([
     taskIds.length
-      ? supabase
+      ? db
           .from("comments")
           .select("task_id")
           .in("task_id", taskIds)
           .then((result) => unwrap(result) as Array<{ task_id: string }>)
       : Promise.resolve([] as Array<{ task_id: string }>),
     taskIds.length
-      ? supabase
+      ? db
           .from("attachments")
           .select("task_id")
           .in("task_id", taskIds)
@@ -547,7 +547,7 @@ async function loadProjectWorkspaceFromDb(projectId: string, userId: string): Pr
   ];
   if (missingUserIds.length) {
     const extraUsers = unwrap(
-      await supabase.from("users").select("id, name, email, initials, color").in("id", missingUserIds),
+      await db.from("users").select("id, name, email, initials, color").in("id", missingUserIds),
     ) as Array<{ id: string; name: string; email: string; initials: string; color: string }>;
     for (const user of extraUsers) usersById.set(user.id, memberFromUser(mapUser(user)));
   }
@@ -631,7 +631,7 @@ async function loadProjectWorkspaceFromDb(projectId: string, userId: string): Pr
 
 export async function getTaskDetail(taskId: string, userId: string): Promise<TaskDetailDTO | null> {
   const task = unwrap(
-    await supabase.from("tasks").select("*").eq("id", taskId).maybeSingle(),
+    await db.from("tasks").select("*").eq("id", taskId).maybeSingle(),
   ) as TaskRow | null;
   if (!task) return null;
   if (!(await isProjectMember(task.project_id, userId))) return null;
@@ -639,17 +639,17 @@ export async function getTaskDetail(taskId: string, userId: string): Promise<Tas
   const [assigneeRows, sprint, comments, attachments] = await Promise.all([
     loadTaskAssigneeRows([taskId]),
     task.sprint_id
-      ? unwrap(await supabase.from("sprints").select("id, name").eq("id", task.sprint_id).maybeSingle())
+      ? unwrap(await db.from("sprints").select("id, name").eq("id", task.sprint_id).maybeSingle())
       : Promise.resolve(null),
     unwrap(
-      await supabase
+      await db
         .from("comments")
         .select("*, users (id, name, email, initials, color)")
         .eq("task_id", taskId)
         .order("created_at", { ascending: true }),
     ),
     unwrap(
-      await supabase
+      await db
         .from("attachments")
         .select("*, users (id, name, email, initials, color)")
         .eq("task_id", taskId)
@@ -666,7 +666,7 @@ export async function getTaskDetail(taskId: string, userId: string): Promise<Tas
   ];
   const assigneeUsers = assigneeIds.length
     ? ((unwrap(
-        await supabase.from("users").select("*").in("id", assigneeIds),
+        await db.from("users").select("*").in("id", assigneeIds),
       ) as UserRow[]) ?? [])
     : [];
   const assigneeById = new Map(assigneeUsers.map((user) => [user.id, user]));
