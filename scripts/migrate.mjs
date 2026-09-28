@@ -92,6 +92,8 @@ async function seedIfEmpty(conn) {
   await conn.query("SET FOREIGN_KEY_CHECKS = 1");
   console.log("seed imported");
 }
+
+async function main() {
   const databaseUrl = process.env.DATABASE_URL?.trim();
   if (!databaseUrl) throw new Error("DATABASE_URL is not set");
   const cfg = parseDatabaseUrl(databaseUrl);
