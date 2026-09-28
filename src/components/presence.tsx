@@ -25,16 +25,22 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
     let inFlight = false;
     const ping = () => {
       if (cancelled || inFlight) return;
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       inFlight = true;
       void pingPresence(pathname, taskId).finally(() => {
         inFlight = false;
       });
     };
     ping();
-    const timer = window.setInterval(ping, 30000);
+    const timer = window.setInterval(ping, 15000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") ping();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [pathname, taskId]);
 
@@ -185,10 +191,15 @@ export function PresenceBoard({
       }
     };
     void load();
-    const timer = window.setInterval(() => void load(), 20000);
+    const timer = window.setInterval(() => void load(), 8000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 

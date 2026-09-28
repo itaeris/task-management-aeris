@@ -1,17 +1,31 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
+  DragOverlay,
+  MeasuringStrategy,
   PointerSensor,
   closestCorners,
+  defaultDropAnimationSideEffects,
+  pointerWithin,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+  type DropAnimation,
 } from "@dnd-kit/core";
-import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  defaultAnimateLayoutChanges,
+  useSortable,
+  verticalListSortingStrategy,
+  type AnimateLayoutChanges,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { KANBAN_COLUMNS } from "@/lib/constants";
 import { moveTask } from "@/lib/actions/tasks";
@@ -25,18 +39,80 @@ import { motion } from "framer-motion";
 import { easeOutSoft } from "@/components/motion";
 import { notifyChange } from "@/components/toast";
 
-function SortableCard({ task, onOpen }: { task: TaskDTO; onOpen: (id: string) => void }) {
+const collisionDetection: CollisionDetection = (args) => {
+  const pointer = args.pointerCoordinates;
+  if (pointer) {
+    const columns = args.droppableContainers.filter((container) => container.data.current?.type === "column");
+    const column = columns.find((container) => {
+      const rect = args.droppableRects.get(container.id);
+      return Boolean(rect && pointer.x >= rect.left && pointer.x <= rect.right);
+    });
+    if (column) {
+      const columnId = String(column.data.current?.status ?? column.id);
+      const cards = args.droppableContainers.filter(
+        (container) =>
+          container.id !== args.active.id &&
+          container.data.current?.type === "task" &&
+          container.data.current?.status === columnId,
+      );
+      const cardHits = pointerWithin({ ...args, droppableContainers: cards });
+      if (cardHits.length) return cardHits;
+      const nearest = closestCorners({ ...args, droppableContainers: cards });
+      if (nearest.length) return nearest;
+      return [{ id: column.id }];
+    }
+  }
+  const pointerHits = pointerWithin(args);
+  if (pointerHits.length) return pointerHits;
+  return closestCorners(args);
+};
+
+const dropAnimation: DropAnimation = {
+  duration: 220,
+  easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+  sideEffects: defaultDropAnimationSideEffects({
+    styles: { active: { opacity: "0.35" } },
+  }),
+};
+
+const animateLayoutChanges: AnimateLayoutChanges = (args) =>
+  defaultAnimateLayoutChanges({ ...args, wasDragging: true });
+
+function statusOf(id: string, list: TaskDTO[]) {
+  if (KANBAN_COLUMNS.some((column) => column.id === id)) return id;
+  return list.find((task) => task.id === id)?.status ?? null;
+}
+
+function SortableCard({
+  task,
+  onOpen,
+  isDropTarget,
+}: {
+  task: TaskDTO;
+  onOpen: (id: string) => void;
+  isDropTarget: boolean;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
-    data: { status: task.status },
+    data: { type: "task", status: task.status },
+    animateLayoutChanges,
   });
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.55 : 1,
+    transform: CSS.Translate.toString(transform),
+    transition: transition ?? "transform 240ms cubic-bezier(0.22, 1, 0.36, 1)",
   };
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "rounded-2xl cursor-grab active:cursor-grabbing",
+        isDragging && "opacity-0",
+        !isDragging && isDropTarget && "z-10 shadow-[0_14px_32px_rgba(15,23,42,0.16)] ring-1 ring-terracotta/25",
+      )}
+      {...attributes}
+      {...listeners}
+    >
       <TaskChip task={task} onOpen={onOpen} />
     </div>
   );
@@ -48,31 +124,45 @@ function Column({
   tasks,
   onOpen,
   index,
+  isDropTarget,
+  overId,
 }: {
   id: string;
   title: string;
   tasks: TaskDTO[];
   onOpen: (id: string) => void;
   index: number;
+  isDropTarget: boolean;
+  overId: string | null;
 }) {
-  const { setNodeRef } = useDroppable({ id });
+  const { setNodeRef } = useDroppable({ id, data: { type: "column", status: id } });
   return (
     <motion.section
-      className="flex h-full min-h-0 min-w-[260px] flex-1 flex-col rounded-3xl bg-paper-2/70 p-3"
+      className={cn(
+        "flex h-full min-h-0 min-w-[260px] flex-1 flex-col rounded-3xl bg-paper-2/70 p-3 transition-[box-shadow,background-color,transform] duration-200",
+        isDropTarget && "bg-paper shadow-[0_16px_40px_rgba(15,23,42,0.12)] ring-1 ring-terracotta/20",
+      )}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.05, ease: easeOutSoft }}
     >
-      <header className="mb-3 flex shrink-0 items-center justify-between px-1">
-        <h3 className="text-sm font-semibold">{title}</h3>
-        <span className={cn(chip, "bg-paper text-muted")}>{tasks.length}</span>
-      </header>
-      <div ref={setNodeRef} className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
-        <SortableContext items={tasks.map((task) => task.id)} strategy={verticalListSortingStrategy}>
-          {tasks.map((task) => (
-            <SortableCard key={task.id} task={task} onOpen={onOpen} />
-          ))}
-        </SortableContext>
+      <div ref={setNodeRef} className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <header className="mb-3 flex shrink-0 items-center justify-between px-1">
+          <h3 className="text-sm font-semibold">{title}</h3>
+          <span className={cn(chip, "bg-paper text-muted")}>{tasks.length}</span>
+        </header>
+        <div className="flex min-h-[8rem] min-w-0 flex-1 flex-col gap-2 overflow-y-auto">
+          <SortableContext items={tasks.map((task) => task.id)} strategy={verticalListSortingStrategy}>
+            {tasks.map((task) => (
+              <SortableCard
+                key={task.id}
+                task={task}
+                onOpen={onOpen}
+                isDropTarget={overId === task.id}
+              />
+            ))}
+          </SortableContext>
+        </div>
       </div>
     </motion.section>
   );
@@ -94,14 +184,31 @@ export function KanbanBoard({
   const [items, setItems] = useState(tasks);
   const [prevTasks, setPrevTasks] = useState(tasks);
   const [openId, setOpenId] = useState<string | null>(null);
-  if (tasks !== prevTasks) {
-    setPrevTasks(tasks);
-    setItems(tasks);
-  }
   const [sprintFilter, setSprintFilter] = useState(
     sprints.find((sprint) => sprint.status === "active")?.id ?? "all",
   );
+  const dragOrigin = useRef<TaskDTO[] | null>(null);
+  const pendingMoves = useRef(new Map<string, { status: string; rank: number }>());
+  const [dragging, setDragging] = useState<TaskDTO | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  function mergeIncoming(next: TaskDTO[]) {
+    return next.map((task) => {
+      const pending = pendingMoves.current.get(task.id);
+      if (!pending) return task;
+      if (task.status === pending.status) {
+        pendingMoves.current.delete(task.id);
+        return task;
+      }
+      return { ...task, status: pending.status, rank: pending.rank };
+    });
+  }
+
+  if (tasks !== prevTasks) {
+    setPrevTasks(tasks);
+    setItems(mergeIncoming(tasks));
+  }
 
   const visible = useMemo(
     () =>
@@ -120,34 +227,86 @@ export function KanbanBoard({
       if (!map[task.status]) map[task.status] = [];
       map[task.status].push(task);
     }
+    for (const column of KANBAN_COLUMNS) {
+      map[column.id].sort((a, b) => a.rank - b.rank);
+    }
     return map;
   }, [visible]);
 
-  async function onDragEnd(event: DragEndEvent) {
+  function onDragStart(event: DragStartEvent) {
+    dragOrigin.current = items;
+    setOverId(String(event.active.id));
+    setDragging(items.find((task) => task.id === String(event.active.id)) ?? null);
+  }
+
+  function onDragOver(event: DragOverEvent) {
     const { active, over } = event;
     if (!over) return;
     const activeId = String(active.id);
-    const overId = String(over.id);
+    const overIdValue = String(over.id);
+    setOverId(overIdValue);
+    if (activeId === overIdValue) return;
+    setItems((current) => {
+      const from = statusOf(activeId, current);
+      const overStatus =
+        (over.data.current as { status?: string } | undefined)?.status ?? statusOf(overIdValue, current);
+      if (!from || !overStatus || from === overStatus) return current;
+      return current.map((task) => (task.id === activeId ? { ...task, status: overStatus } : task));
+    });
+  }
+
+  function clearDrag() {
+    setDragging(null);
+    setOverId(null);
+  }
+
+  async function onDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    const activeId = String(active.id);
     const activeTask = items.find((task) => task.id === activeId);
-    if (!activeTask) return;
+    if (!activeTask || !over) {
+      setItems(dragOrigin.current ?? tasks);
+      clearDrag();
+      return;
+    }
 
-    const overTask = items.find((task) => task.id === overId);
-    const nextStatus = overTask?.status ?? (KANBAN_COLUMNS.some((column) => column.id === overId) ? overId : activeTask.status);
-    if (!nextStatus) return;
-
+    const droppedId = String(over.id);
+    const original = dragOrigin.current?.find((task) => task.id === activeId) ?? activeTask;
+    const liveStatus = items.find((task) => task.id === activeId)?.status ?? activeTask.status;
+    const droppedStatus =
+      (over.data.current as { status?: string } | undefined)?.status ?? statusOf(droppedId, items);
+    const nextStatus =
+      (droppedStatus && droppedStatus !== original.status ? droppedStatus : null) ??
+      (liveStatus !== original.status ? liveStatus : null) ??
+      droppedStatus ??
+      liveStatus;
     const columnTasks = items
-      .filter((task) => task.status === nextStatus && task.id !== activeId)
+      .filter((task) => task.id !== activeId && task.status === nextStatus)
       .sort((a, b) => a.rank - b.rank);
-    let nextIndex = columnTasks.findIndex((task) => task.id === overId);
+    let nextIndex = columnTasks.findIndex((task) => task.id === droppedId);
     if (nextIndex < 0) nextIndex = columnTasks.length;
     const rank = (nextIndex + 1) * 1000;
+    const previous = dragOrigin.current ?? items;
     setItems((current) =>
-      current.map((task) =>
-        task.id === activeId ? { ...task, status: nextStatus, rank } : task,
-      ),
+      current.map((task) => (task.id === activeId ? { ...task, status: nextStatus, rank } : task)),
     );
-    await notifyChange(moveTask(activeId, nextStatus, rank), "Task moved");
+    pendingMoves.current.set(activeId, { status: nextStatus, rank });
+    clearDrag();
+    if (original.status === nextStatus && original.rank === rank) return;
+    try {
+      if (original.status === nextStatus) {
+        await moveTask(activeId, nextStatus, rank);
+      } else {
+        await notifyChange(moveTask(activeId, nextStatus, rank), "Task moved");
+      }
+      router.refresh();
+    } catch {
+      pendingMoves.current.delete(activeId);
+      setItems(previous);
+    }
   }
+
+  const overStatus = overId ? statusOf(overId, items) : null;
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-hidden">
@@ -175,7 +334,19 @@ export function KanbanBoard({
           />
         </div>
       </div>
-      <DndContext id={dndId} sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
+      <DndContext
+        id={dndId}
+        sensors={sensors}
+        collisionDetection={collisionDetection}
+        measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDragEnd={onDragEnd}
+        onDragCancel={() => {
+          setItems(dragOrigin.current ?? tasks);
+          clearDrag();
+        }}
+      >
         <div className="flex h-full min-h-0 flex-1 items-stretch gap-3 overflow-x-auto">
           {KANBAN_COLUMNS.map((column, index) => (
             <Column
@@ -185,9 +356,18 @@ export function KanbanBoard({
               tasks={grouped[column.id] ?? []}
               onOpen={setOpenId}
               index={index}
+              isDropTarget={Boolean(dragging) && overStatus === column.id}
+              overId={dragging ? overId : null}
             />
           ))}
         </div>
+        <DragOverlay dropAnimation={dropAnimation}>
+          {dragging ? (
+            <div className="w-[260px] rotate-[1.2deg] scale-[1.03]">
+              <TaskChip task={dragging} onOpen={() => {}} variant="overlay" />
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
       <TaskDrawer
         taskId={openId}

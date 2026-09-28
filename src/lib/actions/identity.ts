@@ -20,8 +20,8 @@ function fail(error: string): LoginState {
   return { error, challenge: Date.now() };
 }
 
-function revalidateApp() {
-  revalidateHome();
+async function revalidateApp() {
+  await revalidateHome();
   revalidatePath("/login");
   revalidatePath("/settings");
 }
@@ -66,7 +66,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     if (!ok) return fail("Wrong email or password.");
 
     await setUserCookie(user.id);
-    revalidateApp();
+    await revalidateApp();
   } catch (error) {
     if (isMissingAuthColumn(error)) {
       return fail("Login columns are missing. Apply mysql/schema.sql.");
@@ -81,7 +81,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 export async function logout() {
   await clearPresence();
   await clearUserCookie();
-  revalidateApp();
+  await revalidateApp();
   redirect("/login");
 }
 
@@ -101,7 +101,7 @@ export async function updateProfile(_prev: SettingsState, formData: FormData): P
     .eq("id", user.id);
   if (error) return { error: error.message };
 
-  revalidateApp();
+  await revalidateApp();
   revalidatePath("/projects", "layout");
   return { success: "Name saved." };
 }

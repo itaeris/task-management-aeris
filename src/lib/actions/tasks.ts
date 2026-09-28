@@ -9,8 +9,8 @@ import { getTaskDetail } from "@/lib/queries";
 import { notifyGoogleCalendarTaskChanged, notifyGoogleCalendarTaskDeleted } from "@/lib/google-calendar";
 import { revalidateProject } from "@/lib/revalidate";
 
-function refresh(projectId: string) {
-  revalidateProject(projectId);
+async function refresh(projectId: string) {
+  await revalidateProject(projectId);
 }
 
 function syncCalendarLater(taskId: string) {
@@ -118,7 +118,7 @@ export async function createTask(projectId: string, formData: FormData) {
       message: `added "${task.title}"`,
     }),
   );
-  refresh(projectId);
+  await refresh(projectId);
   syncCalendarLater(task.id);
   return task.id;
 }
@@ -156,7 +156,7 @@ export async function updateTask(taskId: string, formData: FormData) {
       message: `updated "${existing.title}"`,
     }),
   );
-  refresh(existing.project_id);
+  await refresh(existing.project_id);
   syncCalendarLater(taskId);
 }
 
@@ -177,7 +177,11 @@ export async function moveTask(taskId: string, status: string, rank: number, spr
       })
       .eq("id", taskId),
   );
-  refresh(existing.project_id);
+  const saved = unwrap(
+    await db.from("tasks").select("status, rank").eq("id", taskId).single(),
+  ) as { status: string; rank: number };
+  if (saved.status !== status) throw new Error("Could not move task.");
+  await refresh(existing.project_id);
   syncCalendarLater(taskId);
 }
 
@@ -188,7 +192,7 @@ export async function reorderTasks(projectId: string, orderedIds: string[]) {
       unwrap(await db.from("tasks").update({ rank: (index + 1) * 1000 }).eq("id", id));
     }),
   );
-  refresh(projectId);
+  await refresh(projectId);
 }
 
 export async function deleteTask(taskId: string) {
@@ -206,7 +210,7 @@ export async function deleteTask(taskId: string) {
       message: `deleted "${existing.title}"`,
     }),
   );
-  refresh(existing.project_id);
+  await refresh(existing.project_id);
   after(() => {
     void notifyGoogleCalendarTaskDeleted(taskId);
   });
@@ -221,9 +225,7 @@ export async function addComment(taskId: string, formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
   if (!body) throw new Error("Comment cannot be empty.");
   unwrap(await db.from("comments").insert({ task_id: taskId, user_id: user.id, body }));
-  after(() => {
-    refresh(existing.project_id);
-  });
+  await refresh(existing.project_id);
 }
 
 export async function loadTaskDetail(taskId: string) {

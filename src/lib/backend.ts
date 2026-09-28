@@ -1,5 +1,6 @@
 const SECRET = process.env.NEST_INTERNAL_SECRET?.trim();
-const TIMEOUT_MS = 400;
+const READ_TIMEOUT_MS = 400;
+const WRITE_TIMEOUT_MS = 3000;
 
 function nestApiUrl() {
   const url = process.env.NEST_API_URL?.trim().replace(/\/$/, "") ?? "";
@@ -27,11 +28,12 @@ function configured() {
 
 async function api(path: string, init?: RequestInit) {
   if (!configured()) return null;
+  const method = (init?.method ?? "GET").toUpperCase();
   try {
     return await fetch(`${API_URL}${path}`, {
       ...init,
       cache: "no-store",
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(method === "GET" ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS),
       headers: {
         Authorization: `Bearer ${SECRET}`,
         "Content-Type": "application/json",
@@ -55,18 +57,27 @@ export async function writeBackendCache<T>(scope: CacheScope, data: T) {
   await api(pathFor(scope), { method: "PUT", body: JSON.stringify({ data }) });
 }
 
+const skipCacheUntil = new Map<string, number>();
+let skipAllUntil = 0;
+
 export async function withBackendCache<T>(scope: CacheScope, load: () => Promise<T>): Promise<T> {
-  const cached = await readBackendCache<T>(scope);
-  if (cached.hit) return cached.data;
+  const projectUntil = "projectId" in scope ? skipCacheUntil.get(scope.projectId) ?? 0 : 0;
+  const bypass = Date.now() < skipAllUntil || Date.now() < projectUntil;
+  if (!bypass) {
+    const cached = await readBackendCache<T>(scope);
+    if (cached.hit) return cached.data;
+  }
   const data = await load();
   if (data !== null && data !== undefined) void writeBackendCache(scope, data);
   return data;
 }
 
 export async function invalidateProjectCache(projectId: string) {
+  skipCacheUntil.set(projectId, Date.now() + 8000);
   await api(`/v1/projects/${projectId}`, { method: "DELETE" });
 }
 
 export async function invalidateHomeCache() {
+  skipAllUntil = Date.now() + 8000;
   await api("/v1/home", { method: "DELETE" });
 }

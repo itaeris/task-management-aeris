@@ -29,5 +29,5 @@ export async function saveDailyLog(projectId: string, formData: FormData) {
       message: `mengisi daily check ${date}`,
     }),
   );
-  revalidateProject(projectId);
+  await revalidateProject(projectId);
 }

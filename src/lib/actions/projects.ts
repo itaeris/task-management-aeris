@@ -17,9 +17,9 @@ import { DEFAULT_PROJECT_ICON, encodeProjectIcon, isFlaticonId } from "@/lib/pro
 import { shareCode } from "@/lib/utils";
 import { revalidateHome, revalidateProject } from "@/lib/revalidate";
 
-function refresh(projectId?: string) {
-  if (projectId) revalidateProject(projectId);
-  else revalidateHome();
+async function refresh(projectId?: string) {
+  if (projectId) await revalidateProject(projectId);
+  else await revalidateHome();
 }
 
 function migrationHint() {
@@ -175,7 +175,7 @@ export async function createProject(formData: FormData) {
   } else {
     await logActivity(project.id, user.id, `created project ${name}`);
   }
-  refresh(project.id);
+  await refresh(project.id);
   redirect(`/projects/${project.id}`);
 }
 
@@ -223,7 +223,7 @@ export async function updateProject(projectId: string, formData: FormData) {
   }
   if (updated.error) throw new Error(updated.error.message);
   await logActivity(projectId, user.id, `updated project details`);
-  refresh(projectId);
+  await refresh(projectId);
 }
 
 export async function updateProjectIcon(projectId: string, icon: string) {
@@ -237,7 +237,7 @@ export async function updateProjectIcon(projectId: string, icon: string) {
       .eq("id", projectId),
   );
   await logActivity(projectId, user.id, "changed the project icon");
-  refresh(projectId);
+  await refresh(projectId);
 }
 
 export async function joinProject(formData: FormData) {
@@ -251,7 +251,7 @@ export async function joinProject(formData: FormData) {
   if (!project) throw new Error("Invalid share code.");
   await joinMember(project.id, user.id);
   await logActivity(project.id, user.id, `joined the project`);
-  refresh(project.id);
+  await refresh(project.id);
   redirect(`/projects/${project.id}`);
 }
 
@@ -261,7 +261,7 @@ export async function joinProjectByCode(code: string) {
   if (!project) throw new Error("Invalid share code.");
   await joinMember(project.id, user.id);
   await logActivity(project.id, user.id, `joined via share link`);
-  refresh(project.id);
+  await refresh(project.id);
   redirect(`/projects/${project.id}`);
 }
 
@@ -271,7 +271,7 @@ export async function rotateShareCode(projectId: string) {
   const next = shareCode();
   unwrap(await db.from("projects").update({ share_code: next, updated_at: new Date().toISOString() }).eq("id", projectId));
   await logActivity(projectId, user.id, `rotated the share code`);
-  refresh(projectId);
+  await refresh(projectId);
   return next;
 }
 
@@ -303,7 +303,7 @@ export async function toggleProjectPin(projectId: string) {
     throw error;
   }
 
-  revalidateHome();
+  await revalidateHome();
 }
 
 export async function leaveProject(projectId: string) {
@@ -322,7 +322,7 @@ export async function leaveProject(projectId: string) {
     await db.from("project_members").delete().eq("project_id", projectId).eq("user_id", user.id),
   );
   await logActivity(projectId, user.id, `left the project`);
-  refresh(projectId);
+  await refresh(projectId);
   redirect("/");
 }
 
@@ -351,5 +351,5 @@ export async function deleteProject(projectId: string, confirmation: string) {
   }
 
   unwrap(await db.from("projects").delete().eq("id", projectId));
-  revalidateHome();
+  await revalidateHome();
 }

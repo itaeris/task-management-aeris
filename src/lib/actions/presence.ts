@@ -45,24 +45,30 @@ function projectIdFromPath(path: string) {
   return match?.[1] ?? null;
 }
 
+function isMissingTable(error: { message: string; code?: string } | null) {
+  if (!error) return false;
+  return error.code === "ER_NO_SUCH_TABLE" || /unknown table|does not exist|schema cache/i.test(error.message);
+}
+
 export async function pingPresence(path: string, taskId?: string | null) {
   const userId = (await cookies()).get(USER_COOKIE)?.value;
   if (!userId) return;
   const cleanPath = path.startsWith("/") ? path : "/";
   const projectId = projectIdFromPath(cleanPath);
-  const payload = {
-    user_id: userId,
-    project_id: projectId,
-    task_id: taskId || null,
-    path: cleanPath,
-    updated_at: new Date().toISOString(),
-  };
-  const { error } = await db.from("presences").upsert(payload);
-  if (!error) return;
-  if (/presences|schema cache|does not exist/i.test(error.message)) return;
-  if (payload.task_id) {
-    const retry = await db.from("presences").upsert({ ...payload, task_id: null });
-    if (!retry.error) return;
+  const updatedAt = new Date();
+  const payloads = [
+    { user_id: userId, project_id: projectId, task_id: taskId || null, path: cleanPath, updated_at: updatedAt },
+    { user_id: userId, project_id: projectId, task_id: null, path: cleanPath, updated_at: updatedAt },
+    { user_id: userId, project_id: null, task_id: null, path: cleanPath, updated_at: updatedAt },
+  ];
+  const seen = new Set<string>();
+  for (const payload of payloads) {
+    const key = `${payload.project_id ?? ""}:${payload.task_id ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const { error } = await db.from("presences").upsert(payload);
+    if (!error) return;
+    if (isMissingTable(error)) return;
   }
 }
 
@@ -70,7 +76,7 @@ export async function listPresence(): Promise<PresencePerson[]> {
   const meId = (await cookies()).get(USER_COOKIE)?.value;
   if (!meId) return [];
 
-  const cutoff = new Date(Date.now() - 90_000).toISOString();
+  const cutoff = new Date(Date.now() - 180_000);
   const { data, error } = await db
     .from("presences")
     .select("user_id, project_id, task_id, path, updated_at")
@@ -78,7 +84,7 @@ export async function listPresence(): Promise<PresencePerson[]> {
     .order("updated_at", { ascending: false });
 
   if (error) {
-    if (/presences|schema cache|does not exist/i.test(error.message)) return [];
+    if (isMissingTable(error)) return [];
     throw new Error(error.message);
   }
 

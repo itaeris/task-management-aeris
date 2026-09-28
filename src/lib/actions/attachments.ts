@@ -5,8 +5,8 @@ import { requireProjectMember } from "@/lib/auth";
 import { ALLOWED_MIME, MAX_UPLOAD_BYTES } from "@/lib/constants";
 import { revalidateProject } from "@/lib/revalidate";
 
-function refresh(projectId: string) {
-  revalidateProject(projectId);
+async function refresh(projectId: string) {
+  await revalidateProject(projectId);
 }
 
 export async function uploadAttachment(taskId: string, formData: FormData) {
@@ -47,7 +47,7 @@ export async function uploadAttachment(taskId: string, formData: FormData) {
       message: `mengunggah ${file.name} ke "${existing.title}"`,
     }),
   );
-  refresh(existing.project_id);
+  await refresh(existing.project_id);
 }
 
 export async function deleteAttachment(attachmentId: string) {
@@ -64,5 +64,5 @@ export async function deleteAttachment(attachmentId: string) {
   await requireProjectMember(task.project_id);
   await db.storage.from("attachments").remove([file.stored_name]);
   unwrap(await db.from("attachments").delete().eq("id", attachmentId));
-  refresh(task.project_id);
+  await refresh(task.project_id);
 }

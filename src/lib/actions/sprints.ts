@@ -5,8 +5,8 @@ import { requireProjectMember } from "@/lib/auth";
 import { parseDateInput } from "@/lib/utils";
 import { revalidateProject } from "@/lib/revalidate";
 
-function refresh(projectId: string) {
-  revalidateProject(projectId);
+async function refresh(projectId: string) {
+  await revalidateProject(projectId);
 }
 
 export async function createSprint(projectId: string, formData: FormData) {
@@ -36,7 +36,7 @@ export async function createSprint(projectId: string, formData: FormData) {
       message: `created sprint ${name}`,
     }),
   );
-  refresh(projectId);
+  await refresh(projectId);
 }
 
 export async function updateSprint(projectId: string, sprintId: string, formData: FormData) {
@@ -71,7 +71,7 @@ export async function updateSprint(projectId: string, sprintId: string, formData
       message: `updated sprint ${name}`,
     }),
   );
-  refresh(projectId);
+  await refresh(projectId);
 }
 
 export async function deleteSprint(projectId: string, sprintId: string) {
@@ -92,7 +92,7 @@ export async function deleteSprint(projectId: string, sprintId: string) {
       message: `deleted sprint ${sprint.name}`,
     }),
   );
-  refresh(projectId);
+  await refresh(projectId);
 }
 
 export async function updateSprintStatus(projectId: string, sprintId: string, status: string) {
@@ -112,5 +112,5 @@ export async function updateSprintStatus(projectId: string, sprintId: string, st
       message: `changed ${sprint.name} to ${status}`,
     }),
   );
-  refresh(projectId);
+  await refresh(projectId);
 }

@@ -75,9 +75,13 @@ function pool(): Pool {
 }
 
 function toMysqlDate(value: unknown) {
-  if (value instanceof Date) return value.toISOString().slice(0, 23).replace("T", " ");
-  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
-    return value.replace("T", " ").replace("Z", "").replace(/\+[\d:]+$/, "").slice(0, 23);
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    return value.toISOString().slice(0, 23).replace("T", " ");
+  }
+  if (typeof value === "string") {
+    const iso = value.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})(?:\.(\d+))?(?:Z|[+-][\d:]*)?$/i);
+    if (iso) return `${iso[1]} ${iso[2]}.${(iso[3] ?? "000").padEnd(3, "0").slice(0, 3)}`;
   }
   return value;
 }
@@ -411,7 +415,10 @@ class QueryBuilder<TData = DbRow[]> implements PromiseLike<QueryResult<TData>> {
     const row = this.normalizeRows(this.payload)[0];
     const columns = Object.keys(row);
     const updates = columns.filter((column) => column !== "id");
-    const sql = `INSERT INTO ${quoteIdent(this.table)} (${columns.map(quoteIdent).join(", ")}) VALUES (${columns.map(() => "?").join(", ")}) AS new ON DUPLICATE KEY UPDATE ${updates.map((column) => `${quoteIdent(column)} = new.${quoteIdent(column)}`).join(", ")}`;
+    const assignments = (updates.length ? updates : columns).map(
+      (column) => `${quoteIdent(column)} = VALUES(${quoteIdent(column)})`,
+    );
+    const sql = `INSERT INTO ${quoteIdent(this.table)} (${columns.map(quoteIdent).join(", ")}) VALUES (${columns.map(() => "?").join(", ")}) ON DUPLICATE KEY UPDATE ${assignments.join(", ")}`;
     await pool().query(sql, columns.map((column) => row[column]));
     return { data: this.pickReturning(row), error: null };
   }

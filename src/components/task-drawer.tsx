@@ -352,19 +352,30 @@ function CommentForm({ taskId, onAdded }: { taskId: string; onAdded: () => Promi
 export function TaskChip({
   task,
   onOpen,
+  variant = "default",
 }: {
   task: TaskDTO;
   onOpen: (id: string) => void;
+  variant?: "default" | "overlay";
 }) {
+  const overlay = variant === "overlay";
   return (
     <div
       role="button"
-      tabIndex={0}
-      onClick={() => onOpen(task.id)}
+      tabIndex={overlay ? -1 : 0}
+      onClick={() => {
+        if (!overlay) onOpen(task.id);
+      }}
       onKeyDown={(event) => {
+        if (overlay) return;
         if (event.key === "Enter" || event.key === " ") onOpen(task.id);
       }}
-      className="w-full cursor-pointer rounded-2xl border border-line bg-paper p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      className={cn(
+        "w-full rounded-2xl border border-line bg-paper p-3 text-left",
+        overlay
+          ? "cursor-grabbing shadow-[0_22px_48px_rgba(15,23,42,0.22)] ring-1 ring-black/5"
+          : "cursor-pointer shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(15,23,42,0.12)]",
+      )}
     >
       <div className="flex items-center justify-between gap-2">
         <TypeBadge type={task.type} />

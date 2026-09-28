@@ -7,8 +7,8 @@ import { requireProjectMember } from "@/lib/auth";
 import { db, unwrap } from "@/lib/db";
 import { revalidateProject } from "@/lib/revalidate";
 
-function refresh(projectId: string) {
-  revalidateProject(projectId);
+async function refresh(projectId: string) {
+  await revalidateProject(projectId);
   revalidatePath(`/projects/${projectId}/share`);
 }
 
@@ -45,7 +45,7 @@ export async function addGroupMember(projectId: string, formData: FormData) {
       message: "added someone to the group",
     }),
   );
-  refresh(projectId);
+  await refresh(projectId);
 }
 
 export async function removeGroupMember(projectId: string, userId: string) {
@@ -86,5 +86,5 @@ export async function removeGroupMember(projectId: string, userId: string) {
       message: "removed someone from the group",
     }),
   );
-  refresh(projectId);
+  await refresh(projectId);
 }

@@ -18,7 +18,7 @@ export async function disconnectGoogleCalendar(
   try {
     const { user } = await requireProjectMember(projectId);
     await disconnectCalendar(user.id);
-    revalidateProject(projectId);
+    await revalidateProject(projectId);
     return { success: "Google Calendar disconnected." };
   } catch (error) {
     if (isMissingCalendarTable(error)) {
@@ -37,7 +37,7 @@ export async function syncGoogleCalendar(
   try {
     const { user } = await requireProjectMember(projectId);
     const count = await syncProjectToGoogleCalendar(user.id, projectId);
-    revalidateProject(projectId);
+    await revalidateProject(projectId);
     return { success: `${count} ${count === 1 ? "task" : "tasks"} synced to Google Calendar.` };
   } catch (error) {
     if (isMissingCalendarTable(error)) {
