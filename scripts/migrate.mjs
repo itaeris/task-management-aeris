@@ -73,10 +73,23 @@ function seedPath() {
   return candidates.find((file) => existsSync(file));
 }
 
+function mysqlDateTimes(sql) {
+  return sql.replace(
+    /(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)(?:[+-]\d{2}:?(?:\d{2})?|Z)/g,
+    "$1",
+  );
+}
+
+async function countRows(conn, table) {
+  const [rows] = await conn.query(`SELECT COUNT(*) AS c FROM \`${table}\``);
+  return Number(rows[0]?.c ?? 0);
+}
+
 async function seedIfEmpty(conn) {
-  const [rows] = await conn.query("SELECT COUNT(*) AS c FROM projects");
-  if (Number(rows[0]?.c ?? 0) > 0) {
-    console.log("skip seed (projects already present)");
+  const projects = await countRows(conn, "projects");
+  const tasks = await countRows(conn, "tasks");
+  if (projects > 0 && tasks > 0) {
+    console.log("skip seed (data already present)");
     return;
   }
   const file = seedPath();
@@ -84,13 +97,41 @@ async function seedIfEmpty(conn) {
     console.log("skip seed (mysql/seed.sql not found)");
     return;
   }
-  await conn.query("SET FOREIGN_KEY_CHECKS = 0");
-  await conn.query(
-    "DELETE FROM users WHERE email IN ('it@aerisbeaute.com', 'dwiki@aerisbeaute.com', 'leonardo@aerisbeaute.com')",
-  );
-  await conn.query(readFileSync(file, "utf8"));
-  await conn.query("SET FOREIGN_KEY_CHECKS = 1");
-  console.log("seed imported");
+
+  const sql = mysqlDateTimes(readFileSync(file, "utf8"));
+  await conn.beginTransaction();
+  try {
+    await conn.query("SET FOREIGN_KEY_CHECKS = 0");
+    if (projects > 0 && tasks === 0) {
+      console.log("incomplete seed detected; wiping partial rows");
+      for (const table of [
+        "project_analyses",
+        "activities",
+        "daily_logs",
+        "attachments",
+        "comments",
+        "task_assignees",
+        "tasks",
+        "sprints",
+        "project_pins",
+        "project_members",
+        "projects",
+      ]) {
+        await conn.query(`DELETE FROM \`${table}\``);
+      }
+    }
+    await conn.query(
+      "DELETE FROM users WHERE email IN ('it@aerisbeaute.com', 'dwiki@aerisbeaute.com', 'leonardo@aerisbeaute.com')",
+    );
+    await conn.query(sql);
+    await conn.query("SET FOREIGN_KEY_CHECKS = 1");
+    await conn.commit();
+    console.log("seed imported");
+  } catch (error) {
+    await conn.rollback();
+    await conn.query("SET FOREIGN_KEY_CHECKS = 1").catch(() => {});
+    throw error;
+  }
 }
 
 async function main() {
