@@ -95,10 +95,9 @@ jobs:
           dest = Path("env-files")
           dest.mkdir(exist_ok=True)
 
-          def write(filename: str, secret_name: str) -> None:
+          def parse(secret_name: str) -> dict[str, str]:
               raw = os.environ.get(secret_name, "").replace("\r\n", "\n").replace("\r", "\n")
-              lines = []
-              keys = []
+              values = {}
               for line in raw.splitlines():
                   text = line.strip()
                   if not text or text.startswith("#"):
@@ -110,17 +109,25 @@ jobs:
                   key, value = text.split("=", 1)
                   key = key.strip()
                   value = value.strip()
-                  if not key:
-                      continue
-                  lines.append(f"{key}={value}")
-                  keys.append(key)
-              (dest / filename).write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
-              print(f"{secret_name} keys: {', '.join(keys) or '(empty)'}")
-              if "DATABASE_URL" not in keys:
-                  raise SystemExit(f"{secret_name} is missing DATABASE_URL")
+                  if key:
+                      values[key] = value
+              print(f"{secret_name} keys: {', '.join(values) or '(empty)'}")
+              return values
 
-          write("backend.env", "BACKEND_ENV")
-          write("frontend.env", "FRONTEND_ENV")
+          backend = parse("BACKEND_ENV")
+          frontend = parse("FRONTEND_ENV")
+          database_url = backend.get("DATABASE_URL") or frontend.get("DATABASE_URL")
+          if not database_url:
+              raise SystemExit("DATABASE_URL is missing from both BACKEND_ENV and FRONTEND_ENV")
+          backend.setdefault("DATABASE_URL", database_url)
+          frontend.setdefault("DATABASE_URL", database_url)
+
+          def write(filename: str, values: dict[str, str]) -> None:
+              body = "".join(f"{key}={value}\n" for key, value in values.items())
+              (dest / filename).write_text(body, encoding="utf-8")
+
+          write("backend.env", backend)
+          write("frontend.env", frontend)
           PY
 
       - name: Copy deploy files
