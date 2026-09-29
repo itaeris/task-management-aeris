@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -36,7 +36,6 @@ import { Select } from "@/components/fields";
 import { chip } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { easeOutSoft } from "@/components/motion";
 import { notifyChange } from "@/components/toast";
 
 const collisionDetection: CollisionDetection = (args) => {
@@ -68,10 +67,10 @@ const collisionDetection: CollisionDetection = (args) => {
 };
 
 const dropAnimation: DropAnimation = {
-  duration: 220,
+  duration: 180,
   easing: "cubic-bezier(0.22, 1, 0.36, 1)",
   sideEffects: defaultDropAnimationSideEffects({
-    styles: { active: { opacity: "0.35" } },
+    styles: { active: { opacity: "0" } },
   }),
 };
 
@@ -107,8 +106,9 @@ function SortableCard({
       style={style}
       className={cn(
         "rounded-2xl cursor-grab active:cursor-grabbing",
-        isDragging && "opacity-0",
-        !isDragging && isDropTarget && "z-10 shadow-[0_14px_32px_rgba(15,23,42,0.16)] ring-1 ring-terracotta/25",
+        isDragging &&
+          "border border-dashed border-line bg-paper/70 shadow-[0_10px_24px_rgba(15,23,42,0.12)] [&>*]:invisible",
+        !isDragging && isDropTarget && "z-10 ring-2 ring-terracotta/30",
       )}
       {...attributes}
       {...listeners}
@@ -123,7 +123,6 @@ function Column({
   title,
   tasks,
   onOpen,
-  index,
   isDropTarget,
   overId,
 }: {
@@ -131,27 +130,41 @@ function Column({
   title: string;
   tasks: TaskDTO[];
   onOpen: (id: string) => void;
-  index: number;
   isDropTarget: boolean;
   overId: string | null;
 }) {
   const { setNodeRef } = useDroppable({ id, data: { type: "column", status: id } });
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    let timer = 0;
+    const onScroll = () => {
+      el.classList.add("is-scrolling");
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => el.classList.remove("is-scrolling"), 700);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      window.clearTimeout(timer);
+    };
+  }, []);
   return (
     <motion.section
       className={cn(
         "flex h-full min-h-0 min-w-[260px] flex-1 flex-col rounded-3xl bg-paper-2/70 p-3 transition-[box-shadow,background-color,transform] duration-200",
-        isDropTarget && "bg-paper shadow-[0_16px_40px_rgba(15,23,42,0.12)] ring-1 ring-terracotta/20",
+        isDropTarget && "ring-1 ring-terracotta/25",
       )}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: index * 0.05, ease: easeOutSoft }}
+      initial={false}
     >
       <div ref={setNodeRef} className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="mb-3 flex shrink-0 items-center justify-between px-1">
           <h3 className="text-sm font-semibold">{title}</h3>
           <span className={cn(chip, "bg-paper text-muted")}>{tasks.length}</span>
         </header>
-        <div className="flex min-h-[8rem] min-w-0 flex-1 flex-col gap-2 overflow-y-auto">
+        <div ref={scrollRef} className="kanban-scroll flex min-h-[8rem] min-w-0 flex-1 flex-col gap-2 overflow-y-auto">
           <SortableContext items={tasks.map((task) => task.id)} strategy={verticalListSortingStrategy}>
             {tasks.map((task) => (
               <SortableCard
@@ -299,7 +312,6 @@ export function KanbanBoard({
       } else {
         await notifyChange(moveTask(activeId, nextStatus, rank), "Task moved");
       }
-      router.refresh();
     } catch {
       pendingMoves.current.delete(activeId);
       setItems(previous);
@@ -348,14 +360,13 @@ export function KanbanBoard({
         }}
       >
         <div className="flex h-full min-h-0 flex-1 items-stretch gap-3 overflow-x-auto">
-          {KANBAN_COLUMNS.map((column, index) => (
+          {KANBAN_COLUMNS.map((column) => (
             <Column
               key={column.id}
               id={column.id}
               title={column.label}
               tasks={grouped[column.id] ?? []}
               onOpen={setOpenId}
-              index={index}
               isDropTarget={Boolean(dragging) && overStatus === column.id}
               overId={dragging ? overId : null}
             />
@@ -363,7 +374,7 @@ export function KanbanBoard({
         </div>
         <DragOverlay dropAnimation={dropAnimation}>
           {dragging ? (
-            <div className="w-[260px] rotate-[1.2deg] scale-[1.03]">
+            <div className="w-[260px]">
               <TaskChip task={dragging} onOpen={() => {}} variant="overlay" />
             </div>
           ) : null}

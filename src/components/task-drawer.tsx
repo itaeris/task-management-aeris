@@ -373,8 +373,8 @@ export function TaskChip({
       className={cn(
         "w-full rounded-2xl border border-line bg-paper p-3 text-left",
         overlay
-          ? "cursor-grabbing shadow-[0_22px_48px_rgba(15,23,42,0.22)] ring-1 ring-black/5"
-          : "cursor-pointer shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(15,23,42,0.12)]",
+          ? "cursor-grabbing shadow-lg"
+          : "cursor-pointer shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md",
       )}
     >
       <div className="flex items-center justify-between gap-2">
