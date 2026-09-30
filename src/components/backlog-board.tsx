@@ -74,7 +74,6 @@ export function BacklogBoard({
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Sprint</th>
               <th className="px-4 py-3">Due</th>
-              <th className="px-4 py-3">Pts</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -100,7 +99,6 @@ export function BacklogBoard({
                 </td>
                 <td className="px-4 py-3 text-muted">{task.sprintName ?? "—"}</td>
                 <td className="px-4 py-3 text-muted">{task.dueDate ? formatTaskWhen(task.dueDate, task.allDay) : "—"}</td>
-                <td className="px-4 py-3">{task.points ?? "—"}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-3 text-muted">
                     <span className="inline-flex items-center gap-1 text-xs">

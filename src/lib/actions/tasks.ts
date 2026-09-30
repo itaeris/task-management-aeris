@@ -92,7 +92,6 @@ export async function createTask(projectId: string, formData: FormData) {
   const { user } = await requireProjectMember(projectId);
   const title = String(formData.get("title") ?? "").trim();
   if (!title) throw new Error("Task title is required.");
-  const pointsRaw = String(formData.get("points") ?? "").trim();
   const assigneeIds = readAssigneeIds(formData);
 
   const task = await writeTask("insert", {
@@ -104,7 +103,6 @@ export async function createTask(projectId: string, formData: FormData) {
         status: String(formData.get("status") ?? "backlog"),
         sprint_id: String(formData.get("sprintId") ?? "") || null,
         assignee_id: assigneeIds[0] ?? null,
-        points: pointsRaw ? Number(pointsRaw) : null,
         ...taskDates(formData),
         rank: await nextRank(projectId),
       });
@@ -129,7 +127,6 @@ export async function updateTask(taskId: string, formData: FormData) {
   ) as { project_id: string; title: string } | null;
   if (!existing) throw new Error("Task not found.");
   const { user } = await requireProjectMember(existing.project_id);
-  const pointsRaw = String(formData.get("points") ?? "").trim();
   const assigneeIds = readAssigneeIds(formData);
 
   await writeTask(
@@ -142,7 +139,6 @@ export async function updateTask(taskId: string, formData: FormData) {
       status: String(formData.get("status") ?? "backlog"),
       sprint_id: String(formData.get("sprintId") ?? "") || null,
       assignee_id: assigneeIds[0] ?? null,
-      points: pointsRaw ? Number(pointsRaw) : null,
       ...taskDates(formData),
       updated_at: new Date().toISOString(),
     },

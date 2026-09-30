@@ -93,7 +93,6 @@ export function CreateTaskButton({
                   placeholder="Unassigned"
                   options={members.map((member) => ({ value: member.id, label: member.name }))}
                 />
-                <input name="points" type="number" min={0} className={field} placeholder="Points" />
                 <TaskScheduleFields />
               </div>
             </div>

@@ -302,7 +302,6 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
             </div>
             <h3 className="mt-5 text-sm font-semibold tracking-wide text-ink uppercase">Other</h3>
             <div className="mt-3 grid gap-3">
-              <Term name="Pts (story points)">Size estimate, not hours. Relative numbers on the team (for example 1, 2, 3, 5, 8).</Term>
               <Term name="Assignee">Who owns the task. You can assign more than one person, or leave it empty.</Term>
               <Term name="Start / Due">Start and deadline. Due fills Calendar. Both fill Timeline.</Term>
               <Term name="Sprint">The iteration where the task is worked. Empty = still on the product backlog.</Term>
@@ -472,7 +471,7 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
               Click a task in Product log, Kanban, Calendar, or Timeline. This drawer is where you edit it fully.
             </p>
             <div className="mt-4 grid gap-3">
-              <Term name="Save">Writes title, description, status, priority, type, sprint, assignees, dates, and points.</Term>
+              <Term name="Save">Writes title, description, status, priority, type, sprint, assignees, and dates.</Term>
               <Term name="Comments">Discussion on that task only. The team sees them in time order.</Term>
               <Term name="Attachments">Files attached to the task. Limit around 10 MB. Common formats: images, PDF, Office documents, ZIP, text/CSV.</Term>
               <Term name="Delete">Removes the task, its comments, and its attachments. Cannot be undone from the app.</Term>
@@ -494,8 +493,7 @@ export function UsageGuide({ projectId }: { projectId?: string }) {
                 Create a project, pick Personal / Group / Organization, then add a short description on Overview.
               </Step>
               <Step n="2" title="Write the backlog">
-                In Product log, break the work into tasks. Fill in priority, type, estimated points, and a due
-                date if you already know it.
+                In Product log, break the work into tasks. Fill in priority, type, and a due date if you already know it.
               </Step>
               <Step n="3" title="Plan the sprint">
                 In Scrum log, create a sprint, write the goal, activate it. From task detail, pick that sprint.

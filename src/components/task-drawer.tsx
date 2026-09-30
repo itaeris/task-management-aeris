@@ -108,7 +108,6 @@ export function TaskDrawer({
               detail.status,
               detail.sprintId,
               (detail.assignees ?? []).map((person) => person.id).join(","),
-              detail.points,
               detail.startDate,
               detail.dueDate,
               detail.allDay,
@@ -160,14 +159,6 @@ export function TaskDrawer({
                 defaultValue={(detail.assignees ?? []).map((person) => person.id)}
                 placeholder="Unassigned"
                 options={members.map((member) => ({ value: member.id, label: member.name }))}
-              />
-              <input
-                name="points"
-                type="number"
-                min={0}
-                className={field}
-                placeholder="Story points"
-                defaultValue={detail.points ?? ""}
               />
               <TaskScheduleFields
                 startIso={detail.startDate}
@@ -383,7 +374,6 @@ export function TaskChip({
       </div>
       <p className="mt-2 text-sm font-semibold leading-snug">{task.title}</p>
       <div className="mt-3 flex items-center justify-between text-xs text-muted">
-        <span>        {task.points ? `${task.points} pt` : "No points"}</span>
         {task.dueDate ? <span>{formatTaskWhen(task.dueDate, task.allDay)}</span> : <span />}
         {task.assignees?.length ? (
           <AvatarStack members={task.assignees} />
